@@ -1,13 +1,15 @@
 #!/bin/bash
 #
-# PlexPass Linux Server download tool v2.3
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# This tool will login to the Plex homepage, locate the PlexPass
-# Plex Media Server for Linux and download it.
+# Plex Linux Server download tool v2.4
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# This tool will download the latest version of Plex Media
+# Server for Linux. It supports both the public versions
+# as well as the PlexPass versions.
 #
-# Either modify this file to add email and password OR create
-# a separate .plexupdate file in your home directory with these
-# values.
+# PlexPass users:
+#   Either modify this file to add email and password OR create
+#   a separate .plexupdate file in your home directory with these
+#   values.
 #
 # Returns 0 on success
 #         1 on error
@@ -30,7 +32,7 @@
 #               resiliance to HTML changes and also better error handling
 #  2.3          Now reads an optional config file to avoid having to
 #               modify this script.
-#
+#  2.4          Added support for the public versions of PMS
 
 #################################################################
 # Set these two to what you need, or create a .plexupdate file
@@ -51,33 +53,37 @@ fi
 # Current pages we need
 URL_LOGIN=https://plex.tv/users/sign_in
 URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
+URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
 
 # Defaults
 RELEASE="64-bit"
 KEEP=no
 FORCE=no
-
-# Sanity check
-if [ "${EMAIL}" == "" -o "${PASS}" == "" ]; then
-	echo "Error: No email and/or password provided, please edit me."
-	exit 1
-fi
+PUBLIC=no
 
 # Parse commandline
 set -- $(getopt fhko: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-fhko]\n\nf = Force download even if it exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\n"; exit 0;;
+	(-h) echo -e "Usage: $(basename $0) [-fhkop]\n\nf = Force download even if it exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version"; exit 0;;
 	(-f) FORCE=yes;;
 	(-k) KEEP=yes;;
 	(-o) RELEASE="32-bit";;
+	(-p) PUBLIC=yes;;
 	(--) ;;
 	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
 	(*)  break;;
 	esac
 	shift
 done
+
+# Sanity check
+if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
+	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version."
+	exit 1
+fi
+
 
 # Useful functions
 rawurlencode() {
@@ -114,7 +120,7 @@ keypair() {
 # commit		Sign in
 
 # If user wants, we skip authentication, but only if previous auth exists
-if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ]; then
+if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 	echo -n "Authenticating..."
 	# Clean old session
 	rm /tmp/kaka 2>/dev/null
@@ -147,6 +153,11 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ]; then
 		exit 1
 	fi
 	echo "OK"
+else
+	# It's a public version, so change URL and make doubly sure that cookies are empty
+	rm 2>/dev/null >/dev/null /tmp/kaka
+	touch /tmp/kaka
+	URL_DOWNLOAD=${URL_DOWNLOAD_PUBLIC}
 fi
 
 # Extract the URL for our release
