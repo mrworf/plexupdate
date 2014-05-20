@@ -34,7 +34,8 @@
 #               modify this script.
 #  2.4          Added support for the public versions of PMS
 #  2.5          Supports autoinstall if root and given the option
-
+#  2.6		Support for redhat derived distributions
+#
 #################################################################
 # Set these two to what you need, or create a .plexupdate file
 # in your home directory with these two (avoids changing this)
@@ -93,6 +94,15 @@ if [ "${AUTOINSTALL}" == "yes" ]; then
 		echo "Error: You need to be root to use autoinstall option."
 		exit 1
 	fi
+fi
+
+# Detect if we're running on redhat instead of ubuntu
+REDHAT=no;
+PKGEXT='.deb'
+
+if [ -f /etc/redhat-release ]; then
+	REDHAT=yes;
+	PKGEXT='.rpm'
 fi
 
 # Useful functions
@@ -179,7 +189,8 @@ fi
 
 # Extract the URL for our release
 echo -n "Finding download URL for ${RELEASE}..."
-DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep ".deb" | grep "${RELEASE}" | sed "s/.*href=\"\([^\"]*\.deb\)\"[^>]*>${RELEASE}.*/\1/")
+
+DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep "${PKGEXT}" | grep -m 1 "${RELEASE}" | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>${RELEASE}.*/\1/" )
 echo -e "OK"
 
 if [ "${DOWNLOAD}" == "" ]; then
@@ -208,7 +219,11 @@ fi
 echo "OK"
 
 if [ "${AUTOINSTALL}" == "yes" ]; then
-	dpkg -i "${FILENAME}"
+	if [ "${REDHAT}" == "yes" ]; then
+		rpm -i "${FILENAME}"
+	else
+		dpkg -i "${FILENAME}"
+	fi
 fi
 
 exit 0
