@@ -33,6 +33,7 @@
 #  2.3          Now reads an optional config file to avoid having to
 #               modify this script.
 #  2.4          Added support for the public versions of PMS
+#  2.5          Supports autoinstall if root and given the option
 
 #################################################################
 # Set these two to what you need, or create a .plexupdate file
@@ -60,13 +61,15 @@ RELEASE="64-bit"
 KEEP=no
 FORCE=no
 PUBLIC=no
+AUTOINSTALL=no
 
 # Parse commandline
 set -- $(getopt fhko: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-fhkop]\n\nf = Force download even if it exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version"; exit 0;;
+	(-h) echo -e "Usage: $(basename $0) [-afhkop]\n\na = Auto install if download was successful (requires root)\nf = Force download even if it exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version"; exit 0;;
+	(-a) AUTOINSTALL=yes;;
 	(-f) FORCE=yes;;
 	(-k) KEEP=yes;;
 	(-o) RELEASE="32-bit";;
@@ -84,6 +87,13 @@ if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
 	exit 1
 fi
 
+if [ "${AUTOINSTALL}" == "yes" ]; then
+	id | grep 'uid=0(' 2>&1 >/dev/null
+	if [ $? -ne 0 ]; then
+		echo "Error: You need to be root to use autoinstall option."
+		exit 1
+	fi
+fi
 
 # Useful functions
 rawurlencode() {
@@ -108,6 +118,13 @@ keypair() {
 
 	echo "${key}=${val}"
 }
+
+# Setup an exit handler so we cleanup
+function cleanup {
+	rm /tmp/kaka 2>/dev/null >/dev/null
+	rm /tmp/postdata 2>/dev/null >/dev/null
+}
+trap cleanup EXIT
 
 # Fields we need to submit for login to work
 #
@@ -189,4 +206,9 @@ if [ ${CODE} -ne 0 ]; then
 	exit ${CODE}
 fi
 echo "OK"
+
+if [ "${AUTOINSTALL}" == "yes" ]; then
+	dpkg -i "${FILENAME}"
+fi
+
 exit 0
