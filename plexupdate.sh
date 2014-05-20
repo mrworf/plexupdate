@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Plex Linux Server download tool v2.4
+# Plex Linux Server download tool v2.6
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # This tool will download the latest version of Plex Media
 # Server for Linux. It supports both the public versions
