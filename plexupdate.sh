@@ -49,22 +49,23 @@ DOWNLOADDIR="."
 # Don't change anything below this point
 #
 
-# Load settings from config file if it exists
-if [ -f ~/.plexupdate ]; then
-	source ~/.plexupdate
-fi
-
-# Current pages we need
-URL_LOGIN=https://plex.tv/users/sign_in
-URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
-URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
-
 # Defaults
+# (aka "Advanced" settings, can be overriden with config file)
 RELEASE="64-bit"
 KEEP=no
 FORCE=no
 PUBLIC=no
 AUTOINSTALL=no
+
+# Load settings from config file if it exists
+if [ -f ~/.plexupdate ]; then
+	source ~/.plexupdate
+fi
+
+# Current pages we need - Do not change unless Plex.tv changea again
+URL_LOGIN=https://plex.tv/users/sign_in
+URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
+URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
 
 # Parse commandline
 set -- $(getopt fhko: -- "$@")
