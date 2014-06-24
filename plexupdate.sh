@@ -39,9 +39,11 @@
 #################################################################
 # Set these two to what you need, or create a .plexupdate file
 # in your home directory with these two (avoids changing this)
+# DOWNLOADDIR is the full directory path you would like the download to go, without trailing slash.
 #
 EMAIL=
 PASS=
+DOWNLOADDIR="."
 
 #################################################################
 # Don't change anything below this point
@@ -204,13 +206,13 @@ if [ $? -ne 0 ]; then
 	exit 3
 fi
 
-if [ -f "${FILENAME}" -a "${FORCE}" != "yes" ]; then
+if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
 	echo "File already exists, won't download."
 	exit 2
 fi
 
 echo -ne "Downloading release \"${FILENAME}\"..."
-ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" 2>&1)
+ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
 CODE=$?
 if [ ${CODE} -ne 0 ]; then
 	echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
@@ -220,9 +222,9 @@ echo "OK"
 
 if [ "${AUTOINSTALL}" == "yes" ]; then
 	if [ "${REDHAT}" == "yes" ]; then
-		rpm -i "${FILENAME}"
+		rpm -i "${DOWNLOADDIR}/${FILENAME}"
 	else
-		dpkg -i "${FILENAME}"
+		dpkg -i "${DOWNLOADDIR}/${FILENAME}"
 	fi
 fi
 
