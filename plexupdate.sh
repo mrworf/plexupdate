@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Plex Linux Server download tool v2.6
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Plex Linux Server download tool v2.6.2
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # This tool will download the latest version of Plex Media
 # Server for Linux. It supports both the public versions
 # as well as the PlexPass versions.
@@ -35,6 +35,8 @@
 #  2.4          Added support for the public versions of PMS
 #  2.5          Supports autoinstall if root and given the option
 #  2.6		Support for redhat derived distributions
+#  2.6.2	Merge download dir support and moved config sourcing
+#		(per request)
 #
 #################################################################
 # Set these two to what you need, or create a .plexupdate file
