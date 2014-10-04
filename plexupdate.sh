@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Plex Linux Server download tool v2.6.2
+# Plex Linux Server download tool v2.6.3
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # This tool will download the latest version of Plex Media
 # Server for Linux. It supports both the public versions
@@ -37,6 +37,7 @@
 #  2.6		Support for redhat derived distributions
 #  2.6.2	Merge download dir support and moved config sourcing
 #		(per request)
+#  2.6.3	Added detection for wget to avoid issues downloading
 #
 #################################################################
 # Set these two to what you need, or create a .plexupdate file
@@ -58,6 +59,13 @@ KEEP=no
 FORCE=no
 PUBLIC=no
 AUTOINSTALL=no
+
+# Sanity, make sure wget is in our path...
+wget >/dev/null 2>/dev/null
+if [ $? -eq 127 ]; then
+	echo "Error: This script requires wget in the path. It could also signify that you don't have the tool installed."
+	exit 1
+fi
 
 # Load settings from config file if it exists
 if [ -f ~/.plexupdate ]; then
