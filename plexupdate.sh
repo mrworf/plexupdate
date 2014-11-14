@@ -217,6 +217,15 @@ if [ $? -ne 0 ]; then
 	exit 3
 fi
 
+# Installed version detection (untested on Redhat)
+if [ "${REDHAT}" != "yes" ]; then
+	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
+	if [ $FILENAME == *$INSTALLED_VERSION* ] && [ "${FORCE}" != "yes" ]; then
+		echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
+		exit 0
+	fi
+fi
+
 if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
 	echo "File already exists, won't download."
 	exit 2
