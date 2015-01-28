@@ -217,19 +217,26 @@ if [ $? -ne 0 ]; then
 	exit 3
 fi
 
+SKIPDOWNLOAD="no"
 if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
-	echo "File already exists, won't download."
-	exit 2
+	if [ "${AUTOINSTALL}" != "yes" ]; then 
+		echo "File already exists, won't download."
+		exit 2
+	fi
+    
+	SKIP_DOWNLOAD="yes"
 fi
 
-echo -ne "Downloading release \"${FILENAME}\"..."
-ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
-CODE=$?
-if [ ${CODE} -ne 0 ]; then
-	echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
-	exit ${CODE}
+if [ "${SKIP_DOWNLOAD}" == "no" ]; then
+	echo -ne "Downloading release \"${FILENAME}\"..."
+	ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
+	CODE=$?
+	if [ ${CODE} -ne 0 ]; then
+		echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
+		exit ${CODE}
+	fi
+	echo "OK"
 fi
-echo "OK"
 
 if [ "${AUTOINSTALL}" == "yes" ]; then
 	if [ "${REDHAT}" == "yes" ]; then
