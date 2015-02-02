@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Plex Linux Server download tool v2.6.3
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Plex Linux Server download tool
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # This tool will download the latest version of Plex Media
 # Server for Linux. It supports both the public versions
 # as well as the PlexPass versions.
@@ -16,6 +16,7 @@
 #         2 if file already downloaded
 #         3 if page layout has changed.
 #         4 if download fails
+#         5 if version already installed
 #
 # All other return values not documented.
 #
@@ -23,23 +24,10 @@
 #
 # Enjoy!
 #
-# Version	Description
-# ^^^^^^^	^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#  1.0		Initial version, was able to download from plexapp
-#  2.0		Initial version supporting plex.tv
-#  2.1		Updated to use options and error codes
-#  2.2          Layout changed, so code also changed. Added better
-#               resiliance to HTML changes and also better error handling
-#  2.3          Now reads an optional config file to avoid having to
-#               modify this script.
-#  2.4          Added support for the public versions of PMS
-#  2.5          Supports autoinstall if root and given the option
-#  2.6		Support for redhat derived distributions
-#  2.6.2	Merge download dir support and moved config sourcing
-#		(per request)
-#  2.6.3	Added detection for wget to avoid issues downloading
+# Check out https://github.com/mrworf/plexupdate for latest version
+# and also what's new.
 #
-#################################################################
+####################################################################
 # Set these two to what you need, or create a .plexupdate file
 # in your home directory with these two (avoids changing this)
 # DOWNLOADDIR is the full directory path you would like the download to go, without trailing slash.
@@ -82,7 +70,7 @@ set -- $(getopt fhko: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-afhkop]\n\na = Auto install if download was successful (requires root)\nf = Force download even if it exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version"; exit 0;;
+	(-h) echo -e "Usage: $(basename $0) [-afhkop]\n\na = Auto install if download was successful (requires root)\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version"; exit 0;;
 	(-a) AUTOINSTALL=yes;;
 	(-f) FORCE=yes;;
 	(-k) KEEP=yes;;
@@ -217,14 +205,15 @@ if [ $? -ne 0 ]; then
 	exit 3
 fi
 
+# By default, try downloading
 SKIP_DOWNLOAD="no"
 
-# Installed version detection (untested on Redhat)
+# Installed version detection (only supported for deb based systems, feel free to submit rpm equivalent)
 if [ "${REDHAT}" != "yes" ]; then
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 	if [ $FILENAME == *$INSTALLED_VERSION* ] && [ "${FORCE}" != "yes" ]; then
 		echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
-		exit 0
+		exit 5
 	fi
 fi
 
@@ -235,6 +224,10 @@ if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
 	fi
     
 	SKIP_DOWNLOAD="yes"
+fi
+
+if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
+	echo "Note! File exists, but asked to overwrite with new copy"
 fi
 
 if [ "${SKIP_DOWNLOAD}" == "no" ]; then
