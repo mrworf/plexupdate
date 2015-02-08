@@ -218,19 +218,19 @@ if [ "${REDHAT}" != "yes" ]; then
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
+	echo "File already exists, won't download."
 	if [ "${AUTOINSTALL}" != "yes" ]; then 
-		echo "File already exists, won't download."
 		exit 2
 	fi
     
 	SKIP_DOWNLOAD="yes"
 fi
 
-if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
-	echo "Note! File exists, but asked to overwrite with new copy"
-fi
-
 if [ "${SKIP_DOWNLOAD}" == "no" ]; then
+	if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
+		echo "Note! File exists, but asked to overwrite with new copy"
+	fi
+
 	echo -ne "Downloading release \"${FILENAME}\"..."
 	ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
 	CODE=$?
