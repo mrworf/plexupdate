@@ -47,6 +47,7 @@ KEEP=no
 FORCE=no
 PUBLIC=no
 AUTOINSTALL=no
+AUTODELETE=no
 
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
@@ -70,8 +71,9 @@ set -- $(getopt fhko: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-afhkop]\n\na = Auto install if download was successful (requires root)\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version"; exit 0;;
+	(-h) echo -e "Usage: $(basename $0) [-afhkop]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version"; exit 0;;
 	(-a) AUTOINSTALL=yes;;
+	(-d) AUTODELETE=yes;;
 	(-f) FORCE=yes;;
 	(-k) KEEP=yes;;
 	(-o) RELEASE="32-bit";;
@@ -246,6 +248,15 @@ if [ "${AUTOINSTALL}" == "yes" ]; then
 		yum localinstall "${DOWNLOADDIR}/${FILENAME}"
 	else
 		dpkg -i "${DOWNLOADDIR}/${FILENAME}"
+	fi
+fi
+
+if [ "${AUTODELETE}" == "yes" ]; then
+	if [ "${AUTOINSTALL}" == "yes" ]; then
+		rm -rf "${DOWNLOADDIR}/${FILENAME}"
+		echo "Deleted \"${FILENAME}\""
+	else
+		echo "Will not auto delete without [-a] auto install"
 	fi
 fi
 
