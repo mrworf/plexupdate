@@ -48,6 +48,7 @@ FORCE=no
 PUBLIC=no
 AUTOINSTALL=no
 AUTODELETE=no
+AUTOUPDATE=no
 
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
@@ -67,23 +68,54 @@ URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
 URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
 
 # Parse commandline
-set -- $(getopt fhko: -- "$@")
+ALLARGS="$@"
+set -- $(getopt aufhko: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-afhkop]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version"; exit 0;;
+	(-h) echo -e "Usage: $(basename $0) [-afhkop]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version\nu = Auto update plexupdate.sh before running it (experimental)\n"; exit 0;;
 	(-a) AUTOINSTALL=yes;;
 	(-d) AUTODELETE=yes;;
 	(-f) FORCE=yes;;
 	(-k) KEEP=yes;;
 	(-o) RELEASE="32-bit";;
 	(-p) PUBLIC=yes;;
+	(-u) AUTOUPDATE=yes;;
+	(-U) AUTOUPDATE=no;;
 	(--) ;;
 	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
 	(*)  break;;
 	esac
 	shift
 done
+
+if [ "${AUTOUPDATE}" == "yes" ]; then
+	git >/dev/null 2>/dev/null
+	if [ $? -eq 127 ]; then
+		echo "Error: You need to have git installed for this to work"
+		exit 1
+	fi
+	pushd "$(dirname "$0")" >/dev/null
+	if [ ! -d .git ]; then
+		echo "Error: This is not a git repository, auto update only works if you've done a git clone"
+		exit 1
+	fi
+	git status | grep "nothing to commit" >/dev/null 2>/dev/null
+	if [ $? -ne 0 ]; then
+		echo "Error: You have made changes to the script, cannot auto update"
+		exit 1
+	fi
+	echo -n "Auto updating..."
+	git pull >/dev/null
+	if [ $? -ne 0 ]; then
+		echo 'Error: Unable to update git, try running "git pull" manually to see what is wrong'
+		exit 1
+	fi
+	echo "OK"
+	popd >/dev/null
+	$0 ${ALLARGS} -U
+	exit $?
+fi
 
 # Sanity check
 if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
