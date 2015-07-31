@@ -136,6 +136,7 @@ keypair() {
 function cleanup {
 	rm /tmp/kaka 2>/dev/null >/dev/null
 	rm /tmp/postdata 2>/dev/null >/dev/null
+	rm /tmp/raw 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
 
@@ -171,15 +172,17 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 	echo -ne >>/tmp/postdata "&$(keypair "commit" "Sign in" )"
 
 	# Authenticate
-	wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_LOGIN}" --post-file=/tmp/postdata -O /dev/null 2>/dev/null
-	RET=$?
-
+	wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_LOGIN}" --post-file=/tmp/postdata -O /tmp/raw 2>/dev/null 
+	if [ $? -ne 0 ]; then
+		echo "Error: Unable to authenticate"
+		exit 1
+	fi
 	# Delete authentication data ... Bad idea to let that stick around
 	rm /tmp/postdata
 
 	# Provide some details to the end user
-	if [ ${RET} -ne 0 ]; then
-		echo "Error: Unable to authenticate"
+	if [ "$(cat /tmp/raw | grep 'Sign In</title')" != "" ]; then
+		echo "Error: Username and/or password incorrect"
 		exit 1
 	fi
 	echo "OK"
