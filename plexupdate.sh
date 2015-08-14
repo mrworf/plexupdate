@@ -258,10 +258,9 @@ fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
 	echo "File already exists, won't download."
-	if [ "${AUTOINSTALL}" != "yes" ]; then 
+	if [ "${AUTOINSTALL}" != "yes" ]; then
 		exit 2
 	fi
-    
 	SKIP_DOWNLOAD="yes"
 fi
 
@@ -282,7 +281,7 @@ fi
 
 if [ "${AUTOINSTALL}" == "yes" ]; then
 	if [ "${REDHAT}" == "yes" ]; then
-		sudo yum localinstall "${DOWNLOADDIR}/${FILENAME}"
+		sudo yum -y localinstall "${DOWNLOADDIR}/${FILENAME}"
 	else
 		sudo dpkg -i "${DOWNLOADDIR}/${FILENAME}"
 	fi
