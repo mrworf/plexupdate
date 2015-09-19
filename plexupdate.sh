@@ -131,6 +131,17 @@ if [ "${AUTOINSTALL}" == "yes" ]; then
 	fi
 fi
 
+# Make sure download directory is sane
+if [ ! -d "${DOWNLOADDIR}" ]; then
+	echo "Error: Download directory does not exist or is not a directory"
+	exit 1
+fi
+
+# Remove any ~ or other oddness in the path we're given
+eval pushd "${DOWNLOADDIR}" > /dev/null
+DOWNLOADDIR="$(pwd)"
+popd > /dev/null
+
 # Detect if we're running on redhat instead of ubuntu
 REDHAT=no;
 PKGEXT='.deb'
