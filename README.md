@@ -30,15 +30,15 @@ Obviously you need to change these three so they match your account information.
 
 There are a few other options for the more enterprising user. Setting any of these to `yes` will enable the function.
 
-- AUTOUPDATE \
+- AUTOUPDATE
   Makes plexupdate.sh automatically update itself using git. Note! This will fail if git isn't available on the command line.
-- AUTOINSTALL \
+- AUTOINSTALL
   Automatically installs the newly downloaded version. Currently works for debian based systems as well as rpm based distros. Will fail miserably if you're not root.
-- AUTODELETE \
+- AUTODELETE 
   Once successfully downloaded and installed, it will delete the package (want not, waste not? ;-))
-- PUBLIC \
+- PUBLIC 
   The default behavior of plexupdate.sh is to download the PlexPass edition of Plex Media Center. Setting this option to `yes` will make it download the public version instead. If this is yes, then `EMAIL` and `PASS` is no longer needed.
-- FORCE \
+- FORCE 
   Normally plexupdate.sh will avoid downloading a file it already has or if it's the same as the installed version, but this allows you to override.
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
@@ -57,6 +57,10 @@ Overall it tries to give you hints regarding why it isn't doing what you expecte
 
 - Command-line option handling needs cleanup
 - Should extract the help text into a function instead
+
+# trivia
+
+- "kaka" is swedish for "cookie"
 
 # TL;DR
 
