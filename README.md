@@ -66,9 +66,9 @@ Overall it tries to give you hints regarding why it isn't doing what you expecte
 
 Open a terminal or SSH on the server running Plex Media Center
 ```
-wget https://github.com/mrworf/plexupdate/blob/master/plexupdate.sh
+wget https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh
 chmod +x plexupdate.sh
-echo -e > ~/.plexupdate 'USER=<plex email account>\nPASS="<plex password>"'
+echo -e > ~/.plexupdate 'EMAIL=<plex email account>\nPASS="<plex password>"'
 nano -w ~/.plexupdate
 sudo ./plexupdate.sh -a
 ```
