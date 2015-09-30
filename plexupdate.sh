@@ -133,13 +133,11 @@ fi
 
 
 # Remove any ~ or other oddness in the path we're given
-eval pushd "${DOWNLOADDIR}" > /dev/null 2>/dev/null
-if [ $? -ne 0 ]; then
+DOWNLOADDIR="$(eval cd ${DOWNLOADDIR/ /\\ } ; if [ $? -eq 0 ]; then pwd; fi)"
+if [ -z "${DOWNLOADDIR}" ]; then
 	echo "Error: Download directory does not exist or is not a directory"
 	exit 1
 fi
-DOWNLOADDIR="$(pwd)"
-popd > /dev/null
 
 # Detect if we're running on redhat instead of ubuntu
 REDHAT=no;
