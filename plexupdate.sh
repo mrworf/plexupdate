@@ -30,7 +30,7 @@
 ####################################################################
 # Set these two to what you need, or create a .plexupdate file
 # in your home directory with these two (avoids changing this)
-# DOWNLOADDIR is the full directory path you would like the download to go, without trailing slash.
+# DOWNLOADDIR is the full directory path you would like the download to go.
 #
 EMAIL=
 PASS=
