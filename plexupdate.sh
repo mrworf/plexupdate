@@ -133,7 +133,7 @@ fi
 
 
 # Remove any ~ or other oddness in the path we're given
-DOWNLOADDIR="$(eval cd ${DOWNLOADDIR/ /\\ } ; if [ $? -eq 0 ]; then pwd; fi)"
+DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } ; if [ $? -eq 0 ]; then pwd; fi)"
 if [ -z "${DOWNLOADDIR}" ]; then
 	echo "Error: Download directory does not exist or is not a directory"
 	exit 1
