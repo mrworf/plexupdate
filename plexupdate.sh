@@ -28,6 +28,12 @@
 # and also what's new.
 #
 ####################################################################
+# Quick-check before we allow bad things to happen
+if [ -z "${BASH_VERSINFO}" ]; then
+  echo "ERROR: You must execute this script with BASH"
+  exit 255
+fi
+####################################################################
 # Set these two to what you need, or create a .plexupdate file
 # in your home directory with these two (avoids changing this)
 # DOWNLOADDIR is the full directory path you would like the download to go.
