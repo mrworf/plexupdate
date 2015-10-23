@@ -320,4 +320,5 @@ if [ "${AUTOSTART}" == "yes" ]; then
 	fi
 fi
 
+echo $REDHAT
 exit 0
