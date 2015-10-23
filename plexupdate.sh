@@ -315,7 +315,6 @@ fi
 
 if [ "${AUTOSTART}" == "yes" ]; then
 	if [ "${REDHAT}" == "no" ]; if [ "${AUTOINSTALL}" == "yes" ]; then
-	then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	service plexmediaserver start
