@@ -55,6 +55,7 @@ PUBLIC=no
 AUTOINSTALL=no
 AUTODELETE=no
 AUTOUPDATE=no
+AUTOSTART=no
 
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
@@ -88,6 +89,7 @@ do
 	(-p) PUBLIC=yes;;
 	(-u) AUTOUPDATE=yes;;
 	(-U) AUTOUPDATE=no;;
+	(-r) AUTOSTART=no;;
 	(--) ;;
 	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
 	(*)  break;;
@@ -307,6 +309,14 @@ if [ "${AUTODELETE}" == "yes" ]; then
 		echo "Deleted \"${FILENAME}\""
 	else
 		echo "Will not auto delete without [-a] auto install"
+	fi
+fi
+
+if [ "${AUTOSTART}" == "yes" ]; then
+	if [ "${AUTOSTART}" == "yes" ]; then
+		service plexmediaserver start
+	else
+		echo "Will not attempt to auto start plexmediaserver service without [-r] restart"
 	fi
 fi
 
