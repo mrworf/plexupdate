@@ -310,4 +310,6 @@ if [ "${AUTODELETE}" == "yes" ]; then
 	fi
 fi
 
+service start plexmediaserver
+
 exit 0
