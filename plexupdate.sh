@@ -89,7 +89,7 @@ do
 	(-p) PUBLIC=yes;;
 	(-u) AUTOUPDATE=yes;;
 	(-U) AUTOUPDATE=no;;
-	(-r) AUTOSTART=no;;
+	(-r) AUTOSTART=yes;;
 	(--) ;;
 	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
 	(*)  break;;
