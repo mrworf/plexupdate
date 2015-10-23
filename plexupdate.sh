@@ -89,7 +89,7 @@ do
 	(-p) PUBLIC=yes;;
 	(-u) AUTOUPDATE=yes;;
 	(-U) AUTOUPDATE=no;;
-	(-r) AUTOSTART=yes;;
+	(-s) AUTOSTART=yes;;
 	(--) ;;
 	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
 	(*)  break;;
@@ -263,6 +263,7 @@ SKIP_DOWNLOAD="no"
 
 # Installed version detection (only supported for deb based systems, feel free to submit rpm equivalent)
 if [ "${REDHAT}" != "yes" ]; then
+	echo "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 else
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
@@ -299,7 +300,7 @@ if [ "${AUTOINSTALL}" == "yes" ]; then
 	if [ "${REDHAT}" == "yes" ]; then
 		sudo yum -y install "${DOWNLOADDIR}/${FILENAME}"
 	else
-		sudo dpkg -i "${DOWNLOADDIR}/${FILENAME}"
+		sudo dpkg -i "${DOWNLOADDIR}/${FILENAME}" if [ "${AUTOINSTALL}" == "yes" ]; then
 	fi
 fi
 
@@ -313,12 +314,11 @@ if [ "${AUTODELETE}" == "yes" ]; then
 fi
 
 if [ "${AUTOSTART}" == "yes" ]; then
-	if [ "${AUTOSTART}" == "yes" ]; then
-		service plexmediaserver start
-	else
-		echo "Will not attempt to auto start plexmediaserver service without [-r] restart"
+	if [ "${REDHAT}" == "no" ]; if [ "${AUTOINSTALL}" == "yes" ]; then
+	then
+		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
+	service plexmediaserver start
 fi
 
-echo $REDHAT
 exit 0
