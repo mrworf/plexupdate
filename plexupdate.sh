@@ -314,10 +314,10 @@ if [ "${AUTODELETE}" == "yes" ]; then
 fi
 
 if [ "${AUTOSTART}" == "yes" ]; then
-	if [ "${REDHAT}" == "no" ]; if [ "${AUTOINSTALL}" == "yes" ]; then
+	if [ "${REDHAT}" == "no" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
-	service plexmediaserver start
+	sudo service plexmediaserver start
 fi
 
 exit 0
