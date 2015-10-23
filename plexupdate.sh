@@ -300,7 +300,7 @@ if [ "${AUTOINSTALL}" == "yes" ]; then
 	if [ "${REDHAT}" == "yes" ]; then
 		sudo yum -y install "${DOWNLOADDIR}/${FILENAME}"
 	else
-		sudo dpkg -i "${DOWNLOADDIR}/${FILENAME}" if [ "${AUTOINSTALL}" == "yes" ]; then
+		sudo dpkg -i "${DOWNLOADDIR}/${FILENAME}"
 	fi
 fi
 
