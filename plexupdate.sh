@@ -55,6 +55,7 @@ PUBLIC=no
 AUTOINSTALL=no
 AUTODELETE=no
 AUTOUPDATE=no
+AUTOSTART=no
 
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
@@ -88,6 +89,7 @@ do
 	(-p) PUBLIC=yes;;
 	(-u) AUTOUPDATE=yes;;
 	(-U) AUTOUPDATE=no;;
+	(-s) AUTOSTART=yes;;
 	(--) ;;
 	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
 	(*)  break;;
@@ -261,6 +263,7 @@ SKIP_DOWNLOAD="no"
 
 # Installed version detection (only supported for deb based systems, feel free to submit rpm equivalent)
 if [ "${REDHAT}" != "yes" ]; then
+	echo "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 else
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
@@ -308,6 +311,17 @@ if [ "${AUTODELETE}" == "yes" ]; then
 	else
 		echo "Will not auto delete without [-a] auto install"
 	fi
+fi
+
+if [ "${AUTOSTART}" == "yes" ]; then
+	id | grep 'uid=0(' 2>&1 >/dev/null
+	if [ $? -ne 0 ]; then
+		echo "Error: You need to be root to use autoinstall option."
+		exit 1
+	elif [ "${REDHAT}" == "no" ]; then
+		echo "The AUTOSTART [-s] option may not be needed on your distribution."
+	fi
+	sudo service plexmediaserver start
 fi
 
 exit 0
