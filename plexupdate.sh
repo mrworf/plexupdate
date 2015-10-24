@@ -328,7 +328,8 @@ if [ "${AUTOSTART}" == "yes" then
 	if [ $? -ne 0 ]; then
 		echo "Error: You need to be root to use autoinstall option."
 		exit 1
-	elif [ "${REDHAT}" == "no" ]
+	fi
+	if [ "${REDHAT}" == "no" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	sudo service plexmediaserver start
