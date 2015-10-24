@@ -313,7 +313,7 @@ if [ "${AUTODELETE}" == "yes" ]; then
 	fi
 fi
 
-if [ "${AUTOSTART}" == "yes"]; then
+if [ "${AUTOSTART}" == "yes" ]; then
 	if [ "${REDHAT}" == "no" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
