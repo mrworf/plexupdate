@@ -80,7 +80,7 @@ set -- $(getopt aufhko: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-afhkop]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version\nu = Auto update plexupdate.sh before running it (experimental)\n"; exit 0;;
+	(-h) echo -e "Usage: $(basename $0) [-afhkopsuU]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version\nu = Auto update plexupdate.sh before running it (experimental)\nU = Do not autoupdate plexupdate.sh (experimental, default)\ns = Auto start (needed for some distros)\n"; exit 0;;
 	(-a) AUTOINSTALL=yes;;
 	(-d) AUTODELETE=yes;;
 	(-f) FORCE=yes;;
@@ -131,10 +131,10 @@ if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
 	exit 1
 fi
 
-if [ "${AUTOINSTALL}" == "yes" ]; then
+if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
 	id | grep 'uid=0(' 2>&1 >/dev/null
 	if [ $? -ne 0 ]; then
-		echo "Error: You need to be root to use autoinstall option."
+		echo "Error: You need to be root to use autoinstall/autostart option."
 		exit 1
 	fi
 fi
@@ -314,14 +314,10 @@ if [ "${AUTODELETE}" == "yes" ]; then
 fi
 
 if [ "${AUTOSTART}" == "yes" ]; then
-	id | grep 'uid=0(' 2>&1 >/dev/null
-	if [ $? -ne 0 ]; then
-		echo "Error: You need to be root to use autoinstall option."
-		exit 1
-	elif [ "${REDHAT}" == "no" ]; then
+	if [ "${REDHAT}" == "no" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
-	sudo service plexmediaserver start
+	service plexmediaserver start
 fi
 
 exit 0
