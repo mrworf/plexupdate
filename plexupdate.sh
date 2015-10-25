@@ -34,8 +34,8 @@ if [ -z "${BASH_VERSINFO}" ]; then
   exit 255
 fi
 ####################################################################
-# Set these two to what you need, or create a .plexupdate file
-# in your home directory with these two (avoids changing this)
+# Set these three settings to what you need, or create a .plexupdate file
+# in your home directory with this section (avoids changing this).
 # DOWNLOADDIR is the full directory path you would like the download to go.
 #
 EMAIL=
@@ -69,7 +69,7 @@ if [ -f ~/.plexupdate ]; then
 	source ~/.plexupdate
 fi
 
-# Current pages we need - Do not change unless Plex.tv changea again
+# Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in
 URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
 URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
