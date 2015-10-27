@@ -317,7 +317,12 @@ if [ "${AUTOSTART}" == "yes" ]; then
 	if [ "${REDHAT}" == "no" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
-	service plexmediaserver start
+	# Check for systemd
+	if [ -f "/bin/systemctl" ]; then
+		systemctl start plexmediaserver.service
+	else
+		service plexmediaserver start
+	fi
 fi
 
 exit 0
