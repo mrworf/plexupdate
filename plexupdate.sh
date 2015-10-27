@@ -263,9 +263,11 @@ SKIP_DOWNLOAD="no"
 
 # Installed version detection (only supported for deb based systems, feel free to submit rpm equivalent)
 if [ "${REDHAT}" != "yes" ]; then
-	echo "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 else
+	if [ "${AUTOSTART}" == "no" ]; then
+		echo "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
+	fi
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
 fi
 if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
