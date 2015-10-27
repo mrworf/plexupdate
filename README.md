@@ -72,3 +72,11 @@ echo -e > ~/.plexupdate 'EMAIL=<plex email account>\nPASS="<plex password>"'
 nano -w ~/.plexupdate
 sudo ./plexupdate.sh -a
 ```
+
+# FAQ
+
+## My password is rejected even though correct
+
+If you use certain characters, such as dollar sign, in your password, bash will interpret that as a reference to a variable. To resolve this, enclose your password with single quotes instead of the normal quotes.
+
+Ie, `PASS="MyP4$$w0rD"` will not work, but changing to it to `PASS='MyP4$$w0rD'` will
