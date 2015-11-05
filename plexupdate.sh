@@ -108,8 +108,8 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 		echo "Error: This is not a git repository, auto update only works if you've done a git clone"
 		exit 1
 	fi
-	git status | grep "nothing to commit" >/dev/null 2>/dev/null
-	if [ $? -ne 0 ]; then
+	git status | grep "git commit -a" >/dev/null 2>/dev/null
+	if [ $? -eq 0 ]; then
 		echo "Error: You have made changes to the script, cannot auto update"
 		exit 1
 	fi
