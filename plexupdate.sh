@@ -121,7 +121,16 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 	fi
 	echo "OK"
 	popd >/dev/null
-	$0 ${ALLARGS} -U
+	if ! type "$0" 2>/dev/null >/dev/null ; then
+		if [ -f "$0" ]; then
+			/bin/bash "$0" ${ALLARGS} -U
+		else
+			echo "Error: Unable to relaunch, couldn't find $0"
+			exit 1
+		fi
+	else
+		"$0" ${ALLARGS} -U
+	fi
 	exit $?
 fi
 
