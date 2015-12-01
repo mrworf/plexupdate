@@ -73,6 +73,27 @@ nano -w ~/.plexupdate
 sudo ./plexupdate.sh -a
 ```
 
+# pushover notifications
+
+[Pushover](https://pushover.net/) is a service that allows you to send push notifications to your mobile device using one of the pushover apps. This is useful when running plexupdate.sh an automated cron job to let you know if it found an update for Plex. In order to use it, you need to add 3 additional lines to the `.plexupdate` file:
+```
+PUSHOVER_NOTIFY=yes
+PUSHOVER_KEY=<Application API Key>
+PUSHOVER_USERKEY=<User Key>
+```
+
+When you register for Pushover at https://pushover.net/ you will be assigned a User Key. 
+
+![Pushover1](http://i.imgur.com/HLQgmLv.jpg)
+
+Once you have your User Key you need to register an application in order to get a API Key. Scroll down past your devices and click `Register an Application` (or just go to https://pushover.net/apps/build). Fill in the name of the application, `Plex Update` and the rest of the fields are optional. Agree to the terms of service and click `Create Application`. You will then be assigned an API Key for your application. 
+
+![Pushover2](http://i.imgur.com/yys1GRC.jpg)
+![Pushover3](http://i.imgur.com/pGWnHZw.jpg)
+
+Copy and paste both fields into the correct fields of the `.plexupdate` file and you are good to go!
+
+![Pushover on Android](http://i.imgur.com/u9qxnnQl.png)
 # FAQ
 
 ## My password is rejected even though correct

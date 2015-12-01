@@ -336,4 +336,18 @@ if [ "${AUTOSTART}" == "yes" ]; then
 	fi
 fi
 
+if [ "${PUSHOVER_NOTIFY}" == "yes" ]; then
+  if [ "${AUTOINSTALL}" == "yes" ]; then
+    PUSHOVER_MESSAGE="Plex successfully updated to version ${FILENAME}"
+  else
+    PUSHOVER_MESSAGE="Plex successfully downloaded Plex version ${FILENAME} to ${DOWNLOADDIR}"
+  fi
+  curl -s \
+    --form-string "token=${PUSHOVER_KEY}" \
+    --form-string "user=${PUSHOVER_USERKEY}" \
+    --form-string "message=${PUSHOVER_MESSAGE}" \
+    https://api.pushover.net/1/messages.json
+  echo
+fi
+
 exit 0
