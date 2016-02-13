@@ -141,7 +141,7 @@ if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
 fi
 
 if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
-	id | grep 'uid=0(' 2>&1 >/dev/null
+	id | grep -i 'uid=0(' 2>&1 >/dev/null
 	if [ $? -ne 0 ]; then
 		echo "Error: You need to be root to use autoinstall/autostart option."
 		exit 1
