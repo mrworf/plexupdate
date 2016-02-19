@@ -48,7 +48,7 @@ DOWNLOADDIR="."
 
 # Defaults
 # (aka "Advanced" settings, can be overriden with config file)
-RELEASE="64-bit"
+RELEASE="64"
 KEEP=no
 FORCE=no
 PUBLIC=no
@@ -85,7 +85,7 @@ do
 	(-d) AUTODELETE=yes;;
 	(-f) FORCE=yes;;
 	(-k) KEEP=yes;;
-	(-o) RELEASE="32-bit";;
+	(-o) RELEASE="32";;
 	(-p) PUBLIC=yes;;
 	(-u) AUTOUPDATE=yes;;
 	(-U) AUTOUPDATE=no;;
@@ -157,12 +157,14 @@ if [ -z "${DOWNLOADDIR}" ]; then
 fi
 
 # Detect if we're running on redhat instead of ubuntu
-REDHAT=no;
-PKGEXT='.deb'
-
 if [ -f /etc/redhat-release ]; then
 	REDHAT=yes;
 	PKGEXT='.rpm'
+	RELEASE="Fedora${RELEASE}"
+else
+	REDHAT=no;
+	PKGEXT='.deb'
+	RELEASE="Ubuntu${RELEASE}"
 fi
 
 # Useful functions
@@ -253,7 +255,7 @@ fi
 # Extract the URL for our release
 echo -n "Finding download URL for ${RELEASE}..."
 
-DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep "${PKGEXT}" | grep -m 1 "${RELEASE}" | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>${RELEASE}.*/\1/" )
+DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep "${PKGEXT}" | grep -m 1 "${RELEASE}" | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>.*/\1/" )
 echo -e "OK"
 
 if [ "${DOWNLOAD}" == "" ]; then
