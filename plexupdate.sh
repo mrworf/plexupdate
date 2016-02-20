@@ -69,6 +69,17 @@ if [ -f ~/.plexupdate ]; then
 	source ~/.plexupdate
 fi
 
+if [ "${RELEASE}" = "64-bit" ]; then
+	echo "WARNING: RELEASE=64-bit is deprecated, use RELEASE=64 instead"
+	RELEASE="64"
+elif [ "${RELEASE}" = "32-bit" ]; then
+	echo "WARNING: RELEASE=32-bit is deprecated, use RELEASE=32 instead"
+	RELEASE="32"
+elif [ "${RELEASE}" != "64" -a "${RELEASE}" != "32" ]; then
+	echo "ERROR: Use of RELEASE=${RELEASE} will no longer work"
+	exit 255
+fi
+
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in
 URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
