@@ -345,7 +345,7 @@ if [ "${AUTOSTART}" == "yes" ]; then
 	if [ -f "/bin/systemctl" ]; then
 		systemctl start plexmediaserver.service
 	else
-		service plexmediaserver start
+		/sbin/service plexmediaserver start
 	fi
 fi
 
