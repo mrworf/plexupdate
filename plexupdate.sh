@@ -48,7 +48,7 @@ DOWNLOADDIR="."
 
 # Defaults
 # (aka "Advanced" settings, can be overriden with config file)
-RELEASE="64-bit"
+RELEASE="64"
 KEEP=no
 FORCE=no
 PUBLIC=no
@@ -69,6 +69,17 @@ if [ -f ~/.plexupdate ]; then
 	source ~/.plexupdate
 fi
 
+if [ "${RELEASE}" = "64-bit" ]; then
+	echo "WARNING: RELEASE=64-bit is deprecated, use RELEASE=64 instead"
+	RELEASE="64"
+elif [ "${RELEASE}" = "32-bit" ]; then
+	echo "WARNING: RELEASE=32-bit is deprecated, use RELEASE=32 instead"
+	RELEASE="32"
+elif [ "${RELEASE}" != "64" -a "${RELEASE}" != "32" ]; then
+	echo "ERROR: Use of RELEASE=${RELEASE} will no longer work"
+	exit 255
+fi
+
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in
 URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
@@ -85,7 +96,7 @@ do
 	(-d) AUTODELETE=yes;;
 	(-f) FORCE=yes;;
 	(-k) KEEP=yes;;
-	(-o) RELEASE="32-bit";;
+	(-o) RELEASE="32";;
 	(-p) PUBLIC=yes;;
 	(-u) AUTOUPDATE=yes;;
 	(-U) AUTOUPDATE=no;;
@@ -121,7 +132,16 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 	fi
 	echo "OK"
 	popd >/dev/null
-	$0 ${ALLARGS} -U
+	if ! type "$0" 2>/dev/null >/dev/null ; then
+		if [ -f "$0" ]; then
+			/bin/bash "$0" ${ALLARGS} -U
+		else
+			echo "Error: Unable to relaunch, couldn't find $0"
+			exit 1
+		fi
+	else
+		"$0" ${ALLARGS} -U
+	fi
 	exit $?
 fi
 
@@ -132,7 +152,7 @@ if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
 fi
 
 if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
-	id | grep 'uid=0(' 2>&1 >/dev/null
+	id | grep -i 'uid=0(' 2>&1 >/dev/null
 	if [ $? -ne 0 ]; then
 		echo "Error: You need to be root to use autoinstall/autostart option."
 		exit 1
@@ -148,12 +168,14 @@ if [ -z "${DOWNLOADDIR}" ]; then
 fi
 
 # Detect if we're running on redhat instead of ubuntu
-REDHAT=no;
-PKGEXT='.deb'
-
 if [ -f /etc/redhat-release ]; then
 	REDHAT=yes;
 	PKGEXT='.rpm'
+	RELEASE="Fedora${RELEASE}"
+else
+	REDHAT=no;
+	PKGEXT='.deb'
+	RELEASE="Ubuntu${RELEASE}"
 fi
 
 # Useful functions
@@ -244,7 +266,7 @@ fi
 # Extract the URL for our release
 echo -n "Finding download URL for ${RELEASE}..."
 
-DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep "${PKGEXT}" | grep -m 1 "${RELEASE}" | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>${RELEASE}.*/\1/" )
+DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep "${PKGEXT}" | grep -m 1 "${RELEASE}" | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>.*/\1/" )
 echo -e "OK"
 
 if [ "${DOWNLOAD}" == "" ]; then
@@ -323,7 +345,7 @@ if [ "${AUTOSTART}" == "yes" ]; then
 	if [ -f "/bin/systemctl" ]; then
 		systemctl start plexmediaserver.service
 	else
-		service plexmediaserver start
+		/sbin/service plexmediaserver start
 	fi
 fi
 
