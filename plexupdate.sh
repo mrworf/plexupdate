@@ -184,8 +184,8 @@ fi
 #
 # Field			Value
 # user[login]		$EMAIL
-# user[password]	$PASSWORD
-# authenticity_token	<retreived from sign_in.json>
+# user[password]	$PASS
+# authentication_token	<retreived from sign_in.json>
 
 # Plex Pass account
 if [ "${PUBLIC}" == "no" ]; then
@@ -194,7 +194,7 @@ if [ "${PUBLIC}" == "no" ]; then
 	AUTH="user%5Blogin%5D=${EMAIL}&user%5Bpassword%5D=${PASS}"
 	CURL_OPTS="-s -H X-Plex-Client-Identifier:plexupdate -H X-Plex-Product:plexupdate -H X-Plex-Version:0.0.1"
 	# Authenticate and get X-Plex-Token
-	TOKEN=$(curl ${CURL_OPTS} --data "${AUTH}" 'https://plex.tv/users/sign_in.json' | jq -r .user.authentication_token)
+	TOKEN=$(curl ${CURL_OPTS} --data "${AUTH}" "${URL_LOGIN}" | jq -r .user.authentication_token)
 	if [ $? -ne 0 -o "${TOKEN}" == "" -o "${TOKEN}" == "null" ]; then
 		echo "Error: Unable to obtain authentication token, page changed?"
 		exit 1
