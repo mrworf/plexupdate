@@ -87,11 +87,11 @@ URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
 
 # Parse commandline
 ALLARGS="$@"
-set -- $(getopt aufhko: -- "$@")
+set -- $(getopt aufhkro: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-afhkopsuU]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version\nu = Auto update plexupdate.sh before running it (experimental)\nU = Do not autoupdate plexupdate.sh (experimental, default)\ns = Auto start (needed for some distros)\n"; exit 0;;
+	(-h) echo -e "Usage: $(basename $0) [-afhkopsuU]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version\nu = Auto update plexupdate.sh before running it (experimental)\nU = Do not autoupdate plexupdate.sh (experimental, default)\ns = Auto start (needed for some distros)\np = Print download URL and exit\n"; exit 0;;
 	(-a) AUTOINSTALL=yes;;
 	(-d) AUTODELETE=yes;;
 	(-f) FORCE=yes;;
@@ -101,6 +101,7 @@ do
 	(-u) AUTOUPDATE=yes;;
 	(-U) AUTOUPDATE=no;;
 	(-s) AUTOSTART=yes;;
+	(-r) PRINT_URL=yes;;
 	(--) ;;
 	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
 	(*)  break;;
@@ -278,6 +279,11 @@ FILENAME="$(basename 2>/dev/null ${DOWNLOAD})"
 if [ $? -ne 0 ]; then
 	echo "Failed to parse HTML, download cancelled."
 	exit 3
+fi
+
+if [ "${PRINT_URL}" == "yes" ]; then
+  echo "${DOWNLOAD}"
+  exit 0
 fi
 
 # By default, try downloading
