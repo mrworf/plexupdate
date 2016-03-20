@@ -40,6 +40,8 @@ There are a few other options for the more enterprising user. Setting any of the
   The default behavior of plexupdate.sh is to download the PlexPass edition of Plex Media Center. Setting this option to `yes` will make it download the public version instead. If this is yes, then `EMAIL` and `PASS` is no longer needed.
 - FORCE 
   Normally plexupdate.sh will avoid downloading a file it already has or if it's the same as the installed version, but this allows you to override.
+- PRINT_URL
+  Authenticate, fetch the download URL, print it, and then exit.
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
 
