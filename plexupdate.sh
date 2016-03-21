@@ -49,7 +49,6 @@ DOWNLOADDIR="."
 # Defaults
 # (aka "Advanced" settings, can be overriden with config file)
 RELEASE="64"
-KEEP=no
 FORCE=no
 PUBLIC=no
 AUTOINSTALL=no
@@ -57,12 +56,15 @@ AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
 
-# Sanity, make sure wget is in our path...
-wget >/dev/null 2>/dev/null
-if [ $? -eq 127 ]; then
-	echo "Error: This script requires wget in the path. It could also signify that you don't have the tool installed."
-	exit 1
-fi
+# Sanity, make sure curl and jq are in our path...
+BINS="jq curl"
+for BIN in ${BINS}; do
+	${BIN} >/dev/null 2>/dev/null
+	if [ $? -eq 127 ]; then
+		echo "Error: This script requires ${BIN} in the path. It could also signify that you don't have the tool installed."
+		exit 1
+	fi
+done
 
 # Load settings from config file if it exists
 if [ -f ~/.plexupdate ]; then
@@ -81,7 +83,7 @@ elif [ "${RELEASE}" != "64" -a "${RELEASE}" != "32" ]; then
 fi
 
 # Current pages we need - Do not change unless Plex.tv changes again
-URL_LOGIN=https://plex.tv/users/sign_in
+URL_LOGIN=https://plex.tv/users/sign_in.json
 URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
 URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
 
@@ -91,11 +93,10 @@ set -- $(getopt aufhkro: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-afhkopsuU]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version\nu = Auto update plexupdate.sh before running it (experimental)\nU = Do not autoupdate plexupdate.sh (experimental, default)\ns = Auto start (needed for some distros)\np = Print download URL and exit\n"; exit 0;;
+	(-h) echo -e "Usage: $(basename $0) [-afhopsuU]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version\nu = Auto update plexupdate.sh before running it (experimental)\nU = Do not autoupdate plexupdate.sh (experimental, default)\ns = Auto start (needed for some distros)\np = Print download URL and exit\n"; exit 0;;
 	(-a) AUTOINSTALL=yes;;
 	(-d) AUTODELETE=yes;;
 	(-f) FORCE=yes;;
-	(-k) KEEP=yes;;
 	(-o) RELEASE="32";;
 	(-p) PUBLIC=yes;;
 	(-u) AUTOUPDATE=yes;;
@@ -179,96 +180,39 @@ else
 	RELEASE="Ubuntu${RELEASE}"
 fi
 
-# Useful functions
-rawurlencode() {
-	local string="${1}"
-	local strlen=${#string}
-	local encoded=""
-
-	for (( pos=0 ; pos<strlen ; pos++ )); do
-		c=${string:$pos:1}
-		case "$c" in
-		[-_.~a-zA-Z0-9] ) o="${c}" ;;
-		* )               printf -v o '%%%02x' "'$c"
-	esac
-	encoded+="${o}"
-	done
-	echo "${encoded}"
-}
-
-keypair() {
-	local key="$( rawurlencode "$1" )"
-	local val="$( rawurlencode "$2" )"
-
-	echo "${key}=${val}"
-}
-
-# Setup an exit handler so we cleanup
-function cleanup {
-	rm /tmp/kaka 2>/dev/null >/dev/null
-	rm /tmp/postdata 2>/dev/null >/dev/null
-	rm /tmp/raw 2>/dev/null >/dev/null
-}
-trap cleanup EXIT
-
 # Fields we need to submit for login to work
 #
 # Field			Value
-# utf8			&#x2713;
-# authenticity_token	<Need to be obtained from web page>
 # user[login]		$EMAIL
-# user[password]	$PASSWORD
-# user[remember_me]	0
-# commit		Sign in
+# user[password]	$PASS
+# authentication_token	<retreived from sign_in.json>
 
-# If user wants, we skip authentication, but only if previous auth exists
-if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
+# Plex Pass account
+if [ "${PUBLIC}" == "no" ]; then
 	echo -n "Authenticating..."
-	# Clean old session
-	rm /tmp/kaka 2>/dev/null
 
-	# Get initial seed we need to authenticate
-	SEED=$(wget --save-cookies /tmp/kaka --keep-session-cookies ${URL_LOGIN} -O - 2>/dev/null | grep 'name="authenticity_token"' | sed 's/.*value=.\([^"]*\).*/\1/')
-	if [ $? -ne 0 -o "${SEED}" == "" ]; then
+	AUTH="user%5Blogin%5D=${EMAIL}&user%5Bpassword%5D=${PASS}"
+	CURL_OPTS="-s -H X-Plex-Client-Identifier:plexupdate -H X-Plex-Product:plexupdate -H X-Plex-Version:0.0.1"
+	# Authenticate and get X-Plex-Token
+	TOKEN=$(curl ${CURL_OPTS} --data "${AUTH}" "${URL_LOGIN}" | jq -r .user.authentication_token)
+	if [ $? -ne 0 -o "${TOKEN}" == "" -o "${TOKEN}" == "null" ]; then
 		echo "Error: Unable to obtain authentication token, page changed?"
 		exit 1
 	fi
 
-	# Build post data
-	echo -ne  >/tmp/postdata  "$(keypair "utf8" "&#x2713;" )"
-	echo -ne >>/tmp/postdata "&$(keypair "authenticity_token" "${SEED}" )"
-	echo -ne >>/tmp/postdata "&$(keypair "user[login]" "${EMAIL}" )"
-	echo -ne >>/tmp/postdata "&$(keypair "user[password]" "${PASS}" )"
-	echo -ne >>/tmp/postdata "&$(keypair "user[remember_me]" "0" )"
-	echo -ne >>/tmp/postdata "&$(keypair "commit" "Sign in" )"
-
-	# Authenticate
-	wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_LOGIN}" --post-file=/tmp/postdata -O /tmp/raw 2>/dev/null 
-	if [ $? -ne 0 ]; then
-		echo "Error: Unable to authenticate"
-		exit 1
-	fi
-	# Delete authentication data ... Bad idea to let that stick around
-	rm /tmp/postdata
-
-	# Provide some details to the end user
-	if [ "$(cat /tmp/raw | grep 'Sign In</title')" != "" ]; then
-		echo "Error: Username and/or password incorrect"
-		exit 1
-	fi
-	echo "OK"
+	# append TOKEN to CURL_OPTS
+	CURL_OPTS="${CURL_OPTS} -H X-Plex-Token:${TOKEN}"
 else
 	# It's a public version, so change URL and make doubly sure that cookies are empty
-	rm 2>/dev/null >/dev/null /tmp/kaka
-	touch /tmp/kaka
+	CURL_OPTS="-s"
 	URL_DOWNLOAD=${URL_DOWNLOAD_PUBLIC}
 fi
 
 # Extract the URL for our release
 echo -n "Finding download URL for ${RELEASE}..."
 
-DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep "${PKGEXT}" | grep -m 1 "${RELEASE}" | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>.*/\1/" )
-echo -e "OK"
+
+DOWNLOAD=$(curl ${CURL_OPTS} "${URL_DOWNLOAD}" | grep "${PKGEXT}" | grep -m 1 ${RELEASE} | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>.*/\1/" )
 
 if [ "${DOWNLOAD}" == "" ]; then
 	echo "Sorry, page layout must have changed, I'm unable to retrieve the URL needed for download"
@@ -317,7 +261,7 @@ if [ "${SKIP_DOWNLOAD}" == "no" ]; then
 	fi
 
 	echo -ne "Downloading release \"${FILENAME}\"..."
-	ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
+	ERROR=$(curl "${DOWNLOAD}" -o "${DOWNLOADDIR}/${FILENAME}" 2>&1)
 	CODE=$?
 	if [ ${CODE} -ne 0 ]; then
 		echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
