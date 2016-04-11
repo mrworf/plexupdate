@@ -56,11 +56,13 @@ AUTOINSTALL=no
 AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
+CRON=no
+QUIET=no
 
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
 if [ $? -eq 127 ]; then
-	echo "Error: This script requires wget in the path. It could also signify that you don't have the tool installed."
+	echo "Error: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
 	exit 1
 fi
 
@@ -85,50 +87,77 @@ URL_LOGIN=https://plex.tv/users/sign_in
 URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
 URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
 
+usage() {
+        echo "Usage: $(basename $0) [-aCfhkopqsuU]"
+        echo "    -a Auto install if download was successful (requires root)"
+        echo "    -C Cron mode. Only output to stdout on an actionable operation"
+        echo "    -d Auto delete after auto install"
+        echo "    -f Force download even if it's the same version or file"
+        echo "       already exists (WILL NOT OVERWRITE)"
+        echo "    -h This help"
+        echo "    -k Reuse last authentication"
+        echo "    -o 32-bit version (default 64 bit)"
+        echo "    -p Public Plex Media Server version"
+        echo "    -q Quiet mode. No stdout/stderr, only exit codes"
+        echo "    -r Print download URL and exit"
+        echo "    -s Auto start (needed for some distros)"
+        echo "    -u Auto update plexupdate.sh before running it (experimental)"
+        echo "    -U Do not autoupdate plexupdate.sh (experimental, default)\n"
+        echo
+        exit 0
+}
+
 # Parse commandline
 ALLARGS="$@"
-set -- $(getopt aufhkro: -- "$@")
+set -- $(getopt aCdfhkopqruU: -- "$@")
 while true;
 do
 	case "$1" in
-	(-h) echo -e "Usage: $(basename $0) [-afhkopsuU]\n\na = Auto install if download was successful (requires root)\nd = Auto delete after auto install\nf = Force download even if it's the same version or file already exists (WILL NOT OVERWRITE)\nh = This help\nk = Reuse last authentication\no = 32-bit version (default 64 bit)\np = Public Plex Media Server version\nu = Auto update plexupdate.sh before running it (experimental)\nU = Do not autoupdate plexupdate.sh (experimental, default)\ns = Auto start (needed for some distros)\np = Print download URL and exit\n"; exit 0;;
-	(-a) AUTOINSTALL=yes;;
-	(-d) AUTODELETE=yes;;
-	(-f) FORCE=yes;;
-	(-k) KEEP=yes;;
-	(-o) RELEASE="32";;
-	(-p) PUBLIC=yes;;
-	(-u) AUTOUPDATE=yes;;
-	(-U) AUTOUPDATE=no;;
-	(-s) AUTOSTART=yes;;
-	(-r) PRINT_URL=yes;;
-	(--) ;;
-	(-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
-	(*)  break;;
+                (-h) usage;;
+                (-a) AUTOINSTALL=yes;;
+                (-C) CRON=yes;;
+                (-d) AUTODELETE=yes;;
+                (-f) FORCE=yes;;
+                (-k) KEEP=yes;;
+                (-o) RELEASE="32";;
+                (-p) PUBLIC=yes;;
+                (-q) QUIET=yes;;
+                (-r) PRINT_URL=yes;;
+                (-s) AUTOSTART=yes;;
+                (-u) AUTOUPDATE=yes;;
+                (-U) AUTOUPDATE=no;;
+                (--) ;;
+                (-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
+                (*)  break;;
 	esac
 	shift
 done
 
+# send all stdout to /dev/null
+if [ "${QUIET}" = "yes" ]; then
+        exec 1> /dev/null
+fi
+
 if [ "${AUTOUPDATE}" == "yes" ]; then
 	git >/dev/null 2>/dev/null
 	if [ $? -eq 127 ]; then
-		echo "Error: You need to have git installed for this to work"
+		echo "Error: You need to have git installed for this to work" >&2
 		exit 1
 	fi
 	pushd "$(dirname "$0")" >/dev/null
 	if [ ! -d .git ]; then
-		echo "Error: This is not a git repository, auto update only works if you've done a git clone"
+		echo "Error: This is not a git repository, auto update only works if you've done a git clone" >&2
 		exit 1
 	fi
 	git status | grep "git commit -a" >/dev/null 2>/dev/null
 	if [ $? -eq 0 ]; then
-		echo "Error: You have made changes to the script, cannot auto update"
+		echo "Error: You have made changes to the script, cannot auto update" >&2
 		exit 1
 	fi
 	echo -n "Auto updating..."
 	git pull >/dev/null
 	if [ $? -ne 0 ]; then
-		echo 'Error: Unable to update git, try running "git pull" manually to see what is wrong'
+		echo 'Error: Unable to update git, try running "git pull" manually to see what is wrong' >&2
 		exit 1
 	fi
 	echo "OK"
@@ -137,7 +166,7 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 		if [ -f "$0" ]; then
 			/bin/bash "$0" ${ALLARGS} -U
 		else
-			echo "Error: Unable to relaunch, couldn't find $0"
+			echo "Error: Unable to relaunch, couldn't find $0" >&2
 			exit 1
 		fi
 	else
@@ -148,14 +177,14 @@ fi
 
 # Sanity check
 if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
-	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version."
+	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
 	exit 1
 fi
 
 if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
 	id | grep -i 'uid=0(' 2>&1 >/dev/null
 	if [ $? -ne 0 ]; then
-		echo "Error: You need to be root to use autoinstall/autostart option."
+		echo "Error: You need to be root to use autoinstall/autostart option." >&2
 		exit 1
 	fi
 fi
@@ -164,7 +193,7 @@ fi
 # Remove any ~ or other oddness in the path we're given
 DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } ; if [ $? -eq 0 ]; then pwd; fi)"
 if [ -z "${DOWNLOADDIR}" ]; then
-	echo "Error: Download directory does not exist or is not a directory"
+	echo "Error: Download directory does not exist or is not a directory" >&2
 	exit 1
 fi
 
@@ -223,14 +252,16 @@ trap cleanup EXIT
 
 # If user wants, we skip authentication, but only if previous auth exists
 if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
-	echo -n "Authenticating..."
+	if [ "${CRON}" = "no" ]; then
+	        echo -n "Authenticating..."
+	fi
 	# Clean old session
 	rm /tmp/kaka 2>/dev/null
 
 	# Get initial seed we need to authenticate
 	SEED=$(wget --save-cookies /tmp/kaka --keep-session-cookies ${URL_LOGIN} -O - 2>/dev/null | grep 'name="authenticity_token"' | sed 's/.*value=.\([^"]*\).*/\1/')
 	if [ $? -ne 0 -o "${SEED}" == "" ]; then
-		echo "Error: Unable to obtain authentication token, page changed?"
+		echo "Error: Unable to obtain authentication token, page changed?" >&2
 		exit 1
 	fi
 
@@ -245,7 +276,7 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 	# Authenticate
 	wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_LOGIN}" --post-file=/tmp/postdata -O /tmp/raw 2>/dev/null 
 	if [ $? -ne 0 ]; then
-		echo "Error: Unable to authenticate"
+		echo "Error: Unable to authenticate" >&2
 		exit 1
 	fi
 	# Delete authentication data ... Bad idea to let that stick around
@@ -253,10 +284,12 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 
 	# Provide some details to the end user
 	if [ "$(cat /tmp/raw | grep 'Sign In</title')" != "" ]; then
-		echo "Error: Username and/or password incorrect"
+		echo "Error: Username and/or password incorrect" >&2
 		exit 1
 	fi
-	echo "OK"
+	if [ "${CRON}" = "no" ]; then
+	        echo "OK"
+	fi
 else
 	# It's a public version, so change URL and make doubly sure that cookies are empty
 	rm 2>/dev/null >/dev/null /tmp/kaka
@@ -265,10 +298,13 @@ else
 fi
 
 # Extract the URL for our release
-echo -n "Finding download URL for ${RELEASE}..."
-
+if [ "${CRON}" = "no" ]; then
+        echo -n "Finding download URL for ${RELEASE}..."
+fi
 DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep "${PKGEXT}" | grep -m 1 "${RELEASE}" | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>.*/\1/" )
-echo -e "OK"
+if [ "${CRON}" = "no" ]; then
+        echo -e "OK"
+fi
 
 if [ "${DOWNLOAD}" == "" ]; then
 	echo "Sorry, page layout must have changed, I'm unable to retrieve the URL needed for download"
@@ -299,12 +335,16 @@ else
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
 fi
 if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
-	echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
+        if [ "${CRON}" = "no" ]; then
+	        echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
+        fi
 	exit 5
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
-	echo "File already exists, won't download."
+	if [ "${CRON}" = "no" ]; then
+	        echo "File already exists, won't download."
+        fi
 	if [ "${AUTOINSTALL}" != "yes" ]; then
 		exit 2
 	fi
@@ -313,7 +353,9 @@ fi
 
 if [ "${SKIP_DOWNLOAD}" == "no" ]; then
 	if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
-		echo "Note! File exists, but asked to overwrite with new copy"
+		if [ "${CRON}" = "no" ]; then
+		        echo "Note! File exists, but asked to overwrite with new copy"
+		fi
 	fi
 
 	echo -ne "Downloading release \"${FILENAME}\"..."
