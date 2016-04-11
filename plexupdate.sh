@@ -57,6 +57,10 @@ AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
 
+# Default options for package managers, override if needed
+REDHAT_INSTALL="yum -y install"
+DEBIAN_INSTALL="dpkg -i"
+
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
 if [ $? -eq 127 ]; then
@@ -205,9 +209,11 @@ keypair() {
 
 # Setup an exit handler so we cleanup
 function cleanup {
-	rm /tmp/kaka 2>/dev/null >/dev/null
 	rm /tmp/postdata 2>/dev/null >/dev/null
 	rm /tmp/raw 2>/dev/null >/dev/null
+	if [ "${KEEP}" != "yes" ]; then
+		rm /tmp/kaka 2>/dev/null >/dev/null
+	fi
 }
 trap cleanup EXIT
 
@@ -328,9 +334,9 @@ fi
 
 if [ "${AUTOINSTALL}" == "yes" ]; then
 	if [ "${REDHAT}" == "yes" ]; then
-		sudo yum -y install "${DOWNLOADDIR}/${FILENAME}"
+		sudo ${REDHAT_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 	else
-		sudo dpkg -i "${DOWNLOADDIR}/${FILENAME}"
+		sudo ${DEBIAN_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 	fi
 fi
 
