@@ -151,8 +151,8 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 fi
 
 # Sanity check
-if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
-	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version."
+if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ] && [ ! -f /tmp/kaka ]; then
+	echo "Error: Need username & password or -k option to download PlexPass version. Otherwise run with -p to download public version."
 	exit 1
 fi
 
@@ -263,7 +263,7 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 		exit 1
 	fi
 	echo "OK"
-else
+elif [ "$PUBLIC" != "no" ]; then
 	# It's a public version, so change URL and make doubly sure that cookies are empty
 	rm 2>/dev/null >/dev/null /tmp/kaka
 	touch /tmp/kaka
