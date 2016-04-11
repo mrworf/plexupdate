@@ -151,8 +151,8 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 fi
 
 # Sanity check
-if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
-	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version."
+if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ] && [ ! -f /tmp/kaka ]; then
+	echo "Error: Need username & password or -k optoin to download PlexPass version. Otherwise run with -p to download public version."
 	exit 1
 fi
 
