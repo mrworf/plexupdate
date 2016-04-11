@@ -102,7 +102,7 @@ usage() {
         echo "    -r Print download URL and exit"
         echo "    -s Auto start (needed for some distros)"
         echo "    -u Auto update plexupdate.sh before running it (experimental)"
-        echo "    -U Do not autoupdate plexupdate.sh (experimental, default)\n"
+        echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
         echo
         exit 0
 }
