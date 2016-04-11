@@ -263,7 +263,7 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 		exit 1
 	fi
 	echo "OK"
-else
+elif [ "$PUBLIC" != "no" ]; then
 	# It's a public version, so change URL and make doubly sure that cookies are empty
 	rm 2>/dev/null >/dev/null /tmp/kaka
 	touch /tmp/kaka
