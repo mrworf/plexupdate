@@ -152,7 +152,7 @@ fi
 
 # Sanity check
 if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ] && [ ! -f /tmp/kaka ]; then
-	echo "Error: Need username & password or -k optoin to download PlexPass version. Otherwise run with -p to download public version."
+	echo "Error: Need username & password or -k option to download PlexPass version. Otherwise run with -p to download public version."
 	exit 1
 fi
 
