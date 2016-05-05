@@ -60,6 +60,10 @@ CRON=no
 QUIET=no
 SILENT=no
 
+# Default options for package managers, override if needed
+REDHAT_INSTALL="yum -y install"
+DEBIAN_INSTALL="dpkg -i"
+
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
 if [ $? -eq 127 ]; then
@@ -184,8 +188,8 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 fi
 
 # Sanity check
-if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ]; then
-	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
+if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ] && [ ! -f /tmp/kaka ]; then
+	echo "Error: Need username & password or -k option to download PlexPass version. Otherwise run with -p to download public version." >&2
 	exit 1
 fi
 
@@ -242,9 +246,11 @@ keypair() {
 
 # Setup an exit handler so we cleanup
 function cleanup {
-	rm /tmp/kaka 2>/dev/null >/dev/null
 	rm /tmp/postdata 2>/dev/null >/dev/null
 	rm /tmp/raw 2>/dev/null >/dev/null
+	if [ "${KEEP}" != "yes" ]; then
+		rm /tmp/kaka 2>/dev/null >/dev/null
+	fi
 }
 trap cleanup EXIT
 
@@ -298,7 +304,7 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 	if [ "${CRON}" = "no" ]; then
 	        echo "OK"
 	fi
-else
+elif [ "$PUBLIC" != "no" ]; then
 	# It's a public version, so change URL and make doubly sure that cookies are empty
 	rm 2>/dev/null >/dev/null /tmp/kaka
 	touch /tmp/kaka
@@ -378,9 +384,9 @@ fi
 
 if [ "${AUTOINSTALL}" == "yes" ]; then
 	if [ "${REDHAT}" == "yes" ]; then
-		sudo yum -y install "${DOWNLOADDIR}/${FILENAME}"
+		sudo ${REDHAT_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 	else
-		sudo dpkg -i "${DOWNLOADDIR}/${FILENAME}"
+		sudo ${DEBIAN_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 	fi
 fi
 
