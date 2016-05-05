@@ -58,6 +58,7 @@ AUTOUPDATE=no
 AUTOSTART=no
 CRON=no
 QUIET=no
+SILENT=no
 
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
@@ -88,7 +89,7 @@ URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
 URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
 
 usage() {
-        echo "Usage: $(basename $0) [-aCfhkopqsuU]"
+        echo "Usage: $(basename $0) [-aCfhkopqsSuU]"
         echo "    -a Auto install if download was successful (requires root)"
         echo "    -C Cron mode. Only output to stdout on an actionable operation"
         echo "    -d Auto delete after auto install"
@@ -98,9 +99,10 @@ usage() {
         echo "    -k Reuse last authentication"
         echo "    -o 32-bit version (default 64 bit)"
         echo "    -p Public Plex Media Server version"
-        echo "    -q Quiet mode. No stdout/stderr, only exit codes"
+        echo "    -q Quiet mode. No stdout, only stderr and exit codes"
         echo "    -r Print download URL and exit"
         echo "    -s Auto start (needed for some distros)"
+        echo "    -S Silent mode. No text output, only exit codes"
         echo "    -u Auto update plexupdate.sh before running it (experimental)"
         echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
         echo
@@ -124,6 +126,7 @@ do
                 (-q) QUIET=yes;;
                 (-r) PRINT_URL=yes;;
                 (-s) AUTOSTART=yes;;
+                (-S) SILENT=yes;;
                 (-u) AUTOUPDATE=yes;;
                 (-U) AUTOUPDATE=no;;
                 (--) ;;
@@ -134,8 +137,13 @@ do
 done
 
 # send all stdout to /dev/null
-if [ "${QUIET}" = "yes" ]; then
+if [ "${QUIET}" = "yes" ] || [ "${SILENT}" = "yes" ]; then
         exec 1> /dev/null
+fi
+
+# send all stdout and stderr to /dev/null
+if [ "${SILENT}" = "yes" ]; then
+        exec 2> /dev/null
 fi
 
 if [ "${AUTOUPDATE}" == "yes" ]; then
