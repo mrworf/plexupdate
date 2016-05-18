@@ -59,11 +59,6 @@ It's very simple, just execute the tool once configured. It will complain if you
 
 Overall it tries to give you hints regarding why it isn't doing what you expected it to.
 
-# known issues
-
-- Command-line option handling needs cleanup
-- Should extract the help text into a function instead
-
 # trivia
 
 - "kaka" is swedish for "cookie"
