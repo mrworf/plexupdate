@@ -48,7 +48,6 @@ DOWNLOADDIR="."
 
 # Defaults
 # (aka "Advanced" settings, can be overriden with config file)
-RELEASE="64"
 KEEP=no
 FORCE=no
 PUBLIC=no
@@ -63,6 +62,7 @@ SILENT=no
 # Default options for package managers, override if needed
 REDHAT_INSTALL="yum -y install"
 DEBIAN_INSTALL="dpkg -i"
+DISTRO_INSTALL=""
 
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
@@ -76,21 +76,15 @@ if [ -f ~/.plexupdate ]; then
 	source ~/.plexupdate
 fi
 
-if [ "${RELEASE}" = "64-bit" ]; then
-	echo "WARNING: RELEASE=64-bit is deprecated, use RELEASE=64 instead"
-	RELEASE="64"
-elif [ "${RELEASE}" = "32-bit" ]; then
-	echo "WARNING: RELEASE=32-bit is deprecated, use RELEASE=32 instead"
-	RELEASE="32"
-elif [ "${RELEASE}" != "64" -a "${RELEASE}" != "32" ]; then
-	echo "ERROR: Use of RELEASE=${RELEASE} will no longer work"
+if [ ! "${RELEASE}" = "" ]; then
+	echo "ERROR: RELEASE keyword is deprecated, use DISTRO and BUILD"
 	exit 255
 fi
 
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in
-URL_DOWNLOAD=https://plex.tv/downloads?channel=plexpass
-URL_DOWNLOAD_PUBLIC=https://plex.tv/downloads
+URL_DOWNLOAD=https://plex.tv/api/downloads/1.json?channel=plexpass
+URL_DOWNLOAD_PUBLIC=https://plex.tv/api/downloads/1.json
 
 usage() {
         echo "Usage: $(basename $0) [-aCfhkopqsSuU]"
@@ -101,7 +95,6 @@ usage() {
         echo "       already exists (WILL NOT OVERWRITE)"
         echo "    -h This help"
         echo "    -k Reuse last authentication"
-        echo "    -o 32-bit version (default 64 bit)"
         echo "    -p Public Plex Media Server version"
         echo "    -q Quiet mode. No stdout, only stderr and exit codes"
         echo "    -r Print download URL and exit"
@@ -125,7 +118,6 @@ do
                 (-d) AUTODELETE=yes;;
                 (-f) FORCE=yes;;
                 (-k) KEEP=yes;;
-                (-o) RELEASE="32";;
                 (-p) PUBLIC=yes;;
                 (-q) QUIET=yes;;
                 (-r) PRINT_URL=yes;;
@@ -189,7 +181,7 @@ fi
 
 # Sanity check
 if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ] && [ ! -f /tmp/kaka ]; then
-	echo "Error: Need username & password or -k option to download PlexPass version. Otherwise run with -p to download public version." >&2
+	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
 	exit 1
 fi
 
@@ -209,15 +201,26 @@ if [ -z "${DOWNLOADDIR}" ]; then
 	exit 1
 fi
 
-# Detect if we're running on redhat instead of ubuntu
-if [ -f /etc/redhat-release ]; then
-	REDHAT=yes;
-	PKGEXT='.rpm'
-	RELEASE="Fedora${RELEASE}"
+if [ "${DISTRO_INSTALL}" == "" ]; then
+	# Detect if we're running on redhat instead of ubuntu
+	if [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
+		if [ -f /etc/redhat-release ]; then
+			REDHAT=yes
+			BUILD='linux-ubuntu-x86_64'
+			DISTRO="redhat"
+			DISTRO_INSTALL="${REDHAT_INSTALL}"
+		else
+			REDHAT=no
+			BUILD='linux-ubuntu-x86_64'
+			DISTRO="ubuntu"
+			DISTRO_INSTALL="${DEBIAN_INSTALL}"
+		fi
+	fi
 else
-	REDHAT=no;
-	PKGEXT='.deb'
-	RELEASE="Ubuntu${RELEASE}"
+	if [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
+		echo "Using custom DISTRO_INSTALL requires custom DISTRO and BUILD too"
+		exit 255
+	fi
 fi
 
 # Useful functions
@@ -272,20 +275,10 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 	# Clean old session
 	rm /tmp/kaka 2>/dev/null
 
-	# Get initial seed we need to authenticate
-	SEED=$(wget --save-cookies /tmp/kaka --keep-session-cookies ${URL_LOGIN} -O - 2>/dev/null | grep 'name="authenticity_token"' | sed 's/.*value=.\([^"]*\).*/\1/')
-	if [ $? -ne 0 -o "${SEED}" == "" ]; then
-		echo "Error: Unable to obtain authentication token, page changed?" >&2
-		exit 1
-	fi
-
 	# Build post data
-	echo -ne  >/tmp/postdata  "$(keypair "utf8" "&#x2713;" )"
-	echo -ne >>/tmp/postdata "&$(keypair "authenticity_token" "${SEED}" )"
-	echo -ne >>/tmp/postdata "&$(keypair "user[login]" "${EMAIL}" )"
+	echo -ne >/tmp/postdata "&$(keypair "user[login]" "${EMAIL}" )"
 	echo -ne >>/tmp/postdata "&$(keypair "user[password]" "${PASS}" )"
 	echo -ne >>/tmp/postdata "&$(keypair "user[remember_me]" "0" )"
-	echo -ne >>/tmp/postdata "&$(keypair "commit" "Sign in" )"
 
 	# Authenticate
 	wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_LOGIN}" --post-file=/tmp/postdata -O /tmp/raw 2>/dev/null 
@@ -313,9 +306,10 @@ fi
 
 # Extract the URL for our release
 if [ "${CRON}" = "no" ]; then
-        echo -n "Finding download URL for ${RELEASE}..."
+        echo -n "Finding download URL to download..."
 fi
-DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep "${PKGEXT}" | grep -m 1 "${RELEASE}" | sed "s/.*href=\"\([^\"]*\\${PKGEXT}\)\"[^>]*>.*/\1/" )
+
+DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -i "\"build\":\"${BUILD}\"" | grep -m1 -ioe 'https://[^\"]*' )
 if [ "${CRON}" = "no" ]; then
         echo -e "OK"
 fi
@@ -383,11 +377,7 @@ if [ "${SKIP_DOWNLOAD}" == "no" ]; then
 fi
 
 if [ "${AUTOINSTALL}" == "yes" ]; then
-	if [ "${REDHAT}" == "yes" ]; then
-		sudo ${REDHAT_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
-	else
-		sudo ${DEBIAN_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
-	fi
+	sudo ${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 fi
 
 if [ "${AUTODELETE}" == "yes" ]; then

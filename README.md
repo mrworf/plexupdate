@@ -42,10 +42,11 @@ There are a few other options for the more enterprising user. Setting any of the
   Normally plexupdate.sh will avoid downloading a file it already has or if it's the same as the installed version, but this allows you to override.
 - PRINT_URL
   Authenticate, fetch the download URL, print it, and then exit.
-- REDHAT_INSTALL
-  The commandline used to install .rpm packages, only change if you need special options
-- DEBIAN_INSTALL
-  The commandline used to install .deb packages, only change if you need special options
+- DISTRO_INSTALL
+  The commandline used to install packages, only change if you need special options. Natively supports Debian and Redhat, so need to set this for these systems.
+  NOTE! If you define this, you MUST define DISTRO and BUILD
+- DISTRO and BUILD
+  Override which version to download
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
 
