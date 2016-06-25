@@ -46,7 +46,7 @@ There are a few other options for the more enterprising user. Setting any of the
   The commandline used to install packages, only change if you need special options. Natively supports Debian and Redhat, so need to set this for these systems.
   NOTE! If you define this, you MUST define DISTRO and BUILD
 - DISTRO and BUILD
-  Override which version to download
+  Override which version to download, use -l option to see what you can select.
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
 

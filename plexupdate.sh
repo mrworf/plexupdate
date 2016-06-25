@@ -58,6 +58,7 @@ AUTOSTART=no
 CRON=no
 QUIET=no
 SILENT=no
+ARCH=$(uname -m)
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="yum -y install"
@@ -95,6 +96,7 @@ usage() {
         echo "       already exists (WILL NOT OVERWRITE)"
         echo "    -h This help"
         echo "    -k Reuse last authentication"
+        echo "    -l List available builds and distros"
         echo "    -p Public Plex Media Server version"
         echo "    -q Quiet mode. No stdout, only stderr and exit codes"
         echo "    -r Print download URL and exit"
@@ -118,6 +120,7 @@ do
                 (-d) AUTODELETE=yes;;
                 (-f) FORCE=yes;;
                 (-k) KEEP=yes;;
+                (-l) LISTOPTS=yes;;
                 (-p) PUBLIC=yes;;
                 (-q) QUIET=yes;;
                 (-r) PRINT_URL=yes;;
@@ -202,19 +205,22 @@ if [ -z "${DOWNLOADDIR}" ]; then
 fi
 
 if [ "${DISTRO_INSTALL}" == "" ]; then
-	# Detect if we're running on redhat instead of ubuntu
-	if [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
+	if [ "${DISTRO}" == "" -a "${BUILD}" == "" ]; then
+		# Detect if we're running on redhat instead of ubuntu
 		if [ -f /etc/redhat-release ]; then
 			REDHAT=yes
-			BUILD='linux-ubuntu-x86_64'
+			BUILD="linux-ubuntu-${ARCH}"
 			DISTRO="redhat"
 			DISTRO_INSTALL="${REDHAT_INSTALL}"
 		else
 			REDHAT=no
-			BUILD='linux-ubuntu-x86_64'
+			BUILD="linux-ubuntu-${ARCH}"
 			DISTRO="ubuntu"
 			DISTRO_INSTALL="${DEBIAN_INSTALL}"
 		fi
+	elif [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
+		echo "ERROR: You must define both DISTRO and BUILD"
+		exit 255
 	fi
 else
 	if [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
@@ -304,6 +310,27 @@ elif [ "$PUBLIC" != "no" ]; then
 	URL_DOWNLOAD=${URL_DOWNLOAD_PUBLIC}
 fi
 
+if [ "${LISTOPTS}" == "yes" ]; then
+	opts="$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -oe '"label"[^}]*' | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
+	eval opts=( "DISTRO" "BUILD" "DESCRIPTION" "======" "=====" "==============================================" $opts )
+
+	BUILD=
+	DISTRO=
+
+	for X in "${opts[@]}" ; do
+		if [ "$DISTRO" == "" ]; then
+			DISTRO="$X"
+		elif [ "$BUILD" == "" ]; then
+			BUILD="$X"
+		else
+			printf "%-12s %-30s %s\n" "$DISTRO" "$BUILD" "$X"
+			BUILD=
+			DISTRO=
+		fi
+	done
+	exit 0
+fi
+
 # Extract the URL for our release
 if [ "${CRON}" = "no" ]; then
         echo -n "Finding download URL to download..."
@@ -315,7 +342,7 @@ if [ "${CRON}" = "no" ]; then
 fi
 
 if [ "${DOWNLOAD}" == "" ]; then
-	echo "Sorry, page layout must have changed, I'm unable to retrieve the URL needed for download"
+	echo "ERROR: Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)"
 	exit 3
 fi
 
