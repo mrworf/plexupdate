@@ -83,7 +83,7 @@ if [ ! "${RELEASE}" = "" ]; then
 fi
 
 # Current pages we need - Do not change unless Plex.tv changes again
-URL_LOGIN=https://plex.tv/users/sign_in
+URL_LOGIN=https://plex.tv/users/sign_in.json
 URL_DOWNLOAD=https://plex.tv/api/downloads/1.json?channel=plexpass
 URL_DOWNLOAD_PUBLIC=https://plex.tv/api/downloads/1.json
 
@@ -257,6 +257,7 @@ keypair() {
 function cleanup {
 	rm /tmp/postdata 2>/dev/null >/dev/null
 	rm /tmp/raw 2>/dev/null >/dev/null
+	rm /tmp/failcause 2>/dev/null >/dev/null
 	if [ "${KEEP}" != "yes" ]; then
 		rm /tmp/kaka 2>/dev/null >/dev/null
 	fi
@@ -282,24 +283,28 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 	rm /tmp/kaka 2>/dev/null
 
 	# Build post data
-	echo -ne >/tmp/postdata "&$(keypair "user[login]" "${EMAIL}" )"
+	echo -ne >/tmp/postdata "$(keypair "user[login]" "${EMAIL}" )"
 	echo -ne >>/tmp/postdata "&$(keypair "user[password]" "${PASS}" )"
 	echo -ne >>/tmp/postdata "&$(keypair "user[remember_me]" "0" )"
 
-	# Authenticate
-	wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_LOGIN}" --post-file=/tmp/postdata -O /tmp/raw 2>/dev/null 
-	if [ $? -ne 0 ]; then
-		echo "Error: Unable to authenticate" >&2
-		exit 1
-	fi
+	# Authenticate (using Plex Single Sign On)
+	wget --header "X-Plex-Client-Identifier: 4a745ae7-1839-e44e-1e42-aebfa578c865" --header "X-Plex-Product: Plex SSO" --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_LOGIN}" --post-file=/tmp/postdata -q -S -O /tmp/failcause 2>/tmp/raw
 	# Delete authentication data ... Bad idea to let that stick around
 	rm /tmp/postdata
 
 	# Provide some details to the end user
-	if [ "$(cat /tmp/raw | grep 'Sign In</title')" != "" ]; then
-		echo "Error: Username and/or password incorrect" >&2
+	RESULTCODE=$(head -n1 /tmp/raw | grep -oe '[1-5][0-9][0-9]')
+	if [ $RESULTCODE -eq 401 ]; then
+		echo "ERROR: Username and/or password incorrect" >&2
+		exit 1
+	elif [ $RESULTCODE -ne 201 ]; then
+		echo "ERROR: Failed to login, debug information:" >&2
+		cat /tmp/failcause >&2
 		exit 1
 	fi
+	# Remove this, since it contains more information than we should leave hanging around
+	rm /tmp/failcause
+
 	if [ "${CRON}" = "no" ]; then
 	        echo "OK"
 	fi
