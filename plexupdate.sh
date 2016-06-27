@@ -129,7 +129,7 @@ do
                 (-u) AUTOUPDATE=yes;;
                 (-U) AUTOUPDATE=no;;
                 (--) ;;
-                (-*) echo "Error: unrecognized option $1" 1>&2; exit 1;;
+                (-*) echo "Error: unrecognized option $1" 1>&2; usage; exit 1;;
                 (*)  break;;
 	esac
 	shift
