@@ -73,8 +73,12 @@ if [ $? -eq 127 ]; then
 fi
 
 # Load settings from config file if it exists
-if [ -f ~/.plexupdate ]; then
-	source ~/.plexupdate
+CONFIG_FILE="${HOME}/.plexupdate"
+if [[ ! -z ${SUDO_USER} ]] ; then
+	CONFIG_FILE="`eval echo ~${SUDO_USER}`/.plexupdate"
+fi
+if [ -f ${CONFIG_FILE} ]; then
+	source ${CONFIG_FILE}
 fi
 
 if [ ! "${RELEASE}" = "" ]; then
