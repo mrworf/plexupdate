@@ -384,9 +384,8 @@ fi
 if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
         if [ "${CRON}" = "no" ]; then
 	        echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
-	        exit 5
-        fi
-	exit 0
+	fi
+	exit 5
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
