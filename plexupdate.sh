@@ -302,6 +302,8 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 		cat /tmp/failcause >&2
 		exit 1
 	fi
+	TOKEN=$(</tmp/failcause  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
+
 	# Remove this, since it contains more information than we should leave hanging around
 	rm /tmp/failcause
 
@@ -341,7 +343,8 @@ if [ "${CRON}" = "no" ]; then
         echo -n "Finding download URL to download..."
 fi
 
-DOWNLOAD=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -i "\"build\":\"${BUILD}\"" | grep -m1 -ioe 'https://[^\"]*' )
+DOWNLOAD=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -i "\"build\":\"${BUILD}\"" | grep -m1 -ioe 'https://[^\"]*' )
+
 if [ "${CRON}" = "no" ]; then
         echo -e "OK"
 fi
