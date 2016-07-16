@@ -471,7 +471,7 @@ if [ ! "${PLEXSERVER}" = "" -a "${AUTOINSTALL}" == "yes" ]; then
 		cronexit 6
 	fi
 fi
-exit 255
+
 if [ "${AUTOINSTALL}" == "yes" ]; then
 	sudo ${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 fi
