@@ -19,9 +19,9 @@ plexupdate.sh looks for a file named `.plexupdate` located in your home director
 The contents of this file usually is
 
 ```
-EMAIL=my.email@plex-server.com
+EMAIL="my.email@plex-server.com"
 PASS="my-secret-plex-password"
-DOWNLOADDIR=/a/folder/to/save/the/files/in
+DOWNLOADDIR="/a/folder/to/save/the/files/in"
 ```
 
 Obviously you need to change these three so they match your account information. And if you don't put anything as a `DOWNLOADDIR`, the tool will use the folder you're executing the script from. So take care.
@@ -50,6 +50,12 @@ There are a few other options for the more enterprising user. Setting any of the
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
 
+### Using it from CRON
+
+It seems quite popular to run this via crontab, which is fine. But the behavior of the script has been somewhat, shall we say, annoying.
+
+Starting today, the ```-C``` option is deprecated and will give an error to check the docs. The new version is ```-c``` and will make sure that only fatal errors are reported back via the exit code. No more 2, 3, 4 or 5 exitcodes. They are converted into 0. Combining this option with ```-q``` will hide any and all non-essential output from the script as well. Only error messages are emitted, so if it fails, you'll know why.
+
 ## 4. command-line
 
 I'm going to be lazy, just run the tool with `-h` and you'll find out what you can do. It will basically be a mirror of what section 3 just stated :-)
@@ -70,12 +76,16 @@ Open a terminal or SSH on the server running Plex Media Center
 ```
 wget https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh
 chmod +x plexupdate.sh
-echo -e > ~/.plexupdate 'EMAIL=<plex email account>\nPASS="<plex password>"'
+echo -e > ~/.plexupdate 'EMAIL="<plex email account>"\nPASS="<plex password>"'
 nano -w ~/.plexupdate
 sudo ./plexupdate.sh -a
 ```
 
 # FAQ
+
+## What username and password are you talking about
+
+The username and password for http://plex.tv 
 
 ## My password is rejected even though correct
 
