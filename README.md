@@ -32,6 +32,8 @@ You can point out a different file than ```.plexupdate``` by providing it as the
 
 There are also a few additional options for the more enterprising user. Setting any of these to `yes` will enable the function.
 
+- PLEXSERVER
+  If set, and combined with AUTOINSTALL, the script will automatically check if server is in-use and deferr the update. Great for crontab users. PLEXSERVER should be set to the IP/DNS of your Plex Media Server, which typically is 127.0.0.1
 - AUTOUPDATE
   Makes plexupdate.sh automatically update itself using git. Note! This will fail if git isn't available on the command line.
 - AUTOINSTALL

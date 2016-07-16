@@ -17,6 +17,7 @@
 #         3 if page layout has changed.
 #         4 if download fails
 #         5 if version already installed
+#         6 if update was deferred due to usage
 #
 # All other return values not documented.
 #
@@ -41,6 +42,7 @@ fi
 EMAIL=
 PASS=
 DOWNLOADDIR="."
+PLEXSERVER=
 
 #################################################################
 # Don't change anything below this point
@@ -48,7 +50,6 @@ DOWNLOADDIR="."
 
 # Defaults
 # (aka "Advanced" settings, can be overriden with config file)
-KEEP=no
 FORCE=no
 PUBLIC=no
 AUTOINSTALL=no
@@ -138,7 +139,7 @@ cronexit() {
 }
 
 usage() {
-        echo "Usage: $(basename $0) [configfile] [-acfhkopqsSuU]"
+        echo "Usage: $(basename $0) [configfile] [-acfhopqsSuU]"
 	echo ""
 	echo "    configfile overrides the default ~/.plexupdate"
 	echo "    If used, it must be the FIRST option or it will be ignored"
@@ -149,7 +150,6 @@ usage() {
         echo "    -f Force download even if it's the same version or file"
         echo "       already exists (WILL NOT OVERWRITE)"
         echo "    -h This help"
-        echo "    -k Reuse last authentication"
         echo "    -l List available builds and distros"
         echo "    -p Public Plex Media Server version"
         echo "    -q Quiet mode. No stdout, only stderr and cronexit codes"
@@ -174,7 +174,6 @@ do
 		(-C) echo "ERROR: CRON option has changed, please review README.md" 1>&2; cronexit 255;;
                 (-d) AUTODELETE=yes;;
                 (-f) FORCE=yes;;
-                (-k) KEEP=yes;;
                 (-l) LISTOPTS=yes;;
                 (-p) PUBLIC=yes;;
                 (-q) QUIET=yes;;
@@ -189,6 +188,11 @@ do
 	esac
 	shift
 done
+
+if [ "${KEEP}" = "yes" ]; then
+	echo "ERROR: KEEP is deprecated" >&2
+	cronexit 1
+fi
 
 # send all stdout to /dev/null
 if [ "${QUIET}" = "yes" ] || [ "${SILENT}" = "yes" ]; then
@@ -313,9 +317,7 @@ function cleanup {
 	rm /tmp/postdata 2>/dev/null >/dev/null
 	rm /tmp/raw 2>/dev/null >/dev/null
 	rm /tmp/failcause 2>/dev/null >/dev/null
-	if [ "${KEEP}" != "yes" ]; then
-		rm /tmp/kaka 2>/dev/null >/dev/null
-	fi
+	rm /tmp/kaka 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
 
@@ -329,8 +331,13 @@ trap cleanup EXIT
 # user[remember_me]	0
 # commit		Sign in
 
+# Load previous token if stored
+if [ -f /tmp/kaka_token ]; then
+	TOKEN=$(cat /tmp/kaka_token)
+fi
+
 # If user wants, we skip authentication, but only if previous auth exists
-if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
+if [ "${PUBLIC}" == "no" ]; then
         echo -n "Authenticating..."
 
 	# Clean old session
@@ -356,7 +363,7 @@ if [ "${KEEP}" != "yes" -o ! -f /tmp/kaka ] && [ "${PUBLIC}" == "no" ]; then
 		cat /tmp/failcause >&2
 		cronexit 1
 	fi
-	
+
 	# If the system got here, it means the login was successfull, so we set the TOKEN variable to the authToken from the response
 	# I use cut -c 14- to cut off the "authToken":" string from the grepped result, can probably be done in a different way
 	TOKEN=$(</tmp/failcause  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
@@ -435,7 +442,7 @@ if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" ] && [ ! -z 
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
-        echo "File already exists, won't download."
+        echo "File already exists (${FILENAME}), won't download."
 	if [ "${AUTOINSTALL}" != "yes" ]; then
 		cronexit 2
 	fi
@@ -457,6 +464,14 @@ if [ "${SKIP_DOWNLOAD}" == "no" ]; then
 	echo "OK"
 fi
 
+if [ ! "${PLEXSERVER}" = "" -a "${AUTOINSTALL}" == "yes" ]; then
+	# Check if server is in-use before continuing (thanks @AltonV, @hakong and @sufr3ak)...
+	if ! wget --no-check-certificate -q -O - https://${PLEXSERVER}:32400/status/sessions | grep -q '<MediaContainer size="0">' ; then
+		echo "Server ${PLEXSERVER} is currently being used by one or more users, skipping installation. Please run again later"
+		cronexit 6
+	fi
+fi
+exit 255
 if [ "${AUTOINSTALL}" == "yes" ]; then
 	sudo ${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 fi
