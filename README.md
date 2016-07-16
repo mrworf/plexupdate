@@ -28,7 +28,9 @@ Obviously you need to change these three so they match your account information.
 
 ## 3. advanced options
 
-There are a few other options for the more enterprising user. Setting any of these to `yes` will enable the function.
+You can point out a different file than ```.plexupdate``` by providing it as the first argument to the script. It HAS to be the FIRST argument, or it will be ignored.
+
+There are also a few additional options for the more enterprising user. Setting any of these to `yes` will enable the function.
 
 - AUTOUPDATE
   Makes plexupdate.sh automatically update itself using git. Note! This will fail if git isn't available on the command line.

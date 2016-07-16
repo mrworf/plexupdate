@@ -72,9 +72,50 @@ if [ $? -eq 127 ]; then
 	exit 1
 fi
 
-# Load settings from config file if it exists
-if [ -f ~/.plexupdate ]; then
-	source ~/.plexupdate
+# Allow manual control of configfile
+if [ ! "$1" = "" -a ! "${1:0:1}" = "-" ]; then
+	if [ -f "$1" ]; then
+		source "$1"
+	else
+		echo "ERROR: Cannot load configuration $1" >&2
+		exit 1
+	fi
+else
+	# Load settings from config file if it exists
+	# Also, respect SUDO_USER and try that first
+	if [ "${SUDO_USER}" != "" ]; then
+		# Make sure nothing bad comes from this (since we use eval)
+		ERROR=0
+		if   [[ $SUDO_USER == *";"* ]]; then ERROR=1 ; # Allows more commands
+		elif [[ $SUDO_USER == *" "* ]]; then ERROR=1 ; # Space is not a good thing
+		elif [[ $SUDO_USER == *"&"* ]]; then ERROR=1 ; # Spinning off the command is bad
+		elif [[ $SUDO_USER == *"<"* ]]; then ERROR=1 ; # No redirection
+		elif [[ $SUDO_USER == *">"* ]]; then ERROR=1 ; # No redirection
+		elif [[ $SUDO_USER == *"|"* ]]; then ERROR=1 ; # No pipes
+		elif [[ $SUDO_USER == *"~"* ]]; then ERROR=1 ; # No tilde
+		fi
+		if [ ${ERROR} -gt 0 ]; then
+			echo "ERROR: SUDO_USER variable is COMPROMISED: \"${SUDO_USER}\"" >&2
+			exit 255
+		fi
+
+		# Try using original user's config
+		CONFIGDIR="$( eval cd ~${SUDO_USER} 2>/dev/null && pwd )"
+		if [ "${CONFIGDIR}" == "" ]; then
+			echo "WARNING: SUDO_USER \"${SUDO_USER}\" does not have a valid home directory, ignoring." >&2
+		fi
+
+		if [ "${CONFIGDIR}" != "" -a -f "${CONFIGDIR}/.plexupdate" ]; then
+			#echo "INFO: Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate"
+			source "${CONFIGDIR}/.plexupdate"
+		elif [ -f ~/.plexupdate ]; then
+			# Fallback for compatibility
+			source ~/.plexupdate
+		fi
+	elif [ -f ~/.plexupdate ]; then
+		# Fallback for compatibility
+		source ~/.plexupdate
+	fi
 fi
 
 if [ ! "${RELEASE}" = "" ]; then
@@ -97,7 +138,11 @@ cronexit() {
 }
 
 usage() {
-        echo "Usage: $(basename $0) [-acfhkopqsSuU]"
+        echo "Usage: $(basename $0) [configfile] [-acfhkopqsSuU]"
+	echo ""
+	echo "    configfile overrides the default ~/.plexupdate"
+	echo "    If used, it must be the FIRST option or it will be ignored"
+	echo ""
         echo "    -a Auto install if download was successful (requires root)"
 	echo "    -c Cron mode, only fatal errors return non-zero cronexit code"
         echo "    -d Auto delete after auto install"
