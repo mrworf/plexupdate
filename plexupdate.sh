@@ -74,11 +74,12 @@ if [ $? -eq 127 ]; then
 fi
 
 # Allow manual control of configfile
-if [ ! "$1" = "" -a ! "${1:0:1}" = "-" ]; then
-	if [ -f "$1" ]; then
-		source "$1"
+HASCFG="${@: -1}"
+if [ ! "${HASCFG}" = "" -a ! "${HASCFG:0:1}" = "-" ]; then
+	if [ -f "${HASCFG}" ]; then
+		source "${HASCFG}"
 	else
-		echo "ERROR: Cannot load configuration $1" >&2
+		echo "ERROR: Cannot load configuration ${HASCFG}" >&2
 		exit 1
 	fi
 else
@@ -139,10 +140,10 @@ cronexit() {
 }
 
 usage() {
-        echo "Usage: $(basename $0) [configfile] [-acfhopqsSuU]"
+        echo "Usage: $(basename $0) [-acfhopqsSuU] [config file]"
 	echo ""
-	echo "    configfile overrides the default ~/.plexupdate"
-	echo "    If used, it must be the FIRST option or it will be ignored"
+	echo "    config file overrides the default ~/.plexupdate"
+	echo "    If used, it must be the LAST option or it will be ignored"
 	echo ""
         echo "    -a Auto install if download was successful (requires root)"
 	echo "    -c Cron mode, only fatal errors return non-zero cronexit code"
@@ -163,8 +164,8 @@ usage() {
 }
 
 # Parse commandline
-ALLARGS="$@"
-set -- $(getopt aCdfhkopqruU: -- "$@")
+ALLARGS=( "$@" )
+set -- $(getopt acCdfhkopqruU: -- "$@")
 while true;
 do
 	case "$1" in
@@ -228,15 +229,17 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 	fi
 	echo "OK"
 	popd >/dev/null
+
+	unset ALLARGS["-u"]
 	if ! type "$0" 2>/dev/null >/dev/null ; then
 		if [ -f "$0" ]; then
-			/bin/bash "$0" ${ALLARGS} -U
+			/bin/bash "$0" -U ${ALLARGS[@]}
 		else
 			echo "Error: Unable to relaunch, couldn't find $0" >&2
 			cronexit 1
 		fi
 	else
-		"$0" ${ALLARGS} -U
+		"$0" -U ${ALLARGS[@]}
 	fi
 	cronexit $?
 fi

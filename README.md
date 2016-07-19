@@ -28,7 +28,7 @@ Obviously you need to change these three so they match your account information.
 
 ## 3. advanced options
 
-You can point out a different file than ```.plexupdate``` by providing it as the first argument to the script. It HAS to be the FIRST argument, or it will be ignored.
+You can point out a different file than ```.plexupdate``` by providing it as the last argument to the script. It HAS to be the LAST argument, or it will be ignored. Any options set by the config file can be overriden with commandline options.
 
 There are also a few additional options for the more enterprising user. Setting any of these to `yes` will enable the function.
 
