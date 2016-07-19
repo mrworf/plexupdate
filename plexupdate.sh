@@ -230,7 +230,14 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 	echo "OK"
 	popd >/dev/null
 
-	unset ALLARGS["-u"]
+	ALLARGS2=()
+	for A in ${ALLARGS} ; do
+		if [ ! "${A}" = "-u" ]; then
+			ALLARGS2+=(${A})
+		fi
+	done
+	ALLARGS=("${ALLARGS[@]}")
+
 	if ! type "$0" 2>/dev/null >/dev/null ; then
 		if [ -f "$0" ]; then
 			/bin/bash "$0" -U ${ALLARGS[@]}
