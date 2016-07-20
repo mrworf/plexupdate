@@ -197,7 +197,7 @@ fi
 
 # send all stdout to /dev/null
 if [ "${QUIET}" = "yes" ] || [ "${SILENT}" = "yes" ]; then
-        exec 1> /dev/null
+	exec 5>&1 >/dev/null
 fi
 
 # send all stdout and stderr to /dev/null
@@ -430,7 +430,7 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ "${PRINT_URL}" == "yes" ]; then
-  echo "${DOWNLOAD}"
+  echo "${DOWNLOAD}" >&5
   cronexit 0
 fi
 
