@@ -231,12 +231,12 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 	popd >/dev/null
 
 	ALLARGS2=()
-	for A in ${ALLARGS} ; do
+	for A in ${ALLARGS[@]} ; do
 		if [ ! "${A}" = "-u" ]; then
 			ALLARGS2+=(${A})
 		fi
 	done
-	ALLARGS=("${ALLARGS[@]}")
+	ALLARGS=("${ALLARGS2[@]}")
 
 	if ! type "$0" 2>/dev/null >/dev/null ; then
 		if [ -f "$0" ]; then
