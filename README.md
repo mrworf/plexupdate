@@ -51,6 +51,14 @@ There are also a few additional options for the more enterprising user. Setting 
   NOTE! If you define this, you MUST define DISTRO and BUILD
 - DISTRO and BUILD
   Override which version to download, use -l option to see what you can select.
+- TELEGRAM_NOTIFY
+  Enable Telegram notification support. Requires TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID
+- TELEGRAM_BOT_TOKEN
+  After talking to BotFather and creating a new bot, you can acquire the Bot Token required for the Telegram API.
+- TELEGRAM_CHAT_ID
+  Ask myidbot for your chat ID, or your group's chat ID, required for the Telegram API.
+- TELEGRAM_DEBUG
+  Output API messages for debugging. 
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
 

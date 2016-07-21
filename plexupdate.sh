@@ -66,6 +66,13 @@ REDHAT_INSTALL="yum -y install"
 DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
+# Telegram notification options
+TELEGRAM_NOTIFY="no"
+TELEGRAM_CHAT_ID="no"
+TELEGRAM_BOT_TOKEN="no"
+TELEGRAM_MESSAGE=""
+TELEGRAM_DEBUG=no
+
 # Sanity, make sure wget is in our path...
 wget >/dev/null 2>/dev/null
 if [ $? -eq 127 ]; then
@@ -140,7 +147,7 @@ cronexit() {
 }
 
 usage() {
-        echo "Usage: $(basename $0) [-acfhopqsSuU] [config file]"
+        echo "Usage: $(basename $0) [-acfhopqsStuU] [config file]"
 	echo ""
 	echo "    config file overrides the default ~/.plexupdate"
 	echo "    If used, it must be the LAST option or it will be ignored"
@@ -157,6 +164,7 @@ usage() {
         echo "    -r Print download URL and exit"
         echo "    -s Auto start (needed for some distros)"
         echo "    -S Silent mode. No text output, only exit codes"
+        echo "    -t Send a Telegram notification"
         echo "    -u Auto update plexupdate.sh before running it (experimental)"
         echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
         echo
@@ -181,6 +189,7 @@ do
                 (-r) PRINT_URL=yes;;
                 (-s) AUTOSTART=yes;;
                 (-S) SILENT=yes;;
+                (-t) TELEGRAM_NOTIFY=yes;;
                 (-u) AUTOUPDATE=yes;;
                 (-U) AUTOUPDATE=no;;
                 (--) ;;
@@ -506,5 +515,37 @@ if [ "${AUTOSTART}" == "yes" ]; then
 		/sbin/service plexmediaserver start
 	fi
 fi
+
+if [ "${TELEGRAM_NOTIFY}" == "yes" ]; then
+        # check to see if there is a BOT_TOKEN provided; if not, error out sending notification.
+        if [ "${TELEGRAM_BOT_TOKEN}" == "no" ]; then
+                echo "TELEGRAM_BOT_TOKEN is empty. Get your BOT_TOKEN from @BotFather."
+                cronexit 1
+        fi
+        # check to see if there is a CHAT_ID in which to send the notification; if not, error out sending notification.
+        if [ "${TELEGRAM_CHAT_ID}" = "no" ]; then
+                echo "TELEGRAM_CHAT_ID is empty. Get the Chat ID from @myidbot."
+                cronexit 1
+        fi
+        # check to see if AUTOINSTALL is on; if so, set a successful update notice.
+        if [ "${AUTOINSTALL}" == "yes" ]; then
+                TELEGRAM_MESSAGE="Plex was successfully updated using ${FILENAME}"
+        else
+                TELEGRAM_MESSAGE="Plex downloaded ${FILENAME} to ${DOWNLOADDIR}"
+        fi
+        # send the notification to Telegram's BOT API, output to TELEGRAM_RESPONSE for potential debugging.
+        TELEGRAM_RESPONSE=$(curl -s https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id="${TELEGRAM_CHAT_ID}"\&text="${TELEGRAM_MESSAGE}")
+
+        if [ "${TELEGRAM_DEBUG}" == "yes" ]; then
+                echo "######################"
+                echo "### TELEGRAM DEBUG ###"
+                echo $TELEGRAM_RESPONSE
+                echo "######################"
+        else
+                echo "Telegram notification sent."
+        fi
+
+fi
+
 
 cronexit 0
