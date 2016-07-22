@@ -75,13 +75,20 @@ Overall it tries to give you hints regarding why it isn't doing what you expecte
 - "kaka" is swedish for "cookie"
 
 # TL;DR
-
 Open a terminal or SSH on the server running Plex Media Center
+## First install
 ```
 wget https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh
 chmod +x plexupdate.sh
 echo -e > ~/.plexupdate 'EMAIL="<plex email account>"\nPASS="<plex password>"'
 nano -w ~/.plexupdate
+sudo ./plexupdate.sh -a
+```
+
+##Updating the script and Plex
+```
+wget https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh
+chmod +x plexupdate.sh
 sudo ./plexupdate.sh -a
 ```
 
