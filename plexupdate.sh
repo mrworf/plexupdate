@@ -430,7 +430,11 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ "${PRINT_URL}" == "yes" ]; then
-  echo "${DOWNLOAD}" >&5
+  if [ "${QUIET}" = "yes" ] || [ "${SILENT}" = "yes" ]; then
+    echo "${DOWNLOAD}" >&5
+  else
+    echo "${DOWNLOAD}"
+  fi
   cronexit 0
 fi
 
