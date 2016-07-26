@@ -165,7 +165,12 @@ usage() {
 
 # Parse commandline
 ALLARGS=( "$@" )
-set -- $(getopt acCdfhkopqruU: -- "$@")
+optstring="acCdfhkopqruU"
+getopt -T >/dev/null
+if [ $? -eq 4 ]; then
+	optstring="-o $optstring"
+fi
+set -- $(getopt $optstring -- "$@")
 while true;
 do
 	case "$1" in
