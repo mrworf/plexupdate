@@ -85,7 +85,7 @@ nano -w ~/.plexupdate
 sudo ./plexupdate.sh -a
 ```
 
-##Updating the script and Plex
+## Updating the script and Plex if you don't want to use the built-in updater
 ```
 wget https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh
 chmod +x plexupdate.sh
