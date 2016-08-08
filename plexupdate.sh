@@ -165,7 +165,7 @@ usage() {
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfhkopqruU"
+optstring="acCdfhkopqrsuU"
 getopt -T >/dev/null
 if [ $? -eq 4 ]; then
 	optstring="-o $optstring"
