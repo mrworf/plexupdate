@@ -78,18 +78,13 @@ Overall it tries to give you hints regarding why it isn't doing what you expecte
 Open a terminal or SSH on the server running Plex Media Center
 ## First install
 ```
-wget https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh
-chmod +x plexupdate.sh
-echo -e > ~/.plexupdate 'EMAIL="<plex email account>"\nPASS="<plex password>"'
-nano -w ~/.plexupdate
-sudo ./plexupdate.sh -a
+git clone https://github.com/mrworf/plexupdate.git
+chmod +x chmod +x plexupdate/plexupdate.sh
+sudo plexupdate/plexupdate.sh -p -a
 ```
-
-## Updating the script and Plex if you don't want to use the built-in updater
+## Updating Plex and the script
 ```
-wget https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh
-chmod +x plexupdate.sh
-sudo ./plexupdate.sh -a
+sudo plexupdate/plexupdate.sh -p -u -a
 ```
 
 # FAQ
