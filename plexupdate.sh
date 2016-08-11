@@ -58,7 +58,6 @@ AUTOUPDATE=no
 AUTOSTART=no
 CRON=no
 QUIET=no
-SILENT=no
 ARCH=$(uname -m)
 
 # Default options for package managers, override if needed
@@ -156,7 +155,6 @@ usage() {
         echo "    -q Quiet mode. No stdout, only stderr and cronexit codes"
         echo "    -r Print download URL and exit"
         echo "    -s Auto start (needed for some distros)"
-        echo "    -S Silent mode. No text output, only exit codes"
         echo "    -u Auto update plexupdate.sh before running it (experimental)"
         echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
         echo
@@ -185,7 +183,7 @@ do
                 (-q) QUIET=yes;;
                 (-r) PRINT_URL=yes;;
                 (-s) AUTOSTART=yes;;
-                (-S) SILENT=yes;;
+		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" 1>&2; cronexit 1;;
                 (-u) AUTOUPDATE=yes;;
                 (-U) AUTOUPDATE=no;;
                 (--) ;;
@@ -200,14 +198,14 @@ if [ "${KEEP}" = "yes" ]; then
 	cronexit 1
 fi
 
-# send all stdout to /dev/null
-if [ "${QUIET}" = "yes" ] || [ "${SILENT}" = "yes" ]; then
-	exec 5>&1 >/dev/null
+if [ "${SILENT}" = "yes" ]; then
+	echo "ERROR: SILENT option has been removed, please use QUIET instead" >&2
+	cronexit 1
 fi
 
-# send all stdout and stderr to /dev/null
-if [ "${SILENT}" = "yes" ]; then
-        exec 2> /dev/null
+# send all stdout to /dev/null
+if [ "${QUIET}" = "yes" ]; then
+	exec 5>&1 >/dev/null
 fi
 
 if [ "${AUTOUPDATE}" == "yes" ]; then
@@ -435,7 +433,7 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ "${PRINT_URL}" == "yes" ]; then
-  if [ "${QUIET}" = "yes" ] || [ "${SILENT}" = "yes" ]; then
+  if [ "${QUIET}" = "yes" ]; then
     echo "${DOWNLOAD}" >&5
   else
     echo "${DOWNLOAD}"
