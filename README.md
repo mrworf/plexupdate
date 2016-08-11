@@ -1,7 +1,7 @@
 ![plexupdate.sh](http://i.imgur.com/ThY5Rvl.png "plexupdate")
 # plexupdate
 
-Plex Update is a BASH script which simplifies the life of headless Linux Plex Media Server users (what's that for a strange description).
+Plex Update is a BASH script which simplifies the life of headless Linux Plex Media Server users (how's that for a strange description).
 
 This tool will automatically download the latest version for linux (Using plexpass or public version) and if you **kindly ask**, also install it for you.
 
