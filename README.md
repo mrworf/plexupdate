@@ -79,7 +79,7 @@ Open a terminal or SSH on the server running Plex Media Center
 ## First install
 ```
 git clone https://github.com/mrworf/plexupdate.git
-chmod +x chmod +x plexupdate/plexupdate.sh
+chmod +x plexupdate/plexupdate.sh
 sudo plexupdate/plexupdate.sh -p -a
 ```
 ## Updating Plex and the script
