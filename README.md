@@ -1,8 +1,9 @@
+![plexupdate.sh](http://i.imgur.com/ThY5Rvl.png "plexupdate")
 # plexupdate
 
-Plex Update is a BASH script which simplifies the life of headless Linux Plex Media Server users (how's that for a strange description).
+Plex Update is a BASH script which simplifies the life of headless Linux Plex Media Server users (what's that for a strange description).
 
-This tool will automatically download the latest version for linux (be it plexpass or public version) and if you ask it to, install it for you.
+This tool will automatically download the latest version for linux (Using plexpass or public version) and if you **kindly ask**, also install it for you.
 
 # Installation
 
@@ -12,17 +13,18 @@ It's fairly easy, but let's take it step by step (if it seems too much, skip to 
 
 ####Using wget and unzip
 
-You can either just download it as a [zip file](https://github.com/mrworf/plexupdate/archive/master.zip) and unzip it on your server.
+You can either download it as a [zip file](https://github.com/mrworf/plexupdate/archive/master.zip) and unzip it on your server.
 ```
 wget https://github.com/mrworf/plexupdate/archive/master.zip && unzip master.zip && mv plexupdate-master plexupdate && rm master.zip
 ```
 Note that unzip is requered (`sudo apt-get install unzip`).
 
 ####Using git to clone (Recommended)
-Using git it way eaiser and recommended, if you ask me. 
+Using git is way eaiser and recommended, if you ask me. 
 ```
 git clone https://github.com/mrworf/plexupdate.git
 ```
+Note that git is requered (`sudo apt-get install git-all`)
 
 The main benefit with git clone is that you can update to latest version very easily. *Said in another way*: Auto update only works, if you've done a git clone.
 
