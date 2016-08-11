@@ -4,15 +4,29 @@ Plex Update is a BASH script which simplifies the life of headless Linux Plex Me
 
 This tool will automatically download the latest version for linux (be it plexpass or public version) and if you ask it to, install it for you.
 
-# installation
+# Installation
 
 It's fairly easy, but let's take it step by step (if it seems too much, skip to the end for a short version)
 
-## 1. getting the code
+## 1. Getting the code
 
-You can either just download it as a [zip file](https://github.com/mrworf/plexupdate/archive/master.zip) and unzip it on your server, or you can use git to clone it ( git clone https://github.com/mrworf/plexupdate.git ). The main benefit with git clone is that you can update to latest version very easily. 
+####Using wget and unzip
 
-## 2. setting it up
+You can either just download it as a [zip file](https://github.com/mrworf/plexupdate/archive/master.zip) and unzip it on your server.
+```
+wget https://github.com/mrworf/plexupdate/archive/master.zip && unzip master.zip && mv plexupdate-master plexupdate && rm master.zip
+```
+Note that unzip is requered (`sudo apt-get install unzip`).
+
+####Using git to clone (Recommended)
+Using git it way eaiser and recommended, if you ask me. 
+```
+git clone https://github.com/mrworf/plexupdate.git
+```
+
+The main benefit with git clone is that you can update to latest version very easily. *Said in another way*: Auto update only works, if you've done a git clone.
+
+## 2. Setting it up
 
 plexupdate.sh looks for a file named `.plexupdate` located in your home directory. Please note that I'm referring to the home directory of the user who is running the plexupdate.sh ... If that user is someone else (root for instance) you'll need to make sure that user has the config file set up properly as well.
 
@@ -26,7 +40,7 @@ DOWNLOADDIR="/a/folder/to/save/the/files/in"
 
 Obviously you need to change these three so they match your account information. And if you don't put anything as a `DOWNLOADDIR`, the tool will use the folder you're executing the script from. So take care.
 
-## 3. advanced options
+## 3. Advanced options
 
 You can point out a different file than ```.plexupdate``` by providing it as the last argument to the script. It HAS to be the LAST argument, or it will be ignored. Any options set by the config file can be overriden with commandline options.
 
@@ -60,17 +74,19 @@ It seems quite popular to run this via crontab, which is fine. But the behavior 
 
 Starting today, the ```-C``` option is deprecated and will give an error to check the docs. The new version is ```-c``` and will make sure that only fatal errors are reported back via the exit code. No more 2, 3, 4 or 5 exitcodes. They are converted into 0. Combining this option with ```-q``` will hide any and all non-essential output from the script as well. Only error messages are emitted, so if it fails, you'll know why.
 
-## 4. command-line
+Take a look at the Wiki, and find the article called [Running plexupdate daily as a systemd timer](https://github.com/mrworf/plexupdate/wiki/Running-plexupdate-daily-as-a-systemd-timer).
+
+## 4. Command-line
 
 I'm going to be lazy, just run the tool with `-h` and you'll find out what you can do. It will basically be a mirror of what section 3 just stated :-)
 
-# running it
+# Running it
 
 It's very simple, just execute the tool once configured. It will complain if you've forgotten to set it up. If you want to use the autoinstall (-a option or `AUTOINSTALL=YES` is set), you must run as root or use sudo when executing or plexupdate.sh will stop and give you an error.
 
 Overall it tries to give you hints regarding why it isn't doing what you expected it to.
 
-# trivia
+# Trivia
 
 - "kaka" is swedish for "cookie"
 
