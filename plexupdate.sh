@@ -118,12 +118,6 @@ else
 	fi
 fi
 
-if [ ! "${RELEASE}" = "" ]; then
-	echo "ERROR: RELEASE keyword is deprecated and should be removed from .plexupdate" >&2
-	echo "       Use DISTRO and BUILD instead to manually select what to install (check README.md)" >&2
-	exit 255
-fi
-
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in.json
 URL_DOWNLOAD=https://plex.tv/api/downloads/1.json?channel=plexpass
@@ -174,7 +168,7 @@ do
                 (-h) usage;;
                 (-a) AUTOINSTALL=yes;;
                 (-c) CRON=yes;;
-		(-C) echo "ERROR: CRON option has changed, please review README.md" 1>&2; cronexit 255;;
+		(-C) echo "ERROR: CRON option has changed, please review README.md" >&2; cronexit 255;;
                 (-d) AUTODELETE=yes;;
                 (-f) FORCE=yes;;
                 (-l) LISTOPTS=yes;;
@@ -182,29 +176,31 @@ do
                 (-q) QUIET=yes;;
                 (-r) PRINT_URL=yes;;
                 (-s) AUTOSTART=yes;;
-		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" 1>&2; cronexit 1;;
+		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" >&2; cronexit 255;;
                 (-u) AUTOUPDATE=yes;;
                 (-U) AUTOUPDATE=no;;
                 (--) ;;
-                (-*) echo "Error: unrecognized option $1" 1>&2; usage; cronexit 1;;
+                (-*) echo "ERROR: unrecognized option $1" >&2; usage; cronexit 1;;
                 (*)  break;;
 	esac
 	shift
 done
 
 if [ "${KEEP}" = "yes" ]; then
-	echo "ERROR: KEEP is deprecated" >&2
-	cronexit 1
+	echo "ERROR: KEEP is deprecated and should be removed from .plexupdate" >&2
+	cronexit 255
 fi
 
 if [ "${SILENT}" = "yes" ]; then
-	echo "ERROR: SILENT option has been removed, please use QUIET instead" >&2
-	cronexit 1
+	echo "ERROR: SILENT option has been removed and should be removed from .plexupdate" >&2
+	echo "       Use QUIET or -q instead" >&2
+	cronexit 255
 fi
 
-# send all stdout to /dev/null
-if [ "${QUIET}" = "yes" ]; then
-	exec 5>&1 >/dev/null
+if [ ! -z "${RELEASE}" ]; then
+	echo "ERROR: RELEASE keyword is deprecated and should be removed from .plexupdate" >&2
+	echo "       Use DISTRO and BUILD instead to manually select what to install (check README.md)" >&2
+	cronexit 255
 fi
 
 if [ "${AUTOUPDATE}" == "yes" ]; then
@@ -214,18 +210,18 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 	fi
 	pushd "$(dirname "$0")" >/dev/null
 	if [ ! -d .git ]; then
-		echo "Error: This is not a git repository, auto update only works if you've done a git clone" >&2
+		echo "ERROR: This is not a git repository, auto update only works if you've done a git clone" >&2
 		cronexit 1
 	fi
 	git status | grep "git commit -a" >/dev/null 2>/dev/null
 	if [ $? -eq 0 ]; then
-		echo "Error: You have made changes to the script, cannot auto update" >&2
+		echo "ERROR: You have made changes to the script, cannot auto update" >&2
 		cronexit 1
 	fi
 	echo -n "Auto updating..."
 	git pull >/dev/null
 	if [ $? -ne 0 ]; then
-		echo 'Error: Unable to update git, try running "git pull" manually to see what is wrong' >&2
+		echo 'ERROR: Unable to update git, try running "git pull" manually to see what is wrong' >&2
 		cronexit 1
 	fi
 	echo "OK"
@@ -243,7 +239,7 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 		if [ -f "$0" ]; then
 			/bin/bash "$0" -U ${ALLARGS[@]}
 		else
-			echo "Error: Unable to relaunch, couldn't find $0" >&2
+			echo "ERROR: Unable to relaunch, couldn't find $0" >&2
 			cronexit 1
 		fi
 	else
@@ -254,14 +250,14 @@ fi
 
 # Sanity check
 if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ] && [ ! -f /tmp/kaka ]; then
-	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
+	echo "ERROR: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
 	cronexit 1
 fi
 
 if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
 	id | grep -i 'uid=0(' 2>&1 >/dev/null
 	if [ $? -ne 0 ]; then
-		echo "Error: You need to be root to use autoinstall/autostart option." >&2
+		echo "ERROR: You need to be root to use autoinstall/autostart option." >&2
 		cronexit 1
 	fi
 fi
@@ -270,7 +266,7 @@ fi
 # Remove any ~ or other oddness in the path we're given
 DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } ; if [ $? -eq 0 ]; then pwd; fi)"
 if [ -z "${DOWNLOADDIR}" ]; then
-	echo "Error: Download directory does not exist or is not a directory" >&2
+	echo "ERROR: Download directory does not exist or is not a directory" >&2
 	cronexit 1
 fi
 
