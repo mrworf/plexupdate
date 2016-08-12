@@ -66,9 +66,8 @@ DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
 # Sanity, make sure wget is in our path...
-wget >/dev/null 2>/dev/null
-if [ $? -eq 127 ]; then
-	echo "Error: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
+if hash wget 2>/dev/null; then
+	echo "ERROR: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
 	exit 1
 fi
 
@@ -209,9 +208,8 @@ if [ "${QUIET}" = "yes" ]; then
 fi
 
 if [ "${AUTOUPDATE}" == "yes" ]; then
-	git >/dev/null 2>/dev/null
-	if [ $? -eq 127 ]; then
-		echo "Error: You need to have git installed for this to work" >&2
+	if hash git 2>/dev/null; then
+		echo "ERROR: You need to have git installed for this to work" >&2
 		cronexit 1
 	fi
 	pushd "$(dirname "$0")" >/dev/null
