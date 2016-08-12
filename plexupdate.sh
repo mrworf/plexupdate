@@ -125,8 +125,9 @@ URL_DOWNLOAD_PUBLIC=https://plex.tv/api/downloads/1.json
 
 cronexit() {
 	# Don't give anything but true error codes if in CRON mode
+	rawexit=$1
 	if [ "${CRON}" = "yes" -a $1 -gt 1 -a $1 -lt 255 ]; then
-		cronexit 0
+		exit 0
 	fi
 	exit $1
 }
@@ -201,6 +202,15 @@ if [ ! -z "${RELEASE}" ]; then
 	echo "ERROR: RELEASE keyword is deprecated and should be removed from .plexupdate" >&2
 	echo "       Use DISTRO and BUILD instead to manually select what to install (check README.md)" >&2
 	cronexit 255
+fi
+
+if [ "${CRON}" = "yes" -a "${QUIET}" = "no" ]; then
+	# If running in cron mode, redirect STDOUT to temporary file
+	stdoutlog="$(mktemp)"
+	exec 3>&1 >"${stdoutlog}"
+elif [ "${QUIET}" = "yes" ]; then
+	# Redirect STDOUT to dev null. Use >&3 if you really, really, REALLY need to print to STDOUT
+	exec 3>&1 > /dev/null
 fi
 
 if [ "${AUTOUPDATE}" = "yes" ]; then
@@ -321,6 +331,11 @@ keypair() {
 
 # Setup an cronexit handler so we cleanup
 function cleanup {
+	if [ "${CRON}" = yes -a "${rawexit}" -ne 5 -a -f "${stdoutlog}" ]; then
+		exec 1>&3
+		cat "${stdoutlog}"
+	fi
+	rm "${stdoutlog}" 2>/dev/null >/dev/null
 	rm /tmp/postdata 2>/dev/null >/dev/null
 	rm /tmp/raw 2>/dev/null >/dev/null
 	rm /tmp/failcause 2>/dev/null >/dev/null
@@ -398,7 +413,11 @@ if [ "${LISTOPTS}" = "yes" ]; then
 		elif [ -z "$BUILD" ]; then
 			BUILD="$X"
 		else
-			printf "%-12s %-30s %s\n" "$DISTRO" "$BUILD" "$X"
+			if [ "${QUIET}" = "yes" ]; then
+				printf "%-12s %-30s %s\n" "$DISTRO" "$BUILD" "$X" >&3
+			else
+				printf "%-12s %-30s %s\n" "$DISTRO" "$BUILD" "$X"
+			fi
 			BUILD=
 			DISTRO=
 		fi
@@ -427,7 +446,7 @@ fi
 
 if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
-    echo "${DOWNLOAD}" >&5
+    echo "${DOWNLOAD}" >&3
   else
     echo "${DOWNLOAD}"
   fi
