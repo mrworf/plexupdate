@@ -66,7 +66,7 @@ DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
 # Sanity, make sure wget is in our path...
-if hash wget 2>/dev/null; then
+if ! hash wget 2>/dev/null; then
 	echo "ERROR: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
 	exit 1
 fi
@@ -204,7 +204,7 @@ if [ ! -z "${RELEASE}" ]; then
 fi
 
 if [ "${AUTOUPDATE}" = "yes" ]; then
-	if hash git 2>/dev/null; then
+	if ! hash git 2>/dev/null; then
 		echo "ERROR: You need to have git installed for this to work" >&2
 		cronexit 1
 	fi
@@ -500,7 +500,7 @@ if [ "${AUTOSTART}" = "yes" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	# Check for systemd
-	if [ -f "/bin/systemctl" ]; then
+	if ! hash systemctl 2>/dev/null; then
 		systemctl start plexmediaserver.service
 	else
 		/sbin/service plexmediaserver start
