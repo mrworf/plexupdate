@@ -73,7 +73,7 @@ fi
 
 # Allow manual control of configfile
 HASCFG="${@: -1}"
-if [ ! "${HASCFG}" = "" -a ! "${HASCFG:0:1}" = "-" ]; then
+if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" ]; then
 	if [ -f "${HASCFG}" ]; then
 		source "${HASCFG}"
 	else
@@ -83,7 +83,7 @@ if [ ! "${HASCFG}" = "" -a ! "${HASCFG:0:1}" = "-" ]; then
 else
 	# Load settings from config file if it exists
 	# Also, respect SUDO_USER and try that first
-	if [ "${SUDO_USER}" != "" ]; then
+	if [ ! -z "${SUDO_USER}" ]; then
 		# Make sure nothing bad comes from this (since we use eval)
 		ERROR=0
 		if   [[ $SUDO_USER == *";"* ]]; then ERROR=1 ; # Allows more commands
@@ -101,11 +101,11 @@ else
 
 		# Try using original user's config
 		CONFIGDIR="$( eval cd ~${SUDO_USER} 2>/dev/null && pwd )"
-		if [ "${CONFIGDIR}" == "" ]; then
+		if [ -z "${CONFIGDIR}" ]; then
 			echo "WARNING: SUDO_USER \"${SUDO_USER}\" does not have a valid home directory, ignoring." >&2
 		fi
 
-		if [ "${CONFIGDIR}" != "" -a -f "${CONFIGDIR}/.plexupdate" ]; then
+		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
 			#echo "INFO: Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate"
 			source "${CONFIGDIR}/.plexupdate"
 		elif [ -f ~/.plexupdate ]; then
@@ -203,7 +203,7 @@ if [ ! -z "${RELEASE}" ]; then
 	cronexit 255
 fi
 
-if [ "${AUTOUPDATE}" == "yes" ]; then
+if [ "${AUTOUPDATE}" = "yes" ]; then
 	if hash git 2>/dev/null; then
 		echo "ERROR: You need to have git installed for this to work" >&2
 		cronexit 1
@@ -249,12 +249,12 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 fi
 
 # Sanity check
-if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ] && [ ! -f /tmp/kaka ]; then
+if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ] && [ ! -f /tmp/kaka ]; then
 	echo "ERROR: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
 	cronexit 1
 fi
 
-if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
+if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ]; then
 	id | grep -i 'uid=0(' 2>&1 >/dev/null
 	if [ $? -ne 0 ]; then
 		echo "ERROR: You need to be root to use autoinstall/autostart option." >&2
@@ -270,8 +270,8 @@ if [ -z "${DOWNLOADDIR}" ]; then
 	cronexit 1
 fi
 
-if [ "${DISTRO_INSTALL}" == "" ]; then
-	if [ "${DISTRO}" == "" -a "${BUILD}" == "" ]; then
+if [ -z "${DISTRO_INSTALL}" ]; then
+	if [ -z "${DISTRO}" -a -z "${BUILD}" ]; then
 		# Detect if we're running on redhat instead of ubuntu
 		if [ -f /etc/redhat-release ]; then
 			REDHAT=yes
@@ -284,12 +284,12 @@ if [ "${DISTRO_INSTALL}" == "" ]; then
 			DISTRO="ubuntu"
 			DISTRO_INSTALL="${DEBIAN_INSTALL}"
 		fi
-	elif [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
+	elif [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
 		echo "ERROR: You must define both DISTRO and BUILD" >&2
 		cronexit 255
 	fi
 else
-	if [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
+	if [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
 		echo "Using custom DISTRO_INSTALL requires custom DISTRO and BUILD too" >&2
 		cronexit 255
 	fi
@@ -343,8 +343,7 @@ if [ -f /tmp/kaka_token ]; then
 	TOKEN=$(cat /tmp/kaka_token)
 fi
 
-# If user wants, we skip authentication, but only if previous auth exists
-if [ "${PUBLIC}" == "no" ]; then
+if [ "${PUBLIC}" = "no" ]; then
         echo -n "Authenticating..."
 
 	# Clean old session
@@ -386,7 +385,7 @@ elif [ "$PUBLIC" != "no" ]; then
 	URL_DOWNLOAD=${URL_DOWNLOAD_PUBLIC}
 fi
 
-if [ "${LISTOPTS}" == "yes" ]; then
+if [ "${LISTOPTS}" = "yes" ]; then
 	opts="$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -oe '"label"[^}]*' | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
 	eval opts=( "DISTRO" "BUILD" "DESCRIPTION" "======" "=====" "==============================================" $opts )
 
@@ -394,9 +393,9 @@ if [ "${LISTOPTS}" == "yes" ]; then
 	DISTRO=
 
 	for X in "${opts[@]}" ; do
-		if [ "$DISTRO" == "" ]; then
+		if [ -z "$DISTRO" ]; then
 			DISTRO="$X"
-		elif [ "$BUILD" == "" ]; then
+		elif [ -z "$BUILD" ]; then
 			BUILD="$X"
 		else
 			printf "%-12s %-30s %s\n" "$DISTRO" "$BUILD" "$X"
@@ -413,9 +412,9 @@ fi
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
 DOWNLOAD=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -i "\"build\":\"${BUILD}\"" | grep -m1 -ioe 'https://[^\"]*' )
 
-echo -e "OK"
+echo "OK"
 
-if [ "${DOWNLOAD}" == "" ]; then
+if [ -z "${DOWNLOAD}" ]; then
 	echo "ERROR: Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)" >&2
 	cronexit 3
 fi
@@ -426,7 +425,7 @@ if [ $? -ne 0 ]; then
 	cronexit 3
 fi
 
-if [ "${PRINT_URL}" == "yes" ]; then
+if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
     echo "${DOWNLOAD}" >&5
   else
@@ -442,7 +441,7 @@ SKIP_DOWNLOAD="no"
 if [ "${REDHAT}" != "yes" ]; then
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 else
-	if [ "${AUTOSTART}" == "no" ]; then
+	if [ "${AUTOSTART}" = "no" ]; then
 		echo "WARNING: Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 	fi
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
@@ -460,7 +459,7 @@ if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
 	SKIP_DOWNLOAD="yes"
 fi
 
-if [ "${SKIP_DOWNLOAD}" == "no" ]; then
+if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 	        echo "Note! File exists, but asked to overwrite with new copy"
 	fi
@@ -475,7 +474,7 @@ if [ "${SKIP_DOWNLOAD}" == "no" ]; then
 	echo "OK"
 fi
 
-if [ ! "${PLEXSERVER}" = "" -a "${AUTOINSTALL}" == "yes" ]; then
+if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 	# Check if server is in-use before continuing (thanks @AltonV, @hakong and @sufr3ak)...
 	if ! wget --no-check-certificate -q -O - https://${PLEXSERVER}:32400/status/sessions | grep -q '<MediaContainer size="0">' ; then
 		echo "Server ${PLEXSERVER} is currently being used by one or more users, skipping installation. Please run again later"
@@ -483,12 +482,12 @@ if [ ! "${PLEXSERVER}" = "" -a "${AUTOINSTALL}" == "yes" ]; then
 	fi
 fi
 
-if [ "${AUTOINSTALL}" == "yes" ]; then
+if [ "${AUTOINSTALL}" = "yes" ]; then
 	sudo ${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 fi
 
-if [ "${AUTODELETE}" == "yes" ]; then
-	if [ "${AUTOINSTALL}" == "yes" ]; then
+if [ "${AUTODELETE}" = "yes" ]; then
+	if [ "${AUTOINSTALL}" = "yes" ]; then
 		rm -rf "${DOWNLOADDIR}/${FILENAME}"
 		echo "Deleted \"${FILENAME}\""
 	else
@@ -496,8 +495,8 @@ if [ "${AUTODELETE}" == "yes" ]; then
 	fi
 fi
 
-if [ "${AUTOSTART}" == "yes" ]; then
-	if [ "${REDHAT}" == "no" ]; then
+if [ "${AUTOSTART}" = "yes" ]; then
+	if [ "${REDHAT}" = "no" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	# Check for systemd
