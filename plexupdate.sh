@@ -31,7 +31,7 @@
 ####################################################################
 # Quick-check before we allow bad things to happen
 if [ -z "${BASH_VERSINFO}" ]; then
-  echo "ERROR: You must execute this script with BASH"
+  echo "ERROR: You must execute this script with BASH" >&2
   exit 255
 fi
 ####################################################################
@@ -141,7 +141,7 @@ usage() {
 	echo "    -c Cron mode, only fatal errors return non-zero cronexit code"
         echo "    -d Auto delete after auto install"
         echo "    -f Force download even if it's the same version or file"
-        echo "       already exists (WILL NOT OVERWRITE)"
+        echo "       already exists"
         echo "    -h This help"
         echo "    -l List available builds and distros"
         echo "    -p Public Plex Media Server version"
