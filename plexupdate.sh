@@ -31,7 +31,7 @@
 ####################################################################
 # Quick-check before we allow bad things to happen
 if [ -z "${BASH_VERSINFO}" ]; then
-  echo "ERROR: You must execute this script with BASH"
+  echo "ERROR: You must execute this script with BASH" >&2
   exit 255
 fi
 ####################################################################
@@ -66,15 +66,14 @@ DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
 # Sanity, make sure wget is in our path...
-wget >/dev/null 2>/dev/null
-if [ $? -eq 127 ]; then
-	echo "Error: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
+if ! hash wget 2>/dev/null; then
+	echo "ERROR: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
 	exit 1
 fi
 
 # Allow manual control of configfile
 HASCFG="${@: -1}"
-if [ ! "${HASCFG}" = "" -a ! "${HASCFG:0:1}" = "-" ]; then
+if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" ]; then
 	if [ -f "${HASCFG}" ]; then
 		source "${HASCFG}"
 	else
@@ -84,7 +83,7 @@ if [ ! "${HASCFG}" = "" -a ! "${HASCFG:0:1}" = "-" ]; then
 else
 	# Load settings from config file if it exists
 	# Also, respect SUDO_USER and try that first
-	if [ "${SUDO_USER}" != "" ]; then
+	if [ ! -z "${SUDO_USER}" ]; then
 		# Make sure nothing bad comes from this (since we use eval)
 		ERROR=0
 		if   [[ $SUDO_USER == *";"* ]]; then ERROR=1 ; # Allows more commands
@@ -102,11 +101,11 @@ else
 
 		# Try using original user's config
 		CONFIGDIR="$( eval cd ~${SUDO_USER} 2>/dev/null && pwd )"
-		if [ "${CONFIGDIR}" == "" ]; then
+		if [ -z "${CONFIGDIR}" ]; then
 			echo "WARNING: SUDO_USER \"${SUDO_USER}\" does not have a valid home directory, ignoring." >&2
 		fi
 
-		if [ "${CONFIGDIR}" != "" -a -f "${CONFIGDIR}/.plexupdate" ]; then
+		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
 			#echo "INFO: Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate"
 			source "${CONFIGDIR}/.plexupdate"
 		elif [ -f ~/.plexupdate ]; then
@@ -119,12 +118,6 @@ else
 	fi
 fi
 
-if [ ! "${RELEASE}" = "" ]; then
-	echo "ERROR: RELEASE keyword is deprecated and should be removed from .plexupdate" >&2
-	echo "       Use DISTRO and BUILD instead to manually select what to install (check README.md)" >&2
-	exit 255
-fi
-
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in.json
 URL_DOWNLOAD=https://plex.tv/api/downloads/1.json?channel=plexpass
@@ -132,8 +125,9 @@ URL_DOWNLOAD_PUBLIC=https://plex.tv/api/downloads/1.json
 
 cronexit() {
 	# Don't give anything but true error codes if in CRON mode
+	RAWEXIT=$1
 	if [ "${CRON}" = "yes" -a $1 -gt 1 -a $1 -lt 255 ]; then
-		cronexit 0
+		exit 0
 	fi
 	exit $1
 }
@@ -148,7 +142,7 @@ usage() {
 	echo "    -c Cron mode, only fatal errors return non-zero cronexit code"
         echo "    -d Auto delete after auto install"
         echo "    -f Force download even if it's the same version or file"
-        echo "       already exists (WILL NOT OVERWRITE)"
+        echo "       already exists"
         echo "    -h This help"
         echo "    -l List available builds and distros"
         echo "    -p Public Plex Media Server version"
@@ -175,7 +169,7 @@ do
                 (-h) usage;;
                 (-a) AUTOINSTALL=yes;;
                 (-c) CRON=yes;;
-		(-C) echo "ERROR: CRON option has changed, please review README.md" 1>&2; cronexit 255;;
+		(-C) echo "ERROR: CRON option has changed, please review README.md" >&2; cronexit 255;;
                 (-d) AUTODELETE=yes;;
                 (-f) FORCE=yes;;
                 (-l) LISTOPTS=yes;;
@@ -183,51 +177,61 @@ do
                 (-q) QUIET=yes;;
                 (-r) PRINT_URL=yes;;
                 (-s) AUTOSTART=yes;;
-		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" 1>&2; cronexit 1;;
+		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" >&2; cronexit 255;;
                 (-u) AUTOUPDATE=yes;;
                 (-U) AUTOUPDATE=no;;
                 (--) ;;
-                (-*) echo "Error: unrecognized option $1" 1>&2; usage; cronexit 1;;
+                (-*) echo "ERROR: unrecognized option $1" >&2; usage; cronexit 1;;
                 (*)  break;;
 	esac
 	shift
 done
 
 if [ "${KEEP}" = "yes" ]; then
-	echo "ERROR: KEEP is deprecated" >&2
-	cronexit 1
+	echo "ERROR: KEEP is deprecated and should be removed from .plexupdate" >&2
+	cronexit 255
 fi
 
 if [ "${SILENT}" = "yes" ]; then
-	echo "ERROR: SILENT option has been removed, please use QUIET instead" >&2
-	cronexit 1
+	echo "ERROR: SILENT option has been removed and should be removed from .plexupdate" >&2
+	echo "       Use QUIET or -q instead" >&2
+	cronexit 255
 fi
 
-# send all stdout to /dev/null
-if [ "${QUIET}" = "yes" ]; then
-	exec 5>&1 >/dev/null
+if [ ! -z "${RELEASE}" ]; then
+	echo "ERROR: RELEASE keyword is deprecated and should be removed from .plexupdate" >&2
+	echo "       Use DISTRO and BUILD instead to manually select what to install (check README.md)" >&2
+	cronexit 255
 fi
 
-if [ "${AUTOUPDATE}" == "yes" ]; then
-	git >/dev/null 2>/dev/null
-	if [ $? -eq 127 ]; then
-		echo "Error: You need to have git installed for this to work" >&2
+if [ "${CRON}" = "yes" -a "${QUIET}" = "no" ]; then
+	# If running in cron mode, redirect STDOUT to temporary file
+	STDOUTLOG="$(mktemp)"
+	exec 3>&1 >"${STDOUTLOG}"
+elif [ "${QUIET}" = "yes" ]; then
+	# Redirect STDOUT to dev null. Use >&3 if you really, really, REALLY need to print to STDOUT
+	exec 3>&1 > /dev/null
+fi
+
+if [ "${AUTOUPDATE}" = "yes" ]; then
+	if ! hash git 2>/dev/null; then
+		echo "ERROR: You need to have git installed for this to work" >&2
 		cronexit 1
 	fi
 	pushd "$(dirname "$0")" >/dev/null
 	if [ ! -d .git ]; then
-		echo "Error: This is not a git repository, auto update only works if you've done a git clone" >&2
+		echo "ERROR: This is not a git repository, auto update only works if you've done a git clone" >&2
 		cronexit 1
 	fi
 	git status | grep "git commit -a" >/dev/null 2>/dev/null
 	if [ $? -eq 0 ]; then
-		echo "Error: You have made changes to the script, cannot auto update" >&2
+		echo "ERROR: You have made changes to the script, cannot auto update" >&2
 		cronexit 1
 	fi
 	echo -n "Auto updating..."
 	git pull >/dev/null
 	if [ $? -ne 0 ]; then
-		echo 'Error: Unable to update git, try running "git pull" manually to see what is wrong' >&2
+		echo 'ERROR: Unable to update git, try running "git pull" manually to see what is wrong' >&2
 		cronexit 1
 	fi
 	echo "OK"
@@ -245,7 +249,7 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 		if [ -f "$0" ]; then
 			/bin/bash "$0" -U ${ALLARGS[@]}
 		else
-			echo "Error: Unable to relaunch, couldn't find $0" >&2
+			echo "ERROR: Unable to relaunch, couldn't find $0" >&2
 			cronexit 1
 		fi
 	else
@@ -255,29 +259,29 @@ if [ "${AUTOUPDATE}" == "yes" ]; then
 fi
 
 # Sanity check
-if [ "${EMAIL}" == "" -o "${PASS}" == "" ] && [ "${PUBLIC}" == "no" ] && [ ! -f /tmp/kaka ]; then
-	echo "Error: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
+if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ] && [ ! -f /tmp/kaka ]; then
+	echo "ERROR: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
 	cronexit 1
 fi
 
-if [ "${AUTOINSTALL}" == "yes" -o "${AUTOSTART}" == "yes" ]; then
+if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ]; then
 	id | grep -i 'uid=0(' 2>&1 >/dev/null
 	if [ $? -ne 0 ]; then
-		echo "Error: You need to be root to use autoinstall/autostart option." >&2
+		echo "ERROR: You need to be root to use autoinstall/autostart option." >&2
 		cronexit 1
 	fi
 fi
 
 
 # Remove any ~ or other oddness in the path we're given
-DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } ; if [ $? -eq 0 ]; then pwd; fi)"
-if [ -z "${DOWNLOADDIR}" ]; then
-	echo "Error: Download directory does not exist or is not a directory" >&2
+DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } && pwd)"
+if [ ! -d "${DOWNLOADDIR}" ]; then
+	echo "ERROR: Download directory does not exist or is not a directory" >&2
 	cronexit 1
 fi
 
-if [ "${DISTRO_INSTALL}" == "" ]; then
-	if [ "${DISTRO}" == "" -a "${BUILD}" == "" ]; then
+if [ -z "${DISTRO_INSTALL}" ]; then
+	if [ -z "${DISTRO}" -a -z "${BUILD}" ]; then
 		# Detect if we're running on redhat instead of ubuntu
 		if [ -f /etc/redhat-release ]; then
 			REDHAT=yes
@@ -290,12 +294,12 @@ if [ "${DISTRO_INSTALL}" == "" ]; then
 			DISTRO="ubuntu"
 			DISTRO_INSTALL="${DEBIAN_INSTALL}"
 		fi
-	elif [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
+	elif [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
 		echo "ERROR: You must define both DISTRO and BUILD" >&2
 		cronexit 255
 	fi
 else
-	if [ "${DISTRO}" == "" -o "${BUILD}" == "" ]; then
+	if [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
 		echo "Using custom DISTRO_INSTALL requires custom DISTRO and BUILD too" >&2
 		cronexit 255
 	fi
@@ -327,6 +331,11 @@ keypair() {
 
 # Setup an cronexit handler so we cleanup
 function cleanup {
+	if [ "${CRON}" = yes -a "${RAWEXIT}" -ne 5 -a -f "${STDOUTLOG}" ]; then
+		exec 1>&3
+		cat "${STDOUTLOG}"
+	fi
+	rm "${STDOUTLOG}" 2>/dev/null >/dev/null
 	rm /tmp/postdata 2>/dev/null >/dev/null
 	rm /tmp/raw 2>/dev/null >/dev/null
 	rm /tmp/failcause 2>/dev/null >/dev/null
@@ -349,8 +358,7 @@ if [ -f /tmp/kaka_token ]; then
 	TOKEN=$(cat /tmp/kaka_token)
 fi
 
-# If user wants, we skip authentication, but only if previous auth exists
-if [ "${PUBLIC}" == "no" ]; then
+if [ "${PUBLIC}" = "no" ]; then
         echo -n "Authenticating..."
 
 	# Clean old session
@@ -392,7 +400,7 @@ elif [ "$PUBLIC" != "no" ]; then
 	URL_DOWNLOAD=${URL_DOWNLOAD_PUBLIC}
 fi
 
-if [ "${LISTOPTS}" == "yes" ]; then
+if [ "${LISTOPTS}" = "yes" ]; then
 	opts="$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -oe '"label"[^}]*' | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
 	eval opts=( "DISTRO" "BUILD" "DESCRIPTION" "======" "=====" "==============================================" $opts )
 
@@ -400,12 +408,16 @@ if [ "${LISTOPTS}" == "yes" ]; then
 	DISTRO=
 
 	for X in "${opts[@]}" ; do
-		if [ "$DISTRO" == "" ]; then
+		if [ -z "$DISTRO" ]; then
 			DISTRO="$X"
-		elif [ "$BUILD" == "" ]; then
+		elif [ -z "$BUILD" ]; then
 			BUILD="$X"
 		else
-			printf "%-12s %-30s %s\n" "$DISTRO" "$BUILD" "$X"
+			if [ "${QUIET}" = "yes" ]; then
+				printf "%-12s %-30s %s\n" "$DISTRO" "$BUILD" "$X" >&3
+			else
+				printf "%-12s %-30s %s\n" "$DISTRO" "$BUILD" "$X"
+			fi
 			BUILD=
 			DISTRO=
 		fi
@@ -419,9 +431,9 @@ fi
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
 DOWNLOAD=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -i "\"build\":\"${BUILD}\"" | grep -m1 -ioe 'https://[^\"]*' )
 
-echo -e "OK"
+echo "OK"
 
-if [ "${DOWNLOAD}" == "" ]; then
+if [ -z "${DOWNLOAD}" ]; then
 	echo "ERROR: Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)" >&2
 	cronexit 3
 fi
@@ -432,9 +444,9 @@ if [ $? -ne 0 ]; then
 	cronexit 3
 fi
 
-if [ "${PRINT_URL}" == "yes" ]; then
+if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
-    echo "${DOWNLOAD}" >&5
+    echo "${DOWNLOAD}" >&3
   else
     echo "${DOWNLOAD}"
   fi
@@ -448,7 +460,7 @@ SKIP_DOWNLOAD="no"
 if [ "${REDHAT}" != "yes" ]; then
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 else
-	if [ "${AUTOSTART}" == "no" ]; then
+	if [ "${AUTOSTART}" = "no" ]; then
 		echo "WARNING: Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 	fi
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
@@ -466,7 +478,7 @@ if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
 	SKIP_DOWNLOAD="yes"
 fi
 
-if [ "${SKIP_DOWNLOAD}" == "no" ]; then
+if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 	        echo "Note! File exists, but asked to overwrite with new copy"
 	fi
@@ -481,7 +493,7 @@ if [ "${SKIP_DOWNLOAD}" == "no" ]; then
 	echo "OK"
 fi
 
-if [ ! "${PLEXSERVER}" = "" -a "${AUTOINSTALL}" == "yes" ]; then
+if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 	# Check if server is in-use before continuing (thanks @AltonV, @hakong and @sufr3ak)...
 	if ! wget --no-check-certificate -q -O - https://${PLEXSERVER}:32400/status/sessions | grep -q '<MediaContainer size="0">' ; then
 		echo "Server ${PLEXSERVER} is currently being used by one or more users, skipping installation. Please run again later"
@@ -489,12 +501,12 @@ if [ ! "${PLEXSERVER}" = "" -a "${AUTOINSTALL}" == "yes" ]; then
 	fi
 fi
 
-if [ "${AUTOINSTALL}" == "yes" ]; then
+if [ "${AUTOINSTALL}" = "yes" ]; then
 	sudo ${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 fi
 
-if [ "${AUTODELETE}" == "yes" ]; then
-	if [ "${AUTOINSTALL}" == "yes" ]; then
+if [ "${AUTODELETE}" = "yes" ]; then
+	if [ "${AUTOINSTALL}" = "yes" ]; then
 		rm -rf "${DOWNLOADDIR}/${FILENAME}"
 		echo "Deleted \"${FILENAME}\""
 	else
@@ -502,15 +514,20 @@ if [ "${AUTODELETE}" == "yes" ]; then
 	fi
 fi
 
-if [ "${AUTOSTART}" == "yes" ]; then
-	if [ "${REDHAT}" == "no" ]; then
-		echo "The AUTOSTART [-s] option may not be needed on your distribution."
+if [ "${AUTOSTART}" = "yes" ]; then
+	if [ "${REDHAT}" = "no" ]; then
+		echo "The AUTOSTART [-s] option may not be needed on your distribution." >&2
 	fi
 	# Check for systemd
-	if [ -f "/bin/systemctl" ]; then
+	if hash systemctl 2>/dev/null; then
 		systemctl start plexmediaserver.service
+	elif hash service 2>/dev/null; then
+		service plexmediaserver start
+	elif [ -x /etc/init.d/plexmediaserver ]; then
+		/etc/init.d/plexmediaserver start
 	else
-		/sbin/service plexmediaserver start
+		echo "ERROR: AUTOSTART was specified but no startup scripts were found for 'plexmediaserver'." >&2
+		cronexit 1
 	fi
 fi
 
