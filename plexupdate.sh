@@ -274,7 +274,7 @@ fi
 
 
 # Remove any ~ or other oddness in the path we're given
-DOWNLOADDIR="$(cd ${DOWNLOADDIR// /\\ } && pwd)"
+DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } && pwd)"
 if [ ! -d "${DOWNLOADDIR}" ]; then
 	echo "ERROR: Download directory does not exist or is not a directory" >&2
 	cronexit 1
