@@ -519,10 +519,15 @@ if [ "${AUTOSTART}" = "yes" ]; then
 		echo "The AUTOSTART [-s] option may not be needed on your distribution." >&2
 	fi
 	# Check for systemd
-	if ! hash systemctl 2>/dev/null; then
+	if hash systemctl 2>/dev/null; then
 		systemctl start plexmediaserver.service
+	elif hash service 2>/dev/null; then
+		service plexmediaserver start
+	elif [ -x /etc/init.d/plexmediaserver ]; then
+		/etc/init.d/plexmediaserver start
 	else
-		/sbin/service plexmediaserver start
+		echo "ERROR: AUTOSTART was specified but no startup scripts were found for 'plexmediaserver'." >&2
+		cronexit 1
 	fi
 fi
 
