@@ -516,7 +516,7 @@ fi
 
 if [ "${AUTOSTART}" = "yes" ]; then
 	if [ "${REDHAT}" = "no" ]; then
-		echo "The AUTOSTART [-s] option may not be needed on your distribution."
+		echo "The AUTOSTART [-s] option may not be needed on your distribution." >&2
 	fi
 	# Check for systemd
 	if ! hash systemctl 2>/dev/null; then
