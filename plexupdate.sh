@@ -275,7 +275,7 @@ fi
 
 # Remove any ~ or other oddness in the path we're given
 DOWNLOADDIR="$(cd ${DOWNLOADDIR// /\\ } && pwd)"
-if [ -z "${DOWNLOADDIR}" ]; then
+if [ ! -d "${DOWNLOADDIR}" ]; then
 	echo "ERROR: Download directory does not exist or is not a directory" >&2
 	cronexit 1
 fi
