@@ -51,6 +51,7 @@ PLEXSERVER=
 # Defaults
 # (aka "Advanced" settings, can be overriden with config file)
 FORCE=no
+FORCEALL=no
 PUBLIC=no
 AUTOINSTALL=no
 AUTODELETE=no
@@ -142,7 +143,8 @@ usage() {
 	echo "    -c Cron mode, only fatal errors return non-zero cronexit code"
         echo "    -d Auto delete after auto install"
         echo "    -f Force download even if it's the same version or file"
-        echo "       already exists"
+        echo "       already exists unless checksum passes"
+        echo "    -F Force download always"
         echo "    -h This help"
         echo "    -l List available builds and distros"
         echo "    -p Public Plex Media Server version"
@@ -157,7 +159,7 @@ usage() {
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfhlpqrSsuU"
+optstring="acCdfFhlpqrSsuU"
 getopt -T >/dev/null
 if [ $? -eq 4 ]; then
 	optstring="-o $optstring"
@@ -172,6 +174,7 @@ do
 		(-C) echo "ERROR: CRON option has changed, please review README.md" >&2; cronexit 255;;
                 (-d) AUTODELETE=yes;;
                 (-f) FORCE=yes;;
+                (-F) FORCEALL=yes;;
                 (-l) LISTOPTS=yes;;
                 (-p) PUBLIC=yes;;
                 (-q) QUIET=yes;;
@@ -429,8 +432,9 @@ fi
         echo -n "Finding download URL to download..."
 
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
-DOWNLOAD=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -i "\"build\":\"${BUILD}\"" | grep -m1 -ioe 'https://[^\"]*' )
-
+RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -i "\"build\":\"${BUILD}\"")
+DOWNLOAD=$(echo ${RELEASE} | grep -m1 -ioe 'https://[^\"]*')
+CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"checksum\"\:\"//')
 echo "OK"
 
 if [ -z "${DOWNLOAD}" ]; then
@@ -443,6 +447,8 @@ if [ $? -ne 0 ]; then
 	echo "ERROR: Failed to parse HTML, download cancelled." >&2
 	cronexit 3
 fi
+
+echo "${CHECKSUM}  ${FILENAME}" >${DOWNLOADDIR}/${FILENAME}.sha
 
 if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
@@ -465,32 +471,50 @@ else
 	fi
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
 fi
-if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
+
+if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
         echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
         cronexit 5
 fi
 
-if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
-        echo "File already exists (${FILENAME}), won't download."
-	if [ "${AUTOINSTALL}" != "yes" ]; then
-		cronexit 2
-	fi
-	SKIP_DOWNLOAD="yes"
+if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
+  if [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ]; then
+    echo "File already exists (${FILENAME}), won't download."
+    if [ "${AUTOINSTALL}" != "yes" ]; then
+      cronexit 2
+    fi
+    SKIP_DOWNLOAD="yes"
+  elif [ "${FORCEALL}" == "yes" ]; then
+    echo "Note! File exists, but asked to overwrite with new copy"
+  else
+    sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
+    if [ $? -ne 0 ]; then
+      echo "Note! File exists but fails checksum. Redownloading."
+    else
+      echo "File exists and checksum passes, won't redownload."
+      if [ "${AUTOINSTALL}" != "yes" ]; then
+        cronexit 2
+      fi
+      SKIP_DOWNLOAD="yes"
+    fi
+  fi
 fi
 
 if [ "${SKIP_DOWNLOAD}" = "no" ]; then
-	if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
-	        echo "Note! File exists, but asked to overwrite with new copy"
-	fi
-
 	echo -ne "Downloading release \"${FILENAME}\"..."
 	ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
 	CODE=$?
 	if [ ${CODE} -ne 0 ]; then
-		echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
-		cronexit ${CODE}
+    echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
+    cronexit ${CODE}
 	fi
-	echo "OK"
+ echo "OK"
+fi
+
+sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
+if [ $? -ne 0 ]; then
+  echo "Downloaded file corrupt. Try again."
+  cronexit 4
 fi
 
 if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
@@ -508,6 +532,8 @@ fi
 if [ "${AUTODELETE}" = "yes" ]; then
 	if [ "${AUTOINSTALL}" = "yes" ]; then
 		rm -rf "${DOWNLOADDIR}/${FILENAME}"
+    # Also delete the SHA1 file
+    rm -rf "${DOWNLOADDIR}/${FILENAME}.sha"
 		echo "Deleted \"${FILENAME}\""
 	else
 		echo "Will not auto delete without [-a] auto install"
