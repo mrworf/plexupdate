@@ -155,6 +155,32 @@ usage() {
         cronexit 0
 }
 
+running() {
+	local DATA="$(wget --no-check-certificate -q -O - https://$1:32400/status/sessions?X-Plex-Token=$2)"
+	echo "DATA: '${DATA}'"
+	local RET=$?
+	if [ ${RET} -eq 0 ]; then
+		if [ -z "${DATA}" ]; then
+			# Odd, but usually means noone is watching
+			return 1
+		fi
+		echo "${DATA}" | grep -q '<MediaContainer size="0">'
+		if [ $? -eq 1 ]; then
+			# not found means that one or more medias are being played
+			return 0
+		fi
+		return 1
+	elif [ ${RET} -eq 4 ]; then
+		# No response, assume not running
+		return 1
+	else
+		# We do not know what this means...
+		echo "WARN: Unknown response (${RET}) from server >>>" >&2
+		echo "${DATA}" >&2
+		return 0
+	fi
+}
+
 # Parse commandline
 ALLARGS=( "$@" )
 optstring="acCdfhlpqrSsuU"
@@ -495,7 +521,7 @@ fi
 
 if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 	# Check if server is in-use before continuing (thanks @AltonV, @hakong and @sufr3ak)...
-	if ! wget --no-check-certificate -q -O - https://${PLEXSERVER}:32400/status/sessions?X-Plex-Token=${TOKEN} | grep -q '<MediaContainer size="0">' ; then
+	if running ${PLEXSERVER} ${TOKEN} ; then
 		echo "Server ${PLEXSERVER} is currently being used by one or more users, skipping installation. Please run again later"
 		cronexit 6
 	fi
