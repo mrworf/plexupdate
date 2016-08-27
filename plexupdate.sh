@@ -528,7 +528,7 @@ if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 fi
 
 if [ "${AUTOINSTALL}" = "yes" ]; then
-	sudo ${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
+	${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 fi
 
 if [ "${AUTODELETE}" = "yes" ]; then
