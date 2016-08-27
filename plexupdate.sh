@@ -495,7 +495,7 @@ fi
 
 if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 	# Check if server is in-use before continuing (thanks @AltonV, @hakong and @sufr3ak)...
-	if ! wget --no-check-certificate -q -O - https://${PLEXSERVER}:32400/status/sessions | grep -q '<MediaContainer size="0">' ; then
+	if ! wget --no-check-certificate -q -O - https://${PLEXSERVER}:32400/status/sessions?X-Plex-Token=${TOKEN} | grep -q '<MediaContainer size="0">' ; then
 		echo "Server ${PLEXSERVER} is currently being used by one or more users, skipping installation. Please run again later"
 		cronexit 6
 	fi
