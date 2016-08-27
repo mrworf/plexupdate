@@ -60,6 +60,7 @@ AUTOSTART=no
 CRON=no
 QUIET=no
 ARCH=$(uname -m)
+IGNOREAUTOUPDATE=no
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="yum -y install"
@@ -207,13 +208,17 @@ do
                 (-s) AUTOSTART=yes;;
 		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" >&2; cronexit 255;;
                 (-u) AUTOUPDATE=yes;;
-                (-U) AUTOUPDATE=no;;
+                (-U) IGNOREAUTOUPDATE=yes;;
                 (--) ;;
                 (-*) echo "ERROR: unrecognized option $1" >&2; usage; cronexit 1;;
                 (*)  break;;
 	esac
 	shift
 done
+
+if [ "${IGNOREAUTOUPDATE}" = "yes" ]; then
+	AUTOUPDATE=no
+fi
 
 if [ "${KEEP}" = "yes" ]; then
 	echo "ERROR: KEEP is deprecated and should be removed from .plexupdate" >&2
@@ -264,14 +269,6 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 	fi
 	echo "OK"
 	popd >/dev/null
-
-	ALLARGS2=()
-	for A in ${ALLARGS[@]} ; do
-		if [ ! "${A}" = "-u" ]; then
-			ALLARGS2+=(${A})
-		fi
-	done
-	ALLARGS=("${ALLARGS2[@]}")
 
 	if ! type "$0" 2>/dev/null >/dev/null ; then
 		if [ -f "$0" ]; then
