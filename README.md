@@ -59,7 +59,9 @@ There are also a few additional options for the more enterprising user. Setting 
 - PUBLIC 
   The default behavior of plexupdate.sh is to download the PlexPass edition of Plex Media Center. Setting this option to `yes` will make it download the public version instead. If this is yes, then `EMAIL` and `PASS` is no longer needed.
 - FORCE 
-  Normally plexupdate.sh will avoid downloading a file it already has or if it's the same as the installed version. Using this option will force it to download again and, if you have AUTOINSTALL set, reinstall it.
+  Normally plexupdate.sh will avoid downloading a file it already has or if it's the same as the installed version. Using this option will force it to download again UNLESS the file already downloaded has the correct checksum. If you have AUTOINSTALL set, plexupdate.sh will then reinstall it.
+- FORCEALL
+  Using this option will force plexupdate.sh to override the checksum check and will download the file again, and if you have AUTOINSTALL set, will reinstall it.
 - PRINT_URL
   Authenticate, fetch the download URL, print it, and then exit.
 - DISTRO_INSTALL
