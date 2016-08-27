@@ -159,7 +159,6 @@ usage() {
 
 running() {
 	local DATA="$(wget --no-check-certificate -q -O - https://$1:32400/status/sessions?X-Plex-Token=$2)"
-	echo "DATA: '${DATA}'"
 	local RET=$?
 	if [ ${RET} -eq 0 ]; then
 		if [ -z "${DATA}" ]; then
