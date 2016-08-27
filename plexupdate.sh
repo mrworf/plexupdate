@@ -478,26 +478,26 @@ if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" -a "${FORCEA
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
-  if [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ]; then
-    echo "File already exists (${FILENAME}), won't download."
-    if [ "${AUTOINSTALL}" != "yes" ]; then
-      cronexit 2
-    fi
-    SKIP_DOWNLOAD="yes"
-  elif [ "${FORCEALL}" == "yes" ]; then
-    echo "Note! File exists, but asked to overwrite with new copy"
-  else
-    sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
-    if [ $? -ne 0 ]; then
-      echo "Note! File exists but fails checksum. Redownloading."
-    else
-      echo "File exists and checksum passes, won't redownload."
-      if [ "${AUTOINSTALL}" != "yes" ]; then
-        cronexit 2
-      fi
-      SKIP_DOWNLOAD="yes"
-    fi
-  fi
+	if [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ]; then
+		echo "File already exists (${FILENAME}), won't download."
+		if [ "${AUTOINSTALL}" != "yes" ]; then
+			cronexit 2
+		fi
+		SKIP_DOWNLOAD="yes"
+	elif [ "${FORCEALL}" == "yes" ]; then
+		echo "Note! File exists, but asked to overwrite with new copy"
+	else
+		sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
+		if [ $? -ne 0 ]; then
+			echo "Note! File exists but fails checksum. Redownloading."
+		else
+			echo "File exists and checksum passes, won't redownload."
+			if [ "${AUTOINSTALL}" != "yes" ]; then
+				cronexit 2
+			fi
+			SKIP_DOWNLOAD="yes"
+		fi
+	fi
 fi
 
 if [ "${SKIP_DOWNLOAD}" = "no" ]; then
@@ -505,16 +505,16 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
 	CODE=$?
 	if [ ${CODE} -ne 0 ]; then
-    echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
-    cronexit ${CODE}
+		echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
+		cronexit ${CODE}
 	fi
- echo "OK"
+	echo "OK"
 fi
 
 sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
 if [ $? -ne 0 ]; then
-  echo "Downloaded file corrupt. Try again."
-  cronexit 4
+	echo "Downloaded file corrupt. Try again."
+	cronexit 4
 fi
 
 if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
@@ -532,8 +532,8 @@ fi
 if [ "${AUTODELETE}" = "yes" ]; then
 	if [ "${AUTOINSTALL}" = "yes" ]; then
 		rm -rf "${DOWNLOADDIR}/${FILENAME}"
-    # Also delete the SHA1 file
-    rm -rf "${DOWNLOADDIR}/${FILENAME}.sha"
+		# Also delete the SHA1 file
+		rm -rf "${DOWNLOADDIR}/${FILENAME}.sha"
 		echo "Deleted \"${FILENAME}\""
 	else
 		echo "Will not auto delete without [-a] auto install"
