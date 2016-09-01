@@ -501,11 +501,17 @@ fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 	if [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ]; then
-		echo "File already exists (${FILENAME}), won't download."
-		if [ "${AUTOINSTALL}" != "yes" ]; then
-			cronexit 2
+		sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
+		if [ $? -eq 0 ]; then
+			echo "File already exists (${FILENAME}), won't download."
+			if [ "${AUTOINSTALL}" != "yes" ]; then
+				cronexit 2
+			fi
+			SKIP_DOWNLOAD="yes"
+		else
+			echo "File exists but fails checksum. Redownloading."
+			SKIP_DOWNLOAD="no"
 		fi
-		SKIP_DOWNLOAD="yes"
 	elif [ "${FORCEALL}" == "yes" ]; then
 		echo "Note! File exists, but asked to overwrite with new copy"
 	else
