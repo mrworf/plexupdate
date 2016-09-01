@@ -554,6 +554,11 @@ if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 fi
 
 if [ "${AUTOINSTALL}" = "yes" ]; then
+	if ! hash ldconfig 2>/dev/null && [ "${DISTRO}" = "ubuntu" ]; then
+		export PATH=$PATH:/sbin
+	fi
+	# no elif since DISTRO_INSTALL will produce error output for us
+
 	${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
 fi
 
