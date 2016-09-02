@@ -67,6 +67,10 @@ REDHAT_INSTALL="yum -y install"
 DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
+# Don't change or override or you may break the autoupdates
+VERSION=0.04
+SCRIPT_REPO_URL="https://raw.githubusercontent.com/aleritty/plexupdate/master/plexupdate.sh"
+
 # Sanity, make sure wget is in our path...
 if ! hash wget 2>/dev/null; then
 	echo "ERROR: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
@@ -218,6 +222,11 @@ done
 
 if [ "${IGNOREAUTOUPDATE}" = "yes" ]; then
 	AUTOUPDATE=no
+  gitversion=$(wget $SCRIPT_REPO_URL -O - 2>/dev/null | grep "^VERSION=")
+  echo
+  if [[ ${gitversion:8} > $VERSION ]];then
+      echo "INFO: The new version "${gitversion:8}" is available but you asked to skip the update"
+  fi
 fi
 
 if [ "${KEEP}" = "yes" ]; then
@@ -247,40 +256,54 @@ elif [ "${QUIET}" = "yes" ]; then
 fi
 
 if [ "${AUTOUPDATE}" = "yes" ]; then
-	if ! hash git 2>/dev/null; then
-		echo "ERROR: You need to have git installed for this to work" >&2
-		cronexit 1
-	fi
-	pushd "$(dirname "$0")" >/dev/null
-	if [ ! -d .git ]; then
-		echo "ERROR: This is not a git repository, auto update only works if you've done a git clone" >&2
-		cronexit 1
-	fi
-	git status | grep "git commit -a" >/dev/null 2>/dev/null
-	if [ $? -eq 0 ]; then
-		echo "ERROR: You have made changes to the script, cannot auto update" >&2
-		cronexit 1
-	fi
-	echo -n "Auto updating..."
-	git pull >/dev/null
-	if [ $? -ne 0 ]; then
-		echo 'ERROR: Unable to update git, try running "git pull" manually to see what is wrong' >&2
-		cronexit 1
-	fi
-	echo "OK"
-	popd >/dev/null
+  gitversion=$(wget $SCRIPT_REPO_URL -O - 2>/dev/null | grep "^VERSION=")
+  echo
+  if [[ ${gitversion:8} > $VERSION ]];then
+      echo "The new version "${gitversion:8}" is available"
+      if $(wget $SCRIPT_REPO_URL -O "/tmp/plexupdatescripttemp" 2>/dev/null);then
+          # Write the user modified values to the new file (but please use only configuration file)
+          sed -i '-s/EMAIL=/EMAIL='$EMAIL'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/PASS=/PASS='$PASS'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s^DOWNLOADDIR="."^DOWNLOADDIR='$DOWNLOADDIR'^' "/tmp/plexupdatescripttemp"
+          sed -i '-s^PLEXSERVER=^PLEXSERVER='$PLEXSERVER'^' "/tmp/plexupdatescripttemp"
+          sed -i '-s/FORCE=no/FORCE='$FORCE'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/FORCEALL=no/FORCEALL='$FORCEALL'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/PUBLIC=no/PUBLIC='$PUBLIC'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/AUTOINSTALL=no/AUTOINSTALL='$AUTOINSTALL'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/AUTODELETE=no/AUTODELETE='$AUTODELETE'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/AUTOUPDATE=no/AUTOUPDATE='$AUTOUPDATE'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/AUTOSTART=no/AUTOSTART='$AUTOSTART'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/CRON=no/CRON='$CRON'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/QUIET=no/QUIET='$QUIET'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/ARCH=$(uname -m)/ARCH='$ARCH'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/IGNOREAUTOUPDATE=no/IGNOREAUTOUPDATE='$IGNOREAUTOUPDATE'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/REDHAT_INSTALL="yum -y install"/REDHAT_INSTALL='$REDHAT_INSTALL'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/DEBIAN_INSTALL="dpkg -i"/DEBIAN_INSTALL='$DEBIAN_INSTALL'/' "/tmp/plexupdatescripttemp"
+          sed -i '-s/DISTRO_INSTALL=""/DISTRO_INSTALL='$DISTRO_INSTALL'/' "/tmp/plexupdatescripttemp"
+          cp "/tmp/plexupdatescripttemp" "$0"
 
-	if ! type "$0" 2>/dev/null >/dev/null ; then
-		if [ -f "$0" ]; then
-			/bin/bash "$0" -U ${ALLARGS[@]}
-		else
-			echo "ERROR: Unable to relaunch, couldn't find $0" >&2
-			cronexit 1
-		fi
-	else
-		"$0" -U ${ALLARGS[@]}
-	fi
-	cronexit $?
+          chmod +x "$0"
+          echo "Script updated we need to relaunch it to apply the new version"
+          if ! type "$0" 2>/dev/null >/dev/null ; then
+            if [ -f "$0" ]; then
+              /bin/bash "$0" -U ${ALLARGS[@]}
+            else
+              echo "ERROR: Unable to relaunch, couldn't find $0" >&2
+              cronexit 1
+            fi
+          else
+            "$0" -U ${ALLARGS[@]}
+          fi
+      else
+          echo
+          echo "ERROR: Unable to download script $SCRIPT_REPO_URL"
+          echo
+      fi
+  else
+      echo "No update found, you have the latest version"
+  fi
+  echo
+  cronexit $?
 fi
 
 # Sanity check
