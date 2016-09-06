@@ -31,8 +31,8 @@
 ####################################################################
 # Quick-check before we allow bad things to happen
 if [ -z "${BASH_VERSINFO}" ]; then
-  echo "ERROR: You must execute this script with BASH" >&2
-  exit 255
+	echo "ERROR: You must execute this script with BASH" >&2
+	exit 255
 fi
 ####################################################################
 # Set these three settings to what you need, or create a .plexupdate file
@@ -384,7 +384,7 @@ if [ -f /tmp/kaka_token ]; then
 fi
 
 if [ "${PUBLIC}" = "no" ]; then
-        echo -n "Authenticating..."
+	echo -n "Authenticating..."
 
 	# Clean old session
 	rm /tmp/kaka 2>/dev/null
@@ -417,7 +417,8 @@ if [ "${PUBLIC}" = "no" ]; then
 	# Remove this, since it contains more information than we should leave hanging around
 	rm /tmp/failcause
 
-        echo "OK"
+	echo "OK"
+
 elif [ "$PUBLIC" != "no" ]; then
 	# It's a public version, so change URL and make doubly sure that cookies are empty
 	rm 2>/dev/null >/dev/null /tmp/kaka
@@ -451,7 +452,7 @@ if [ "${LISTOPTS}" = "yes" ]; then
 fi
 
 # Extract the URL for our release
-        echo -n "Finding download URL to download..."
+echo -n "Finding download URL to download..."
 
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
 RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
@@ -473,12 +474,12 @@ fi
 echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${DOWNLOADDIR}/${FILENAME}.sha"
 
 if [ "${PRINT_URL}" = "yes" ]; then
-  if [ "${QUIET}" = "yes" ]; then
-    echo "${DOWNLOAD}" >&3
-  else
-    echo "${DOWNLOAD}"
-  fi
-  cronexit 0
+	if [ "${QUIET}" = "yes" ]; then
+		echo "${DOWNLOAD}" >&3
+	else
+		echo "${DOWNLOAD}"
+	fi
+	cronexit 0
 fi
 
 # By default, try downloading
@@ -495,8 +496,8 @@ else
 fi
 
 if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
-        echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
-        cronexit 5
+	echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
+	cronexit 5
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
