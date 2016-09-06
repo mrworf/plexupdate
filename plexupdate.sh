@@ -138,6 +138,18 @@ running() {
 	fi
 }
 
+trimQuotes() {
+  local __retvar=$1
+  local __buffer=${!__retvar}
+
+  # Remove leading single quote
+  __buffer=${__buffer#\'}
+  # Remove ending single quote
+  __buffer=${__buffer%\'}
+
+  echo $__buffer
+}
+
 # Parse commandline
 ALLARGS=( "$@" )
 optstring="acCdfFhlpqrSsuU -l config:,dldir:,email:,pass:,server:,saveconfig"
@@ -170,11 +182,11 @@ do
 		(-u) AUTOUPDATE_CL=yes;;
 		(-U) IGNOREAUTOUPDATE=yes;;
 
-		(--config) shift; CONFIGFILE=$(echo "$1" | tr -d "'");;
-		(--dldir) shift; DOWNLOADDIR_CL=$(echo "$1" | tr -d "'");;
-		(--email) shift; EMAIL_CL=$(echo "$1" | tr -d "'");;
-		(--pass) shift; PASS_CL=$(echo "$1" | tr -d "'");;
-		(--server) shift; PLEXSERVER_CL=$(echo "$1" | tr -d "'");;
+    (--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes CONFIGFILE);;
+    (--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes DOWNLOADDIR_CL);; 
+    (--email) shift; EMAIL_CL="$1"; EMAIL_CL=$(trimQuotes EMAIL_CL);;
+    (--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes PASS_CL);;
+    (--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes PLEXSERVER_CL);;
 		(--saveconfig) SAVECONFIG=yes;;
 
 		(--) ;;
