@@ -84,7 +84,7 @@ cronexit() {
 }
 
 usage() {
-	echo "Usage: $(basename $0) [-acdfFhlpqsuU]"
+	echo "Usage: $(basename $0) [-acdfFhlpqsuU] [<long options>]"
 	echo ""
 	echo ""
 	echo "    -a Auto install if download was successful (requires root)"
@@ -108,7 +108,7 @@ usage() {
 	echo "    --email <plex.tv email> Plex.TV email address"
 	echo "    --pass <plex.tv password> Plex.TV password"
 	echo "    --server <Plex server address> Address of Plex Server"
-	echo "    --saveconfig Save the command line arguments to "
+	echo "    --saveconfig Save the configuration to config file"
 	echo
 	cronexit 0
 }
