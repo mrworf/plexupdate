@@ -67,63 +67,12 @@ REDHAT_INSTALL="yum -y install"
 DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
-# Sanity, make sure wget is in our path...
-if ! hash wget 2>/dev/null; then
-	echo "ERROR: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
-	exit 1
-fi
-
-# Allow manual control of configfile
-HASCFG="${@: -1}"
-if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" ]; then
-	if [ -f "${HASCFG}" ]; then
-		source "${HASCFG}"
-	else
-		echo "ERROR: Cannot load configuration ${HASCFG}" >&2
-		exit 1
-	fi
-else
-	# Load settings from config file if it exists
-	# Also, respect SUDO_USER and try that first
-	if [ ! -z "${SUDO_USER}" ]; then
-		# Make sure nothing bad comes from this (since we use eval)
-		ERROR=0
-		if   [[ $SUDO_USER == *";"* ]]; then ERROR=1 ; # Allows more commands
-		elif [[ $SUDO_USER == *" "* ]]; then ERROR=1 ; # Space is not a good thing
-		elif [[ $SUDO_USER == *"&"* ]]; then ERROR=1 ; # Spinning off the command is bad
-		elif [[ $SUDO_USER == *"<"* ]]; then ERROR=1 ; # No redirection
-		elif [[ $SUDO_USER == *">"* ]]; then ERROR=1 ; # No redirection
-		elif [[ $SUDO_USER == *"|"* ]]; then ERROR=1 ; # No pipes
-		elif [[ $SUDO_USER == *"~"* ]]; then ERROR=1 ; # No tilde
-		fi
-		if [ ${ERROR} -gt 0 ]; then
-			echo "ERROR: SUDO_USER variable is COMPROMISED: \"${SUDO_USER}\"" >&2
-			exit 255
-		fi
-
-		# Try using original user's config
-		CONFIGDIR="$( eval cd ~${SUDO_USER} 2>/dev/null && pwd )"
-		if [ -z "${CONFIGDIR}" ]; then
-			echo "WARNING: SUDO_USER \"${SUDO_USER}\" does not have a valid home directory, ignoring." >&2
-		fi
-
-		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
-			#echo "INFO: Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate"
-			source "${CONFIGDIR}/.plexupdate"
-		elif [ -f ~/.plexupdate ]; then
-			# Fallback for compatibility
-			source ~/.plexupdate
-		fi
-	elif [ -f ~/.plexupdate ]; then
-		# Fallback for compatibility
-		source ~/.plexupdate
-	fi
-fi
-
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in.json
 URL_DOWNLOAD=https://plex.tv/api/downloads/1.json?channel=plexpass
 URL_DOWNLOAD_PUBLIC=https://plex.tv/api/downloads/1.json
+
+# Functions for rest of script
 
 cronexit() {
 	# Don't give anything but true error codes if in CRON mode
@@ -135,27 +84,33 @@ cronexit() {
 }
 
 usage() {
-        echo "Usage: $(basename $0) [-acfhopqsSuU] [config file]"
+	echo "Usage: $(basename $0) [-acdfFhlpqsuU]"
 	echo ""
-	echo "    config file overrides the default ~/.plexupdate"
-	echo "    If used, it must be the LAST option or it will be ignored"
 	echo ""
-        echo "    -a Auto install if download was successful (requires root)"
+	echo "    -a Auto install if download was successful (requires root)"
 	echo "    -c Cron mode, only fatal errors return non-zero cronexit code"
-        echo "    -d Auto delete after auto install"
-        echo "    -f Force download even if it's the same version or file"
-        echo "       already exists unless checksum passes"
-        echo "    -F Force download always"
-        echo "    -h This help"
-        echo "    -l List available builds and distros"
-        echo "    -p Public Plex Media Server version"
-        echo "    -q Quiet mode. No stdout, only stderr and cronexit codes"
-        echo "    -r Print download URL and exit"
-        echo "    -s Auto start (needed for some distros)"
-        echo "    -u Auto update plexupdate.sh before running it (experimental)"
-        echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
-        echo
-        cronexit 0
+	echo "    -d Auto delete after auto install"
+	echo "    -f Force download even if it's the same version or file"
+	echo "       already exists unless checksum passes"
+	echo "    -F Force download always"
+	echo "    -h This help"
+	echo "    -l List available builds and distros"
+	echo "    -p Public Plex Media Server version"
+	echo "    -q Quiet mode. No stdout, only stderr and cronexit codes"
+	echo "    -r Print download URL and exit"
+	echo "    -s Auto start (needed for some distros)"
+	echo "    -u Auto update plexupdate.sh before running it (experimental)"
+	echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
+	echo ""
+	echo "    Long Argument Options:"
+	echo "    --config <path/to/config/file> Configuration file to use"
+	echo "    --dldir <path/to/download/dir> Download directory to use"
+	echo "    --email <plex.tv email> Plex.TV email address"
+	echo "    --pass <plex.tv password> Plex.TV password"
+	echo "    --server <Plex server address> Address of Plex Server"
+	echo "    --saveconfig Save the command line arguments to "
+	echo
+	cronexit 0
 }
 
 running() {
@@ -185,36 +140,146 @@ running() {
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfFhlpqrSsuU"
+optstring="acCdfFhlpqrSsuU -l config:,dldir:,email:,pass:,server:,saveconfig"
 getopt -T >/dev/null
 if [ $? -eq 4 ]; then
 	optstring="-o $optstring"
 fi
-set -- $(getopt $optstring -- "$@")
+GETOPTRES=$(getopt $optstring -- "$@")
+if [ $? -eq 1 ]; then
+	cronexit 1
+fi
+
+set -- ${GETOPTRES}
 while true;
 do
 	case "$1" in
-                (-h) usage;;
-                (-a) AUTOINSTALL=yes;;
-                (-c) CRON=yes;;
+		(-h) usage;;
+		(-a) AUTOINSTALL_CL=yes;;
+		(-c) CRON_CL=yes;;
 		(-C) echo "ERROR: CRON option has changed, please review README.md" >&2; cronexit 255;;
-                (-d) AUTODELETE=yes;;
-                (-f) FORCE=yes;;
-                (-F) FORCEALL=yes;;
-                (-l) LISTOPTS=yes;;
-                (-p) PUBLIC=yes;;
-                (-q) QUIET=yes;;
-                (-r) PRINT_URL=yes;;
-                (-s) AUTOSTART=yes;;
+		(-d) AUTODELETE_CL=yes;;
+		(-f) FORCE_CL=yes;;
+		(-F) FORCEALL_CL=yes;;
+		(-l) LISTOPTS=yes;;
+		(-p) PUBLIC_CL=yes;;
+		(-q) QUIET_CL=yes;;
+		(-r) PRINT_URL=yes;;
+		(-s) AUTOSTART_CL=yes;;
 		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" >&2; cronexit 255;;
-                (-u) AUTOUPDATE=yes;;
-                (-U) IGNOREAUTOUPDATE=yes;;
-                (--) ;;
-                (-*) echo "ERROR: unrecognized option $1" >&2; usage; cronexit 1;;
-                (*)  break;;
+		(-u) AUTOUPDATE_CL=yes;;
+		(-U) IGNOREAUTOUPDATE=yes;;
+
+		(--config) shift; CONFIGFILE=$(echo "$1" | tr -d "'");;
+		(--dldir) shift; DOWNLOADDIR_CL=$(echo "$1" | tr -d "'");;
+		(--email) shift; EMAIL_CL=$(echo "$1" | tr -d "'");;
+		(--pass) shift; PASS_CL=$(echo "$1" | tr -d "'");;
+		(--server) shift; PLEXSERVER_CL=$(echo "$1" | tr -d "'");;
+		(--saveconfig) SAVECONFIG=yes;;
+
+		(--) ;;
+		(-*) echo "ERROR: unrecognized option $1" >&2; usage; cronexit 1;;
+		(*)  break;;
 	esac
 	shift
 done
+
+# Sanity, make sure wget is in our path...
+if ! hash wget 2>/dev/null; then
+	echo "ERROR: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
+	exit 1
+fi
+
+# Allow manual control of configfile
+if [ ! -z "${CONFIGFILE}" ]; then
+	if [ -f "${CONFIGFILE}" ]; then
+		source "${CONFIGFILE}"
+	else
+		echo "ERROR: Cannot load configuration ${CONFIGFILE}" >&2
+		exit 1
+	fi
+else
+	# Load settings from config file if it exists
+	# Also, respect SUDO_USER and try that first
+	if [ ! -z "${SUDO_USER}" ]; then
+		# Make sure nothing bad comes from this (since we use eval)
+		ERROR=0
+		if   [[ $SUDO_USER == *";"* ]]; then ERROR=1 ; # Allows more commands
+		elif [[ $SUDO_USER == *" "* ]]; then ERROR=1 ; # Space is not a good thing
+		elif [[ $SUDO_USER == *"&"* ]]; then ERROR=1 ; # Spinning off the command is bad
+		elif [[ $SUDO_USER == *"<"* ]]; then ERROR=1 ; # No redirection
+		elif [[ $SUDO_USER == *">"* ]]; then ERROR=1 ; # No redirection
+		elif [[ $SUDO_USER == *"|"* ]]; then ERROR=1 ; # No pipes
+		elif [[ $SUDO_USER == *"~"* ]]; then ERROR=1 ; # No tilde
+		fi
+		if [ ${ERROR} -gt 0 ]; then
+			echo "ERROR: SUDO_USER variable is COMPROMISED: \"${SUDO_USER}\"" >&2
+			exit 255
+		fi
+
+		# Try using original user's config
+		CONFIGDIR="$( eval cd ~${SUDO_USER} 2>/dev/null && pwd )"
+		if [ -z "${CONFIGDIR}" ]; then
+			echo "WARNING: SUDO_USER \"${SUDO_USER}\" does not have a valid home directory, ignoring." >&2
+		fi
+
+		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
+			#echo "INFO: Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate"
+			CONFIGFILE="${CONFIGDIR}/.plexupdate"
+			source "${CONFIGDIR}/.plexupdate"
+		elif [ -f ~/.plexupdate ]; then
+			# Fallback for compatibility
+			CONFIGFILE="${HOME}/.plexupdate"		# tilde expansion won't happen later.
+			source ~/.plexupdate
+		fi
+	elif [ -f ~/.plexupdate ]; then
+		# Fallback for compatibility
+		CONFIGFILE="${HOME}/.plexupdate"
+		source ~/.plexupdate
+	fi
+fi
+
+# The way I wrote this, it assumes that whatever we put on the command line is what we want and should override
+#   any values in the configuration file. As a result, we need to check if they've been set on the command line
+#   and overwrite the values that may have been loaded with the config file
+
+for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER
+do
+	VAR2="$VAR""_CL"
+	if [ ! -z ${!VAR2} ]; then
+		eval $VAR=${!VAR2}
+	fi
+done
+
+# This will destroy and recreate the config file. Any settings that are set in the config file but are no longer
+# valid will NOT be saved.
+if [ "${SAVECONFIG}" = "yes" ]; then
+	echo "# Config file for plexupdate" >${CONFIGFILE:="${HOME}/.plexupdate"}
+
+	for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER
+	do
+		if [ ! -z ${!VAR} ]; then
+
+			# The following keys have defaults set in this file. We don't want to include these values if they are the default.
+			if [ ${VAR} = "FORCE" \
+			-o ${VAR} = "FORCEALL" \
+			-o ${VAR} = "PUBLIC" \
+			-o ${VAR} = "AUTOINSTALL" \
+			-o ${VAR} = "AUTODELETE" \
+			-o ${VAR} = "AUTOUPDATE" \
+			-o ${VAR} = "AUTOSTART" \
+			-o ${VAR} = "CRON" \
+			-o ${VAR} = "QUIET" ]; then
+
+				if [ ${!VAR} = "yes" ]; then
+					echo "${VAR}=${!VAR}" >> ${CONFIGFILE}
+				fi
+			else
+				echo "${VAR}=${!VAR}" >> ${CONFIGFILE}
+			fi
+		fi
+	done
+fi
 
 if [ "${IGNOREAUTOUPDATE}" = "yes" ]; then
 	AUTOUPDATE=no
