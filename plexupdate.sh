@@ -149,6 +149,14 @@ trimQuotes() {
   echo $__buffer
 }
 
+HASCFG="${@: -1}"
+if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" ]; then
+	if [ -f "${HASCFG}" ]; then
+		echo "WARNING: Specifying config file as last argument is deprecated. Use --config <path> instead."
+		CONFIGFILE=${HASCFG}
+	fi
+fi
+
 # Parse commandline
 ALLARGS=( "$@" )
 optstring="acCdfFhlpqrSsuU -l config:,dldir:,email:,pass:,server:,saveconfig"
