@@ -139,8 +139,7 @@ running() {
 }
 
 trimQuotes() {
-  local __retvar=$1
-  local __buffer=${!__retvar}
+    local __buffer=$1
 
   # Remove leading single quote
   __buffer=${__buffer#\'}
@@ -182,11 +181,11 @@ do
 		(-u) AUTOUPDATE_CL=yes;;
 		(-U) IGNOREAUTOUPDATE=yes;;
 
-    (--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes CONFIGFILE);;
-    (--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes DOWNLOADDIR_CL);; 
-    (--email) shift; EMAIL_CL="$1"; EMAIL_CL=$(trimQuotes EMAIL_CL);;
-    (--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes PASS_CL);;
-    (--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes PLEXSERVER_CL);;
+    (--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes ${CONFIGFILE});;
+    (--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes ${DOWNLOADDIR_CL});; 
+    (--email) shift; EMAIL_CL="$1"; EMAIL_CL=$(trimQuotes ${EMAIL_CL});;
+    (--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes ${PASS_CL});;
+    (--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes ${PLEXSERVER_CL});;
 		(--saveconfig) SAVECONFIG=yes;;
 
 		(--) ;;
