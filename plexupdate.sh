@@ -470,8 +470,6 @@ if [ $? -ne 0 ]; then
 	cronexit 3
 fi
 
-echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${DOWNLOADDIR}/${FILENAME}.sha"
-
 if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
     echo "${DOWNLOAD}" >&3
