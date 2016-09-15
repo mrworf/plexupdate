@@ -471,6 +471,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${DOWNLOADDIR}/${FILENAME}.sha"
+trap "rm ${DOWNLOADDIR}/${FILENAME}.sha" EXIT
 
 if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
