@@ -365,6 +365,7 @@ function cleanup {
 	rm /tmp/raw 2>/dev/null >/dev/null
 	rm /tmp/failcause 2>/dev/null >/dev/null
 	rm /tmp/kaka 2>/dev/null >/dev/null
+	rm "${DOWNLOADDIR}/${FILENAME}.sha" 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
 
@@ -471,7 +472,6 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${DOWNLOADDIR}/${FILENAME}.sha"
-trap "rm ${DOWNLOADDIR}/${FILENAME}.sha" EXIT
 
 if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
