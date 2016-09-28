@@ -365,7 +365,7 @@ function cleanup {
 	rm /tmp/raw 2>/dev/null >/dev/null
 	rm /tmp/failcause 2>/dev/null >/dev/null
 	rm /tmp/kaka 2>/dev/null >/dev/null
-	rm "${DOWNLOADDIR}/${FILENAME}.sha" 2>/dev/null >/dev/null
+	rm "/tmp/${FILENAME}.sha" 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
 
@@ -471,7 +471,7 @@ if [ $? -ne 0 ]; then
 	cronexit 3
 fi
 
-echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${DOWNLOADDIR}/${FILENAME}.sha"
+echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"/tmp/${FILENAME}.sha"
 
 if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
@@ -502,7 +502,7 @@ fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 	if [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ]; then
-		sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
+		sha1sum --status -c "/tmp/${FILENAME}.sha"
 		if [ $? -eq 0 ]; then
 			echo "File already exists (${FILENAME}), won't download."
 			if [ "${AUTOINSTALL}" != "yes" ]; then
@@ -516,7 +516,7 @@ if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 	elif [ "${FORCEALL}" == "yes" ]; then
 		echo "Note! File exists, but asked to overwrite with new copy"
 	else
-		sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
+		sha1sum --status -c "/tmp/${FILENAME}.sha"
 		if [ $? -ne 0 ]; then
 			echo "Note! File exists but fails checksum. Redownloading."
 		else
@@ -540,7 +540,7 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	echo "OK"
 fi
 
-sha1sum --status -c "${DOWNLOADDIR}/${FILENAME}.sha"
+sha1sum --status -c "/tmp/${FILENAME}.sha"
 if [ $? -ne 0 ]; then
 	echo "Downloaded file corrupt. Try again."
 	cronexit 4
@@ -566,8 +566,6 @@ fi
 if [ "${AUTODELETE}" = "yes" ]; then
 	if [ "${AUTOINSTALL}" = "yes" ]; then
 		rm -rf "${DOWNLOADDIR}/${FILENAME}"
-		# Also delete the SHA1 file
-		rm -rf "${DOWNLOADDIR}/${FILENAME}.sha"
 		echo "Deleted \"${FILENAME}\""
 	else
 		echo "Will not auto delete without [-a] auto install"
