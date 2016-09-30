@@ -61,6 +61,7 @@ CRON=no
 QUIET=no
 ARCH=$(uname -m)
 IGNOREAUTOUPDATE=no
+SHOWPROGRESS=no
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="yum -y install"
@@ -135,7 +136,7 @@ cronexit() {
 }
 
 usage() {
-        echo "Usage: $(basename $0) [-acfhopqsSuU] [config file]"
+        echo "Usage: $(basename $0) [-acfhopPqsSuU] [config file]"
 	echo ""
 	echo "    config file overrides the default ~/.plexupdate"
 	echo "    If used, it must be the LAST option or it will be ignored"
@@ -149,6 +150,7 @@ usage() {
         echo "    -h This help"
         echo "    -l List available builds and distros"
         echo "    -p Public Plex Media Server version"
+        echo "    -P Show progressbar when downloading big files"
         echo "    -q Quiet mode. No stdout, only stderr and cronexit codes"
         echo "    -r Print download URL and exit"
         echo "    -s Auto start (needed for some distros)"
@@ -185,7 +187,7 @@ running() {
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfFhlpqrSsuU"
+optstring="acCdfFhlpPqrSsuU"
 getopt -T >/dev/null
 if [ $? -eq 4 ]; then
 	optstring="-o $optstring"
@@ -203,6 +205,7 @@ do
                 (-F) FORCEALL=yes;;
                 (-l) LISTOPTS=yes;;
                 (-p) PUBLIC=yes;;
+                (-P) SHOWPROGRESS=yes;;
                 (-q) QUIET=yes;;
                 (-r) PRINT_URL=yes;;
                 (-s) AUTOSTART=yes;;
@@ -531,7 +534,13 @@ fi
 
 if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	echo -ne "Downloading release \"${FILENAME}\"..."
-	ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
+  if [ "${SHOWPROGRESS}" = "yes" ]; then
+      echo
+      ERROR=$(wget -q --show-progress --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}")
+      echo
+    else
+      ERROR=$(wget --load-cookies /tmp/kaka --save-cookies /tmp/kaka --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
+  fi
 	CODE=$?
 	if [ ${CODE} -ne 0 ]; then
 		echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
