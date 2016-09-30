@@ -67,11 +67,11 @@ REDHAT_INSTALL="yum -y install"
 DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
-STDOUTLOG=$(mktemp /tmp/plexupdate.log.XXXX)
-POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
-RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
-FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
-KAKA=$(mktemp /tmp/plexupdate.kaka.XXXX)
+FILE_STDOUTLOG=$(mktemp /tmp/plexupdate.log.XXXX)
+FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
+FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
+FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
+FILE_KAKA=$(mktemp /tmp/plexupdate.kaka.XXXX)
 SHAFILE=$(mktemp /tmp/plexupdate.sha.XXXX)
 
 # Sanity, make sure wget is in our path...
@@ -246,7 +246,7 @@ fi
 
 if [ "${CRON}" = "yes" -a "${QUIET}" = "no" ]; then
 	# If running in cron mode, redirect STDOUT to temporary file
-	exec 3>&1 >"${STDOUTLOG}"
+	exec 3>&1 >"${FILE_STDOUTLOG}"
 elif [ "${QUIET}" = "yes" ]; then
 	# Redirect STDOUT to dev null. Use >&3 if you really, really, REALLY need to print to STDOUT
 	exec 3>&1 > /dev/null
@@ -290,7 +290,7 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 fi
 
 # Sanity check
-if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ] && [ ! -f "${KAKA}" ]; then
+if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ] && [ ! -f "${FILE_KAKA}" ]; then
 	echo "ERROR: Need username & password to download PlexPass version. Otherwise run with -p to download public version." >&2
 	cronexit 1
 fi
@@ -362,14 +362,14 @@ keypair() {
 
 # Setup an cronexit handler so we cleanup
 function cleanup {
-	if [ "${CRON}" = yes -a "${RAWEXIT}" -ne 5 -a -f "${STDOUTLOG}" ]; then
+	if [ "${CRON}" = yes -a "${RAWEXIT}" -ne 5 -a -f "${FILE_STDOUTLOG}" ]; then
 		exec 1>&3
-		cat "${STDOUTLOG}"
+		cat "${FILE_STDOUTLOG}"
 	fi
-	rm "${POSTDATA}" 2>/dev/null >/dev/null
-	rm "${RAW}" 2>/dev/null >/dev/null
-	rm "${FAILCAUSE}" 2>/dev/null >/dev/null
-	rm "${KAKA}" 2>/dev/null >/dev/null
+	rm "${FILE_POSTDATA}" 2>/dev/null >/dev/null
+	rm "${FILE_RAW}" 2>/dev/null >/dev/null
+	rm "${FILE_FAILCAUSE}" 2>/dev/null >/dev/null
+	rm "${FILE_KAKA}" 2>/dev/null >/dev/null
 	rm "${SHAFILE}" 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
@@ -388,46 +388,46 @@ if [ "${PUBLIC}" = "no" ]; then
         echo -n "Authenticating..."
 
 	# Clean old session
-	rm "${KAKA}" 2>/dev/null
+	rm "${FILE_KAKA}" 2>/dev/null
 
 	# Build post data
-	echo -ne >"${POSTDATA}" "$(keypair "user[login]" "${EMAIL}" )"
-	echo -ne >>"${POSTDATA}" "&$(keypair "user[password]" "${PASS}" )"
-	echo -ne >>"${POSTDATA}" "&$(keypair "user[remember_me]" "0" )"
+	echo -ne >"${FILE_POSTDATA}" "$(keypair "user[login]" "${EMAIL}" )"
+	echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[password]" "${PASS}" )"
+	echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[remember_me]" "0" )"
 
 	# Authenticate (using Plex Single Sign On)
-	wget --header "X-Plex-Client-Identifier: 4a745ae7-1839-e44e-1e42-aebfa578c865" --header "X-Plex-Product: Plex SSO" --load-cookies "${KAKA}" --save-cookies "${KAKA}" --keep-session-cookies "${URL_LOGIN}" --post-file="${POSTDATA}" -q -S -O "${FAILCAUSE}" 2>"${RAW}"
+	wget --header "X-Plex-Client-Identifier: 4a745ae7-1839-e44e-1e42-aebfa578c865" --header "X-Plex-Product: Plex SSO" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_LOGIN}" --post-file="${FILE_POSTDATA}" -q -S -O "${FILE_FAILCAUSE}" 2>"${FILE_RAW}"
 	# Delete authentication data ... Bad idea to let that stick around
-	rm "${POSTDATA}"
+	rm "${FILE_POSTDATA}"
 
 	# Provide some details to the end user
-	RESULTCODE=$(head -n1 "${RAW}" | grep -oe '[1-5][0-9][0-9]')
+	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
 	if [ $RESULTCODE -eq 401 ]; then
 		echo "ERROR: Username and/or password incorrect" >&2
 		cronexit 1
 	elif [ $RESULTCODE -ne 201 ]; then
 		echo "ERROR: Failed to login, debug information:" >&2
-		cat "${FAILCAUSE}" >&2
+		cat "${FILE_FAILCAUSE}" >&2
 		cronexit 1
 	fi
 
 	# If the system got here, it means the login was successfull, so we set the TOKEN variable to the authToken from the response
 	# I use cut -c 14- to cut off the "authToken":" string from the grepped result, can probably be done in a different way
-	TOKEN=$(<"${FAILCAUSE}"  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
+	TOKEN=$(<"${FILE_FAILCAUSE}"  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
 
 	# Remove this, since it contains more information than we should leave hanging around
-	rm "${FAILCAUSE}"
+	rm "${FILE_FAILCAUSE}"
 
         echo "OK"
 elif [ "$PUBLIC" != "no" ]; then
 	# It's a public version, so change URL and make doubly sure that cookies are empty
-	rm 2>/dev/null >/dev/null "${KAKA}"
-	touch "${KAKA}"
+	rm 2>/dev/null >/dev/null "${FILE_KAKA}"
+	touch "${FILE_KAKA}"
 	URL_DOWNLOAD=${URL_DOWNLOAD_PUBLIC}
 fi
 
 if [ "${LISTOPTS}" = "yes" ]; then
-	opts="$(wget --load-cookies "${KAKA}" --save-cookies "${KAKA}" --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -oe '"label"[^}]*' | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
+	opts="$(wget --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -oe '"label"[^}]*' | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
 	eval opts=( "DISTRO" "BUILD" "DESCRIPTION" "======" "=====" "==============================================" $opts )
 
 	BUILD=
@@ -455,7 +455,7 @@ fi
         echo -n "Finding download URL to download..."
 
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
-RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies "${KAKA}" --save-cookies "${KAKA}" --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
+RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
 DOWNLOAD=$(echo ${RELEASE} | grep -m1 -ioe 'https://[^\"]*')
 CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"checksum\"\:\"//')
 echo "OK"
@@ -531,7 +531,7 @@ fi
 
 if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	echo -ne "Downloading release \"${FILENAME}\"..."
-	ERROR=$(wget --load-cookies "${KAKA}" --save-cookies "${KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
+	ERROR=$(wget --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
 	CODE=$?
 	if [ ${CODE} -ne 0 ]; then
 		echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
