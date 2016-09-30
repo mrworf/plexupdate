@@ -72,7 +72,7 @@ FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
 FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
 FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
 FILE_KAKA=$(mktemp /tmp/plexupdate.kaka.XXXX)
-SHAFILE=$(mktemp /tmp/plexupdate.sha.XXXX)
+FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 
 # Sanity, make sure wget is in our path...
 if ! hash wget 2>/dev/null; then
@@ -370,7 +370,7 @@ function cleanup {
 	rm "${FILE_RAW}" 2>/dev/null >/dev/null
 	rm "${FILE_FAILCAUSE}" 2>/dev/null >/dev/null
 	rm "${FILE_KAKA}" 2>/dev/null >/dev/null
-	rm "${SHAFILE}" 2>/dev/null >/dev/null
+	rm "${FILE_SHA}" 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
 
@@ -471,7 +471,7 @@ if [ $? -ne 0 ]; then
 	cronexit 3
 fi
 
-echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${SHAFILE}"
+echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${FILE_SHA}"
 
 if [ "${PRINT_URL}" = "yes" ]; then
   if [ "${QUIET}" = "yes" ]; then
@@ -502,7 +502,7 @@ fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 	if [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ]; then
-		sha1sum --status -c "${SHAFILE}"
+		sha1sum --status -c "${FILE_SHA}"
 		if [ $? -eq 0 ]; then
 			echo "File already exists (${FILENAME}), won't download."
 			if [ "${AUTOINSTALL}" != "yes" ]; then
@@ -516,7 +516,7 @@ if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 	elif [ "${FORCEALL}" == "yes" ]; then
 		echo "Note! File exists, but asked to overwrite with new copy"
 	else
-		sha1sum --status -c "${SHAFILE}"
+		sha1sum --status -c "${FILE_SHA}"
 		if [ $? -ne 0 ]; then
 			echo "Note! File exists but fails checksum. Redownloading."
 		else
@@ -540,7 +540,7 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	echo "OK"
 fi
 
-sha1sum --status -c "${SHAFILE}"
+sha1sum --status -c "${FILE_SHA}"
 if [ $? -ne 0 ]; then
 	echo "Downloaded file corrupt. Try again."
 	cronexit 4
