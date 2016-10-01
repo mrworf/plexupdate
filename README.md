@@ -17,14 +17,14 @@ Download it as a [zip file](https://github.com/mrworf/plexupdate/archive/master.
 ```
 wget https://github.com/mrworf/plexupdate/archive/master.zip && unzip master.zip && mv plexupdate-master plexupdate && rm master.zip
 ```
-Note that unzip is requered (`sudo apt-get install unzip`).
+Note that unzip is required (`sudo apt-get install unzip`).
 
 ####Using git to clone (Recommended)
 Using git is way easier and recommended, if you ask me. 
 ```
 git clone https://github.com/mrworf/plexupdate.git
 ```
-Note that git is requered (`sudo apt-get install git-all`)
+Note that git is required (`sudo apt-get install git`)
 
 The main benefit with git clone is that you can update to latest version very easily. If you want to use the auto update feature, you must be using a git clone.
 
