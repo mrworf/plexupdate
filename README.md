@@ -24,7 +24,7 @@ Using git is way easier and recommended, if you ask me.
 ```
 git clone https://github.com/mrworf/plexupdate.git
 ```
-Note that git is required (`sudo apt-get install git-all`)
+Note that git is required (`sudo apt-get install git`)
 
 The main benefit with git clone is that you can update to latest version very easily. If you want to use the auto update feature, you must be using a git clone.
 
