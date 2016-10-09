@@ -31,8 +31,8 @@
 ####################################################################
 # Quick-check before we allow bad things to happen
 if [ -z "${BASH_VERSINFO}" ]; then
-  echo "ERROR: You must execute this script with BASH" >&2
-  exit 255
+	echo "ERROR: You must execute this script with BASH" >&2
+	exit 255
 fi
 ####################################################################
 # Set these three settings to what you need, or create a .plexupdate file
@@ -74,6 +74,142 @@ FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
 FILE_KAKA=$(mktemp /tmp/plexupdate.kaka.XXXX)
 FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 
+# Current pages we need - Do not change unless Plex.tv changes again
+URL_LOGIN=https://plex.tv/users/sign_in.json
+URL_DOWNLOAD=https://plex.tv/api/downloads/1.json?channel=plexpass
+URL_DOWNLOAD_PUBLIC=https://plex.tv/api/downloads/1.json
+
+# Functions for rest of script
+
+cronexit() {
+	# Don't give anything but true error codes if in CRON mode
+	RAWEXIT=$1
+	if [ "${CRON}" = "yes" -a $1 -gt 1 -a $1 -lt 255 ]; then
+		exit 0
+	fi
+	exit $1
+}
+
+usage() {
+	echo "Usage: $(basename $0) [-acdfFhlpqsuU] [<long options>]"
+	echo ""
+	echo ""
+	echo "    -a Auto install if download was successful (requires root)"
+	echo "    -c Cron mode, only fatal errors return non-zero cronexit code"
+	echo "    -d Auto delete after auto install"
+	echo "    -f Force download even if it's the same version or file"
+	echo "       already exists unless checksum passes"
+	echo "    -F Force download always"
+	echo "    -h This help"
+	echo "    -l List available builds and distros"
+	echo "    -p Public Plex Media Server version"
+	echo "    -q Quiet mode. No stdout, only stderr and cronexit codes"
+	echo "    -r Print download URL and exit"
+	echo "    -s Auto start (needed for some distros)"
+	echo "    -u Auto update plexupdate.sh before running it (experimental)"
+	echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
+	echo ""
+	echo "    Long Argument Options:"
+	echo "    --config <path/to/config/file> Configuration file to use"
+	echo "    --dldir <path/to/download/dir> Download directory to use"
+	echo "    --email <plex.tv email> Plex.TV email address"
+	echo "    --pass <plex.tv password> Plex.TV password"
+	echo "    --server <Plex server address> Address of Plex Server"
+	echo "    --saveconfig Save the configuration to config file"
+	echo
+	cronexit 0
+}
+
+running() {
+	local DATA="$(wget --no-check-certificate -q -O - https://$1:32400/status/sessions?X-Plex-Token=$2)"
+	local RET=$?
+	if [ ${RET} -eq 0 ]; then
+		if [ -z "${DATA}" ]; then
+			# Odd, but usually means noone is watching
+			return 1
+		fi
+		echo "${DATA}" | grep -q '<MediaContainer size="0">'
+		if [ $? -eq 1 ]; then
+			# not found means that one or more medias are being played
+			return 0
+		fi
+		return 1
+	elif [ ${RET} -eq 4 ]; then
+		# No response, assume not running
+		return 1
+	else
+		# We do not know what this means...
+		echo "WARN: Unknown response (${RET}) from server >>>" >&2
+		echo "${DATA}" >&2
+		return 0
+	fi
+}
+
+trimQuotes() {
+    local __buffer=$1
+
+  # Remove leading single quote
+  __buffer=${__buffer#\'}
+  # Remove ending single quote
+  __buffer=${__buffer%\'}
+
+  echo $__buffer
+}
+
+HASCFG="${@: -1}"
+if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" ]; then
+	if [ -f "${HASCFG}" ]; then
+		echo "WARNING: Specifying config file as last argument is deprecated. Use --config <path> instead."
+		CONFIGFILE=${HASCFG}
+	fi
+fi
+
+# Parse commandline
+ALLARGS=( "$@" )
+optstring="acCdfFhlpqrSsuU -l config:,dldir:,email:,pass:,server:,saveconfig"
+getopt -T >/dev/null
+if [ $? -eq 4 ]; then
+	optstring="-o $optstring"
+fi
+GETOPTRES=$(getopt $optstring -- "$@")
+if [ $? -eq 1 ]; then
+	cronexit 1
+fi
+
+set -- ${GETOPTRES}
+while true;
+do
+	case "$1" in
+		(-h) usage;;
+		(-a) AUTOINSTALL_CL=yes;;
+		(-c) CRON_CL=yes;;
+		(-C) echo "ERROR: CRON option has changed, please review README.md" >&2; cronexit 255;;
+		(-d) AUTODELETE_CL=yes;;
+		(-f) FORCE_CL=yes;;
+		(-F) FORCEALL_CL=yes;;
+		(-l) LISTOPTS=yes;;
+		(-p) PUBLIC_CL=yes;;
+		(-q) QUIET_CL=yes;;
+		(-r) PRINT_URL=yes;;
+		(-s) AUTOSTART_CL=yes;;
+		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" >&2; cronexit 255;;
+		(-u) AUTOUPDATE_CL=yes;;
+		(-U) IGNOREAUTOUPDATE=yes;;
+
+    (--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes ${CONFIGFILE});;
+    (--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes ${DOWNLOADDIR_CL});; 
+    (--email) shift; EMAIL_CL="$1"; EMAIL_CL=$(trimQuotes ${EMAIL_CL});;
+    (--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes ${PASS_CL});;
+    (--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes ${PLEXSERVER_CL});;
+		(--saveconfig) SAVECONFIG=yes;;
+
+		(--) ;;
+		(-*) echo "ERROR: unrecognized option $1" >&2; usage; cronexit 1;;
+		(*)  break;;
+	esac
+	shift
+done
+
 # Sanity, make sure wget is in our path...
 if ! hash wget 2>/dev/null; then
 	echo "ERROR: This script requires wget in the path. It could also signify that you don't have the tool installed." >&2
@@ -81,12 +217,11 @@ if ! hash wget 2>/dev/null; then
 fi
 
 # Allow manual control of configfile
-HASCFG="${@: -1}"
-if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" ]; then
-	if [ -f "${HASCFG}" ]; then
-		source "${HASCFG}"
+if [ ! -z "${CONFIGFILE}" ]; then
+	if [ -f "${CONFIGFILE}" ]; then
+		source "${CONFIGFILE}"
 	else
-		echo "ERROR: Cannot load configuration ${HASCFG}" >&2
+		echo "ERROR: Cannot load configuration ${CONFIGFILE}" >&2
 		exit 1
 	fi
 else
@@ -116,112 +251,61 @@ else
 
 		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
 			#echo "INFO: Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate"
+			CONFIGFILE="${CONFIGDIR}/.plexupdate"
 			source "${CONFIGDIR}/.plexupdate"
 		elif [ -f ~/.plexupdate ]; then
 			# Fallback for compatibility
+			CONFIGFILE="${HOME}/.plexupdate"		# tilde expansion won't happen later.
 			source ~/.plexupdate
 		fi
 	elif [ -f ~/.plexupdate ]; then
 		# Fallback for compatibility
+		CONFIGFILE="${HOME}/.plexupdate"
 		source ~/.plexupdate
 	fi
 fi
 
-# Current pages we need - Do not change unless Plex.tv changes again
-URL_LOGIN=https://plex.tv/users/sign_in.json
-URL_DOWNLOAD=https://plex.tv/api/downloads/1.json?channel=plexpass
-URL_DOWNLOAD_PUBLIC=https://plex.tv/api/downloads/1.json
+# The way I wrote this, it assumes that whatever we put on the command line is what we want and should override
+#   any values in the configuration file. As a result, we need to check if they've been set on the command line
+#   and overwrite the values that may have been loaded with the config file
 
-cronexit() {
-	# Don't give anything but true error codes if in CRON mode
-	RAWEXIT=$1
-	if [ "${CRON}" = "yes" -a $1 -gt 1 -a $1 -lt 255 ]; then
-		exit 0
-	fi
-	exit $1
-}
-
-usage() {
-        echo "Usage: $(basename $0) [-acfhopqsSuU] [config file]"
-	echo ""
-	echo "    config file overrides the default ~/.plexupdate"
-	echo "    If used, it must be the LAST option or it will be ignored"
-	echo ""
-        echo "    -a Auto install if download was successful (requires root)"
-	echo "    -c Cron mode, only fatal errors return non-zero cronexit code"
-        echo "    -d Auto delete after auto install"
-        echo "    -f Force download even if it's the same version or file"
-        echo "       already exists unless checksum passes"
-        echo "    -F Force download always"
-        echo "    -h This help"
-        echo "    -l List available builds and distros"
-        echo "    -p Public Plex Media Server version"
-        echo "    -q Quiet mode. No stdout, only stderr and cronexit codes"
-        echo "    -r Print download URL and exit"
-        echo "    -s Auto start (needed for some distros)"
-        echo "    -u Auto update plexupdate.sh before running it (experimental)"
-        echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
-        echo
-        cronexit 0
-}
-
-running() {
-	local DATA="$(wget --no-check-certificate -q -O - https://$1:32400/status/sessions?X-Plex-Token=$2)"
-	local RET=$?
-	if [ ${RET} -eq 0 ]; then
-		if [ -z "${DATA}" ]; then
-			# Odd, but usually means noone is watching
-			return 1
-		fi
-		echo "${DATA}" | grep -q '<MediaContainer size="0">'
-		if [ $? -eq 1 ]; then
-			# not found means that one or more medias are being played
-			return 0
-		fi
-		return 1
-	elif [ ${RET} -eq 4 ]; then
-		# No response, assume not running
-		return 1
-	else
-		# We do not know what this means...
-		echo "WARN: Unknown response (${RET}) from server >>>" >&2
-		echo "${DATA}" >&2
-		return 0
-	fi
-}
-
-# Parse commandline
-ALLARGS=( "$@" )
-optstring="acCdfFhlpqrSsuU"
-getopt -T >/dev/null
-if [ $? -eq 4 ]; then
-	optstring="-o $optstring"
-fi
-set -- $(getopt $optstring -- "$@")
-while true;
+for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER
 do
-	case "$1" in
-                (-h) usage;;
-                (-a) AUTOINSTALL=yes;;
-                (-c) CRON=yes;;
-		(-C) echo "ERROR: CRON option has changed, please review README.md" >&2; cronexit 255;;
-                (-d) AUTODELETE=yes;;
-                (-f) FORCE=yes;;
-                (-F) FORCEALL=yes;;
-                (-l) LISTOPTS=yes;;
-                (-p) PUBLIC=yes;;
-                (-q) QUIET=yes;;
-                (-r) PRINT_URL=yes;;
-                (-s) AUTOSTART=yes;;
-		(-S) echo "ERROR: SILENT option has been removed, please use QUIET (-q) instead" >&2; cronexit 255;;
-                (-u) AUTOUPDATE=yes;;
-                (-U) IGNOREAUTOUPDATE=yes;;
-                (--) ;;
-                (-*) echo "ERROR: unrecognized option $1" >&2; usage; cronexit 1;;
-                (*)  break;;
-	esac
-	shift
+	VAR2="$VAR""_CL"
+	if [ ! -z ${!VAR2} ]; then
+		eval $VAR=${!VAR2}
+	fi
 done
+
+# This will destroy and recreate the config file. Any settings that are set in the config file but are no longer
+# valid will NOT be saved.
+if [ "${SAVECONFIG}" = "yes" ]; then
+	echo "# Config file for plexupdate" >${CONFIGFILE:="${HOME}/.plexupdate"}
+
+	for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER
+	do
+		if [ ! -z ${!VAR} ]; then
+
+			# The following keys have defaults set in this file. We don't want to include these values if they are the default.
+			if [ ${VAR} = "FORCE" \
+			-o ${VAR} = "FORCEALL" \
+			-o ${VAR} = "PUBLIC" \
+			-o ${VAR} = "AUTOINSTALL" \
+			-o ${VAR} = "AUTODELETE" \
+			-o ${VAR} = "AUTOUPDATE" \
+			-o ${VAR} = "AUTOSTART" \
+			-o ${VAR} = "CRON" \
+			-o ${VAR} = "QUIET" ]; then
+
+				if [ ${!VAR} = "yes" ]; then
+					echo "${VAR}=${!VAR}" >> ${CONFIGFILE}
+				fi
+			else
+				echo "${VAR}=${!VAR}" >> ${CONFIGFILE}
+			fi
+		fi
+	done
+fi
 
 if [ "${IGNOREAUTOUPDATE}" = "yes" ]; then
 	AUTOUPDATE=no
@@ -385,7 +469,7 @@ trap cleanup EXIT
 # commit		Sign in
 
 if [ "${PUBLIC}" = "no" ]; then
-        echo -n "Authenticating..."
+	echo -n "Authenticating..."
 
 	# Clean old session
 	rm "${FILE_KAKA}" 2>/dev/null
@@ -418,7 +502,8 @@ if [ "${PUBLIC}" = "no" ]; then
 	# Remove this, since it contains more information than we should leave hanging around
 	rm "${FILE_FAILCAUSE}"
 
-        echo "OK"
+	echo "OK"
+
 elif [ "$PUBLIC" != "no" ]; then
 	# It's a public version, so change URL and make doubly sure that cookies are empty
 	rm 2>/dev/null >/dev/null "${FILE_KAKA}"
@@ -452,7 +537,7 @@ if [ "${LISTOPTS}" = "yes" ]; then
 fi
 
 # Extract the URL for our release
-        echo -n "Finding download URL to download..."
+echo -n "Finding download URL to download..."
 
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
 RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
@@ -474,12 +559,12 @@ fi
 echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${FILE_SHA}"
 
 if [ "${PRINT_URL}" = "yes" ]; then
-  if [ "${QUIET}" = "yes" ]; then
-    echo "${DOWNLOAD}" >&3
-  else
-    echo "${DOWNLOAD}"
-  fi
-  cronexit 0
+	if [ "${QUIET}" = "yes" ]; then
+		echo "${DOWNLOAD}" >&3
+	else
+		echo "${DOWNLOAD}"
+	fi
+	cronexit 0
 fi
 
 # By default, try downloading
@@ -496,8 +581,8 @@ else
 fi
 
 if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
-        echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
-        cronexit 5
+	echo "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
+	cronexit 5
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then

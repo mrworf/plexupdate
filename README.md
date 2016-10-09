@@ -30,30 +30,26 @@ The main benefit with git clone is that you can update to latest version very ea
 
 ## 2. Setting it up
 
-plexupdate.sh looks for a file named `.plexupdate` located in your home directory. Please note that I'm referring to the home directory of the user who is running the plexupdate.sh ... If that user is someone else (root for instance) you'll need to make sure that user has the config file set up properly as well.
-
-The contents of this file are usually:
+To quickly setup plexupdate.sh, you should run it the first time like below:
 
 ```
-EMAIL="my.email@plex-server.com"
-PASS="my-secret-plex-password"
-DOWNLOADDIR="/a/folder/to/save/the/files/in"
+./plexupdate.sh --email="my.email@plex-server.com" --pass="my-secret-plex-password" --dldir="/a/folder/to/save/the/files/in" --saveconfig
 ```
 
-Obviously you need to change these so they match your account information. And if you don't put anything as a `DOWNLOADDIR`, the tool will use the folder you're executing the script from. So take care.
+Obviously you need to change these so they match your account information. And if you don't put anything as for the ```--dldir``` option, the tool will use the folder you're executing the script from. So take care.
 
 ## 3. Advanced options
 
-You can point out a different file than ```.plexupdate``` by providing it as the last argument to the script. It HAS to be the LAST argument, or it will be ignored. Any options set by the config file can be overriden with command-line options.
+You can point out a different file than ```.plexupdate``` by providing it as the argument to the ```--config``` option. Any options set by the config file can be overridden with command-line options.
 
 There are also a few additional options for the more enterprising user. Setting any of these to `yes` will enable the function.
 
 - PLEXSERVER
-  If set, and combined with AUTOINSTALL, the script will automatically check if the server is in-use and deferr the update. Great for crontab users. PLEXSERVER should be set to the IP/DNS of your Plex Media Server, which typically is 127.0.0.1
+  If set, and combined with AUTOINSTALL, the script will automatically check if the server is in-use and defer the update. Great for crontab users. PLEXSERVER should be set to the IP/DNS of your Plex Media Server, which typically is 127.0.0.1
 - AUTOUPDATE
   Makes plexupdate.sh automatically update itself using git. Note! This will fail if git isn't available on the command line.
 - AUTOINSTALL
-  Automatically installs the newly downloaded version. Currently works for debian based systems as well as rpm based distros. Will fail miserably if you're not root.
+  Automatically installs the newly downloaded version. Currently works for Debian based systems as well as rpm based distros. Will fail miserably if you're not root.
 - AUTODELETE 
   Once successfully downloaded and installed, it will delete the package (want not, waste not? ;-))
 - PUBLIC 
@@ -76,7 +72,24 @@ Most of these options can be specified on the command-line as well, this is just
 
 If you want to use plexupdate as either a cron job or as a [systemd job](https://github.com/mrworf/plexupdate/wiki/Running-plexupdate-daily-as-a-systemd-timer), the -c option should do what you want. All non-error exit codes will be set to 0 and no output will be printed to stdout unless something has actually been done. (a new version was downloaded, installed, etc)
 
-If you don't even want to know when something has been done, you can combine this with the -q option and you will only receive output in the event of an error. Everything else will just silenty finish without producing any output.
+If you don't even want to know when something has been done, you can combine this with the -q option and you will only receive output in the event of an error. Everything else will just silently finish without producing any output.
+
+### Command Line Options
+
+Several new command line options are available. They can be specified in any order.
+
+- ```--config <path/to/config/file>```
+  Defines the location the script should look for the config file. 
+- ```--email <Plex.tv email>```
+  Email to sign in to Plex.tv
+- ```--pass <Plex.tv password>```
+  Password to sign in to Plex.tv
+- ```--dldir <path/to/where/you/want/files/downloaded/to>```
+  This is the folder that the files will be downloaded to.
+- ```--server <Plex server address>```
+  This is the address that Plex Media Server is on. Setting this will enable a check to see if users are on the server prior to the software being updated.
+- ```--saveconfig```
+  Saves the configuration as it is currently. This will take whatever is in the config file, plus whatever is specified on the command line and will save the config file with that information. Any information in the config file that plexupdate.sh does not understand or use WILL BE LOST. 
 
 # Running it
 
@@ -86,7 +99,7 @@ Overall it tries to give you hints regarding why it isn't doing what you expecte
 
 # Trivia
 
-- "kaka" is swedish for "cookie"
+- "kaka" is Swedish for "cookie"
 
 # TL;DR
 Open a terminal or SSH on the server running Plex Media Center
