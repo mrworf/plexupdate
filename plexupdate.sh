@@ -157,7 +157,7 @@ trimQuotes() {
 }
 
 HASCFG="${@: -1}"
-if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" ]; then
+if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" -a ! "${@:(-2):1}" = "--config" ]; then
 	if [ -f "${HASCFG}" ]; then
 		echo "WARNING: Specifying config file as last argument is deprecated. Use --config <path> instead."
 		CONFIGFILE=${HASCFG}
