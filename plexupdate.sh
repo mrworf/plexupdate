@@ -61,6 +61,8 @@ CRON=no
 QUIET=no
 ARCH=$(uname -m)
 IGNOREAUTOUPDATE=no
+SHOWPROGRESS=no
+WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="yum -y install"
@@ -73,6 +75,7 @@ FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
 FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
 FILE_KAKA=$(mktemp /tmp/plexupdate.kaka.XXXX)
 FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
+FILE_WGETLOG=$(mktemp /tmp/plexupdate.wget.XXXX)
 
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in.json
@@ -91,7 +94,7 @@ cronexit() {
 }
 
 usage() {
-	echo "Usage: $(basename $0) [-acdfFhlpqsuU] [<long options>]"
+	echo "Usage: $(basename $0) [-acdfFhlpPqsuU] [<long options>]"
 	echo ""
 	echo ""
 	echo "    -a Auto install if download was successful (requires root)"
@@ -103,6 +106,7 @@ usage() {
 	echo "    -h This help"
 	echo "    -l List available builds and distros"
 	echo "    -p Public Plex Media Server version"
+	echo "    -P Show progressbar when downloading big files"
 	echo "    -q Quiet mode. No stdout, only stderr and cronexit codes"
 	echo "    -r Print download URL and exit"
 	echo "    -s Auto start (needed for some distros)"
@@ -168,7 +172,7 @@ fi
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfFhlpqrSsuU -l config:,dldir:,email:,pass:,server:,saveconfig"
+optstring="acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,saveconfig"
 getopt -T >/dev/null
 if [ $? -eq 4 ]; then
 	optstring="-o $optstring"
@@ -191,6 +195,7 @@ do
 		(-F) FORCEALL_CL=yes;;
 		(-l) LISTOPTS=yes;;
 		(-p) PUBLIC_CL=yes;;
+		(-P) SHOWPROGRESS=yes;;
 		(-q) QUIET_CL=yes;;
 		(-r) PRINT_URL=yes;;
 		(-s) AUTOSTART_CL=yes;;
@@ -307,6 +312,10 @@ if [ "${SAVECONFIG}" = "yes" ]; then
 			fi
 		fi
 	done
+fi
+
+if [ "${SHOWPROGRESS}" = "yes" ]; then
+	WGETOPTIONS="--show-progress"
 fi
 
 if [ "${IGNOREAUTOUPDATE}" = "yes" ]; then
@@ -457,6 +466,7 @@ function cleanup {
 	rm "${FILE_FAILCAUSE}" 2>/dev/null >/dev/null
 	rm "${FILE_KAKA}" 2>/dev/null >/dev/null
 	rm "${FILE_SHA}" 2>/dev/null >/dev/null
+	rm "${FILE_WGETLOG}" 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
 
@@ -618,8 +628,9 @@ fi
 
 if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	echo -ne "Downloading release \"${FILENAME}\"..."
-	ERROR=$(wget --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1)
+	wget ${WGETOPTIONS} -o "${FILE_WGETLOG}" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
 	CODE=$?
+	ERROR=$(cat ${FILE_WGETLOG})
 	if [ ${CODE} -ne 0 ]; then
 		echo -e "\n  !! Download failed with code ${CODE}, \"${ERROR}\""
 		cronexit ${CODE}
