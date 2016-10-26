@@ -351,7 +351,7 @@ for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUB
 do
 	VAR2="$VAR""_CL"
 	if [ ! -z ${!VAR2} ]; then
-		eval $VAR=${!VAR2}
+		eval $VAR='${!VAR2}'
 	fi
 done
 
