@@ -112,6 +112,7 @@ EMAIL=
 PASS=
 DOWNLOADDIR="."
 PLEXSERVER=
+PLEXPORT=32400
 
 #################################################################
 # Don't change anything below this point
@@ -193,7 +194,7 @@ usage() {
 }
 
 running() {
-	local DATA="$(wget --no-check-certificate -q -O - https://$1:32400/status/sessions?X-Plex-Token=$2)"
+	local DATA="$(wget --no-check-certificate -q -O - https://$1:$3/status/sessions?X-Plex-Token=$2)"
 	local RET=$?
 	if [ ${RET} -eq 0 ]; then
 		if [ -z "${DATA}" ]; then
@@ -240,7 +241,7 @@ fi
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,saveconfig"
+optstring="acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,port:,saveconfig"
 getopt -T >/dev/null
 if [ $? -eq 4 ]; then
 	optstring="-o $optstring"
@@ -276,6 +277,7 @@ do
 		(--email) shift; EMAIL_CL="$1"; EMAIL_CL=$(trimQuotes ${EMAIL_CL});;
 		(--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes ${PASS_CL});;
 		(--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes ${PLEXSERVER_CL});;
+		(--port) shift; PLEXPORT_CL="$1"; PLEXPORT_CL=$(trimQuotes ${PLEXPORT_CL});;
 		(--saveconfig) SAVECONFIG=yes;;
 
 		(--) ;;
@@ -347,7 +349,7 @@ fi
 #   any values in the configuration file. As a result, we need to check if they've been set on the command line
 #   and overwrite the values that may have been loaded with the config file
 
-for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER
+for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT
 do
 	VAR2="$VAR""_CL"
 	if [ ! -z ${!VAR2} ]; then
@@ -360,7 +362,7 @@ done
 if [ "${SAVECONFIG}" = "yes" ]; then
 	echo "# Config file for plexupdate" >${CONFIGFILE:="${HOME}/.plexupdate"}
 
-	for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER
+	for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT
 	do
 		if [ ! -z ${!VAR} ]; then
 
@@ -715,7 +717,7 @@ fi
 
 if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 	# Check if server is in-use before continuing (thanks @AltonV, @hakong and @sufr3ak)...
-	if running ${PLEXSERVER} ${TOKEN} ; then
+	if running ${PLEXSERVER} ${TOKEN} ${PLEXPORT}; then
 		errorLog "Server ${PLEXSERVER} is currently being used by one or more users, skipping installation. Please run again later"
 		cronexit 6
 	fi

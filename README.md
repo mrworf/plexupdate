@@ -46,6 +46,8 @@ There are also a few additional options for the more enterprising user. Setting 
 
 - PLEXSERVER
   If set, and combined with AUTOINSTALL, the script will automatically check if the server is in-use and defer the update. Great for crontab users. PLEXSERVER should be set to the IP/DNS of your Plex Media Server, which typically is 127.0.0.1
+- PLEXPORT
+  Sets the port to use along with PLEXSERVER
 - AUTOUPDATE
   Makes plexupdate.sh automatically update itself using git. Note! This will fail if git isn't available on the command line.
 - AUTOINSTALL
@@ -88,6 +90,8 @@ Several new command line options are available. They can be specified in any ord
   This is the folder that the files will be downloaded to.
 - ```--server <Plex server address>```
   This is the address that Plex Media Server is on. Setting this will enable a check to see if users are on the server prior to the software being updated.
+- ```--port <Plex server port>```
+  This is the port that Plex Media Server uses.
 - ```--saveconfig```
   Saves the configuration as it is currently. This will take whatever is in the config file, plus whatever is specified on the command line and will save the config file with that information. Any information in the config file that plexupdate.sh does not understand or use WILL BE LOST. 
 
