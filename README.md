@@ -33,7 +33,7 @@ The main benefit with git clone is that you can update to latest version very ea
 To quickly setup plexupdate.sh, you should run it the first time like below:
 
 ```
-./plexupdate.sh --email="my.email@plex-server.com" --pass="my-secret-plex-password" --dldir="/a/folder/to/save/the/files/in" --saveconfig
+./plexupdate.sh --email='my.email@plex-server.com' --pass='my-secret-plex-password' --dldir='/a/folder/to/save/the/files/in' --saveconfig
 ```
 
 Obviously you need to change these so they match your account information. And if you don't put anything as for the ```--dldir``` option, the tool will use the folder you're executing the script from. So take care.
@@ -94,6 +94,14 @@ Several new command line options are available. They can be specified in any ord
   This is the port that Plex Media Server uses.
 - ```--saveconfig```
   Saves the configuration as it is currently. This will take whatever is in the config file, plus whatever is specified on the command line and will save the config file with that information. Any information in the config file that plexupdate.sh does not understand or use WILL BE LOST. 
+	
+### Logs
+
+The script now outputs everything to a file (by default `/tmp/plexupdate.log`). This log ***MAY*** contain passwords, so if you post it online, ***USE CAUTION***.
+
+To change the default log file, you can specify a new location:
+
+```FILE_STDOUTLOG="<new/path/to/log>" ./plexupdate.sh <options>```
 
 # Running it
 
