@@ -67,11 +67,22 @@ LogStdOut() {
 	fi
 }
 
+# $1 - Filename to add to log
+# $2 - Type to log file contents as (INFO, ERROR, WARNING)
+LogFileContents() {
+	while read line;
+	do
+		Log "$2" "$line"
+	done <"$1"
+}
+
 # $1 - Message
 # $2 - Print newline? defaults to yes
 infoLog() {
 	Log "INFO" "$1"
-	LogStdOut "" "$1" "$2"
+	if [ "${CRON}" = "no" ]; then
+		LogStdOut "" "$1" "$2"
+	fi
 }
 
 infoLogNoNewline() {
@@ -80,7 +91,9 @@ infoLogNoNewline() {
 
 errorLog() {
 	Log "ERROR" "$1" >&2
-	LogStdOut "ERROR" "$1" "$2"
+	if [ "${CRON}" = "no" ]; then
+		LogStdOut "ERROR" "$1" "$2" >&2
+	fi
 }
 
 errorLogNoNewline() {
@@ -89,7 +102,9 @@ errorLogNoNewline() {
 
 warningLog() {
 	Log "WARNING" "$1" >&2
-	LogStdOut "WARNING" "$1" "$2"
+	if [ "${CRON}" = "no" ]; then
+		LogStdOut "WARNING" "$1" "$2" >&2
+	fi
 }
 
 warningLogNoNewline() {
@@ -145,6 +160,8 @@ FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
 FILE_KAKA=$(mktemp /tmp/plexupdate.kaka.XXXX)
 FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 FILE_WGETLOG=$(mktemp /tmp/plexupdate.wget.XXXX)
+FILE_CMDLOG=$(mktemp /tmp/plexupdate.cmds.XXXX)
+FILE_CMDERR=$(mktemp /tmp/plexupdate.errs.XXXX)
 
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in.json
@@ -188,6 +205,7 @@ usage() {
 	echo "    --email <plex.tv email> Plex.TV email address"
 	echo "    --pass <plex.tv password> Plex.TV password"
 	echo "    --server <Plex server address> Address of Plex Server"
+	echo "    --port <Plex server port> Port for Plex Server. Used with --server"
 	echo "    --saveconfig Save the configuration to config file"
 	echo
 	cronexit 0
@@ -412,8 +430,9 @@ if [ ! -z "${RELEASE}" ]; then
 	cronexit 255
 fi
 
-if [ "${CRON}" = "yes" -o "${QUIET}" = "yes" ]; then
-	# The new logging features automatically redirect to the log no matter what. 
+if [ "${CRON}" = "yes" -a "${QUIET}" = "no" ]; then
+	exec 3>&1 >${FILE_CMDLOG} 2>${FILE_CMDERR}
+elif [ "${QUIET}" = "yes" ]; then
 	# Redirect STDOUT to dev null. Use >&3 if you really, really, REALLY need to print to STDOUT
 	exec 3>&1 >/dev/null
 fi
@@ -528,7 +547,15 @@ keypair() {
 
 # Setup an cronexit handler so we cleanup
 function cleanup {
-	if [ "${CRON}" = yes -a "${RAWEXIT}" -ne 5 -a -f "${FILE_STDOUTLOG}" ]; then
+	if [ "${CRON}" = yes -a "${RAWEXIT}" -ne 5 -a -f "${FILE_CMDLOG}" ]; then
+		infoLog "Command Output:" >/dev/null
+		OUTPUTLINES=$((OUTPUTLINES+$(wc -l <${FILE_CMDLOG})))
+		cat ${FILE_CMDLOG} >>${FILE_STDOUTLOG}
+
+		errorLog "Command Errors/Warnings:" >/dev/null
+		OUTPUTLINES=$((OUTPUTLINES+$(wc -l <${FILE_CMDERR})))
+		cat ${FILE_CMDERR} >>${FILE_STDOUTLOG}
+
 		exec 1>&3
 		tail -n ${OUTPUTLINES} "${FILE_STDOUTLOG}"
 	fi
@@ -538,6 +565,8 @@ function cleanup {
 	rm "${FILE_KAKA}" 2>/dev/null >/dev/null
 	rm "${FILE_SHA}" 2>/dev/null >/dev/null
 	rm "${FILE_WGETLOG}" 2>/dev/null >/dev/null
+	rm "${FILE_CMDLOG}" 2>/dev/null >/dev/null
+	rm "${FILE_CMDERR}" 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
 
@@ -575,6 +604,7 @@ if [ "${PUBLIC}" = "no" ]; then
 	elif [ $RESULTCODE -ne 201 ]; then
 		errorLog "Failed to login, debug information:"
 		cat "${FILE_FAILCAUSE}" >&2
+		LogFileContents "${FILE_FAILCAUSE}" "ERROR"
 		cronexit 1
 	fi
 
