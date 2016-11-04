@@ -396,10 +396,14 @@ if [ "${SAVECONFIG}" = "yes" ]; then
 			-o ${VAR} = "QUIET" ]; then
 
 				if [ ${!VAR} = "yes" ]; then
-					echo "${VAR}=${!VAR}" >> ${CONFIGFILE}
+					echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
+				fi
+			elif [ ${VAR} = "PLEXPORT" ]; then
+				if [ ! "${!VAR}" = "32400" ]; then
+					echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
 				fi
 			else
-				echo "${VAR}=${!VAR}" >> ${CONFIGFILE}
+				echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
 			fi
 		fi
 	done
