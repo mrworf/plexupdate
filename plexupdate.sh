@@ -314,7 +314,7 @@ fi
 # Allow manual control of configfile
 if [ ! -z "${CONFIGFILE}" ]; then
 	if [ -f "${CONFIGFILE}" ]; then
-		infoLog "Using configuration: ${CONFIGFILE}" >/dev/null
+		infoLog "Using configuration: ${CONFIGFILE}" #>/dev/null
 		source "${CONFIGFILE}"
 	else
 		errorLog "Cannot load configuration ${CONFIGFILE}"
@@ -346,18 +346,18 @@ else
 		fi
 
 		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
-			infoLog "Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate" >/dev/null
+			infoLog "Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate" #>/dev/null
 			CONFIGFILE="${CONFIGDIR}/.plexupdate"
 			source "${CONFIGDIR}/.plexupdate"
 		elif [ -f ~/.plexupdate ]; then
 			# Fallback for compatibility
-			infoLog "Using \"${SUDO_USER}\" configuration: ${HOME}/.plexupdate" >/dev/null
+			infoLog "Using \"${SUDO_USER}\" configuration: ${HOME}/.plexupdate" #>/dev/null
 			CONFIGFILE="${HOME}/.plexupdate"		# tilde expansion won't happen later.
 			source ~/.plexupdate
 		fi
 	elif [ -f ~/.plexupdate ]; then
 		# Fallback for compatibility
-		infoLog "Using configuration: ${HOME}/.plexupdate" >/dev/null
+		infoLog "Using configuration: ${HOME}/.plexupdate" #>/dev/null
 		CONFIGFILE="${HOME}/.plexupdate"
 		source ~/.plexupdate
 	fi
