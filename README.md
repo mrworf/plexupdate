@@ -44,6 +44,8 @@ You can point out a different file than ```.plexupdate``` by providing it as the
 
 There are also a few additional options for the more enterprising user. Setting any of these to `yes` will enable the function.
 
+- CHECKUPDATE
+  If set (and it is by default), it will compare your local copy with the one stored on github. If there is any difference, it will let you know. This is handy if you're not using ```git clone``` but want to be alerted to new versions.
 - PLEXSERVER
   If set, and combined with AUTOINSTALL, the script will automatically check if the server is in-use and defer the update. Great for crontab users. PLEXSERVER should be set to the IP/DNS of your Plex Media Server, which typically is 127.0.0.1
 - PLEXPORT

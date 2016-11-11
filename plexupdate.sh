@@ -7,9 +7,14 @@
 # as well as the PlexPass versions.
 #
 # PlexPass users:
-#   Either modify this file to add email and password OR create
-#   a separate .plexupdate file in your home directory with these
-#   values.
+#   Create a separate .plexupdate file in your home directory with these
+#   values:
+#
+#   EMAIL='<whatever your plexpass email was>'
+#   PASS='<whatever password you used>'
+#   DOWNLOADDIR='<where you would like to save the downloaded package>'
+#
+# See https://github.com/mrworf/plexupdate for more details.
 #
 # Returns 0 on success
 #         1 on error
@@ -118,9 +123,9 @@ ALLARGS="$@"
 infoLog "Args: ${ALLARGS}" >/dev/null
 unset ALLARGS
 
-####################################################################
-# Set these three settings to what you need, or create a .plexupdate file
-# in your home directory with this section (avoids changing this).
+#################################################################
+# Don't change anything below this point, use a .plexupdate file
+# in your home directory to override this section.
 # DOWNLOADDIR is the full directory path you would like the download to go.
 #
 EMAIL=
@@ -128,10 +133,6 @@ PASS=
 DOWNLOADDIR="."
 PLEXSERVER=
 PLEXPORT=32400
-
-#################################################################
-# Don't change anything below this point
-#
 
 # Defaults
 # (aka "Advanced" settings, can be overriden with config file)
@@ -148,6 +149,7 @@ ARCH=$(uname -m)
 IGNOREAUTOUPDATE=no
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
+CHECKUPDATE=yes
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="yum -y install"
@@ -162,6 +164,8 @@ FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 FILE_WGETLOG=$(mktemp /tmp/plexupdate.wget.XXXX)
 FILE_CMDLOG=$(mktemp /tmp/plexupdate.cmds.XXXX)
 FILE_CMDERR=$(mktemp /tmp/plexupdate.errs.XXXX)
+FILE_LOCAL=$(mktemp /tmp/plexupdate.local.XXXX)
+FILE_REMOTE=$(mktemp /tmp/plexupdate.remote.XXXX)
 
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN=https://plex.tv/users/sign_in.json
@@ -380,7 +384,7 @@ done
 if [ "${SAVECONFIG}" = "yes" ]; then
 	echo "# Config file for plexupdate" >${CONFIGFILE:="${HOME}/.plexupdate"}
 
-	for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT
+	for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE
 	do
 		if [ ! -z ${!VAR} ]; then
 
@@ -572,8 +576,34 @@ function cleanup {
 	rm "${FILE_WGETLOG}" 2>/dev/null >/dev/null
 	rm "${FILE_CMDLOG}" 2>/dev/null >/dev/null
 	rm "${FILE_CMDERR}" 2>/dev/null >/dev/null
+	rm "${FILE_LOCAL}" 2>/dev/null >/dev/null
+	rm "${FILE_REMOTE}" 2>/dev/null >/dev/null
 }
 trap cleanup EXIT
+
+if [ "${CHECKUPDATE}" = "yes" ]; then
+	ERR1=0
+	(wget -q https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh -O - 2>/dev/null || echo ERROR) | shasum >"${FILE_REMOTE}" 2>/dev/null
+	ERR2=0
+	(cat "$0" 2>/dev/null || echo ERROR) | shasum >"${FILE_LOCAL}" 2>/dev/null
+	if [ $ERR1 -ne 0 -o $ERR2 -ne 0 ]; then
+		errorLog "CheckUpdate: Unable to confirm version of script"
+	else
+		# "709c7506b17090bce0d1e2464f39f4a434cf25f1" is the hash for "ERROR" :)
+		if grep -sq "709c7506b17090bce0d1e2464f39f4a434cf25f1" "${FILE_LOCAL}" ; then
+			errorLog "CheckUpdate: Unable to validate local copy"
+		elif grep -sq "709c7506b17090bce0d1e2464f39f4a434cf25f1" "${FILE_REMOTE}" ; then
+			errorLog "CheckUpdate: Unable to validate remote copy"
+		elif ! diff "${FILE_LOCAL}" "${FILE_REMOTE}" >/dev/null 2>/dev/null ; then
+			infoLog "Newer version of this script is available at https://github.com/mrworf/plexupdate"
+			infoLog "(or you've made changes to this script yourself)"
+		fi
+	fi
+	rm "${FILE_LOCAL}" 2>/dev/null >/dev/null
+	rm "${FILE_REMOTE}" 2>/dev/null >/dev/null
+fi
+
+
 
 # Fields we need to submit for login to work
 #
