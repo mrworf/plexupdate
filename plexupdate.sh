@@ -494,9 +494,10 @@ fi
 
 
 # Remove any ~ or other oddness in the path we're given
-DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } && pwd)"
+DOWNLOADDIR_PRE=${DOWNLOADDIR}
+DOWNLOADDIR="$(eval cd ${DOWNLOADDIR// /\\ } 2>/dev/null && pwd)"
 if [ ! -d "${DOWNLOADDIR}" ]; then
-	errorLog "Download directory does not exist or is not a directory"
+	errorLog "Download directory does not exist or is not a directory (tried \"${DOWNLOADDIR_PRE}\")"
 	cronexit 1
 fi
 
