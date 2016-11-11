@@ -766,6 +766,13 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	infoLogNoNewline "Downloading release \"${FILENAME}\"..."
 	wget ${WGETOPTIONS} -o "${FILE_WGETLOG}" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
 	CODE=$?
+	if [ ${CODE} -eq 2 ]; then
+		errorLog "!! Your wget is too old to support --show-progress"
+		infoLogNoNewline "Trying to download release \"${FILENAME}\" again..."
+		wget -o "${FILE_WGETLOG}" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
+		CODE=$?
+	fi
+
 	ERROR=$(cat ${FILE_WGETLOG})
 	if [ ${CODE} -ne 0 ]; then
 		errorLog "!! Download failed with code ${CODE}, \"${ERROR}\""
