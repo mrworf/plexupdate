@@ -60,7 +60,6 @@ AUTOINSTALL=no
 AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
-QUIET=no
 ARCH=$(uname -m)
 IGNOREAUTOUPDATE=no
 SHOWPROGRESS=no
@@ -114,7 +113,6 @@ usage() {
 	echo "    -l List available builds and distros"
 	echo "    -p Public Plex Media Server version"
 	echo "    -P Show progressbar when downloading big files"
-	echo "    -q Quiet mode. No stdout, only stderr and exit codes"
 	echo "    -r Print download URL and exit"
 	echo "    -s Auto start (needed for some distros)"
 	echo "    -u Auto update plexupdate.sh before running it (experimental)"
@@ -237,7 +235,7 @@ do
 		(-l) LISTOPTS=yes;;
 		(-p) PUBLIC_CL=yes;;
 		(-P) SHOWPROGRESS=yes;;
-		(-q) QUIET_CL=yes;;
+		(-q) error "QUIET option is deprecated, please redirect to /dev/null instead"; exit 255;;
 		(-r) PRINT_URL=yes;;
 		(-s) AUTOSTART_CL=yes;;
 		(-u) AUTOUPDATE_CL=yes;;
@@ -328,7 +326,7 @@ fi
 #   any values in the configuration file. As a result, we need to check if they've been set on the command line
 #   and overwrite the values that may have been loaded with the config file
 
-for VAR in AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT
+for VAR in AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT
 do
 	VAR2="$VAR""_CL"
 	if [ ! -z ${!VAR2} ]; then
@@ -345,7 +343,7 @@ if [ "${SAVECONFIG}" = "yes" ]; then
 	fi
 	echo "# Config file for plexupdate" >${CONFIGFILE:="${HOME}/.plexupdate"}
 
-	for VAR in AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE
+	for VAR in AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE
 	do
 		if [ ! -z ${!VAR} ]; then
 
@@ -356,8 +354,7 @@ if [ "${SAVECONFIG}" = "yes" ]; then
 			-o ${VAR} = "AUTOINSTALL" \
 			-o ${VAR} = "AUTODELETE" \
 			-o ${VAR} = "AUTOUPDATE" \
-			-o ${VAR} = "AUTOSTART" \
-			-o ${VAR} = "QUIET" ]; then
+			-o ${VAR} = "AUTOSTART" ]; then
 
 				if [ ${!VAR} = "yes" ]; then
 					echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
