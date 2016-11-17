@@ -77,8 +77,8 @@ URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
 URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
 
 FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
-FILE_RAW=$(mktemp /tmp/plexupdate.failcause.XXXX)
-FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.raw.XXXX)
+FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
+FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
 FILE_KAKA=$(mktemp /tmp/plexupdate.kaka.XXXX)
 FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 FILE_WGETLOG=$(mktemp /tmp/plexupdate.wget.XXXX)
@@ -433,18 +433,18 @@ fi
 
 # Sanity check
 if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ]; then
-	errorLog "Need email & password to download PlexPass version. Otherwise run with -p to download public version."
-	cronexit 1
+	error "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
+	exit 1
 elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
-	errorLog "EMAIL field must contain a valid email address"
-	cronexit 1
+	error "EMAIL field must contain a valid email address"
+	exit 1
 fi
 
 
 if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ]; then
 	id | grep -i 'uid=0(' 2>&1 >/dev/null
 	if [ $? -ne 0 ]; then
-		error "You need to be root to use autoinstall/autostart option."
+		error "You need to be root to use AUTOINSTALL/AUTOSTART option."
 		exit 1
 	fi
 fi
@@ -534,8 +534,6 @@ if [ "${PUBLIC}" = "no" ]; then
 
 	# Provide some details to the end user
 	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
-	info "Contents of ${FILE_RAW}"
-	cat "${FILE_RAW}"
 	if [ $RESULTCODE -eq 401 ]; then
 		error "Username and/or password incorrect"
 		if [ "$VERBOSE" = "yes" ]; then
@@ -584,7 +582,7 @@ if [ "${LISTOPTS}" = "yes" ]; then
 fi
 
 # Extract the URL for our release
-info "Retriving list of available downloads"
+info "Retrieving list of available distributions"
 
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
 RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
