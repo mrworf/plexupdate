@@ -1,18 +1,44 @@
 #!/bin/bash
-
+#
+# Script to be placed in one of
+#   /etc/cron.daily
+#   /etc/cron.weekly
+#
+# or called directly via /etc/crontab
+#
+# Do NOT rename it so it has a dot "." in the name, this will cause
+# ubuntu (and perhaps other distros) to ignore it.
+#
+# CONF    is used to point out a configuration file (optional)
+# SCRIPT  points out where to find plexupdate.sh
+# LOGGING if true, logs all output to syslog daemon facility
+#         (typically /var/log/daemon.log or /var/log/syslog)
+#
+# Set CONFIGURED to true once you've setup the previous three
+# options.
+#
 CONFIGURED=false
 
 CONF=
 SCRIPT=/home/john.doe/plexupdate/plexupdate.sh
-LOGGING=false
+LOGGING=true
 
 if ! $CONFIGURED; then
   echo "ERROR: You have not configured this script" >&2
   exit 255
 fi
 
+if [ -z "${SCRIPT}" -o ! -f "${SCRIPT}" ]; then
+  echo "ERROR: Cannot find plexupdate.sh (tried ${SCRIPT})" >&2
+  exit 255
+fi
+
 if [ ! -z "$CONF" ]; then
   # We have a config file, prefix it with parameter
+  if [ ! -f "${CONF}" ]; then
+    echo "ERROR: Cannot find config file (tried ${CONF})" >&2
+    exit 255
+  fi
   CONF="--config \"${CONF}\""
 fi
 
