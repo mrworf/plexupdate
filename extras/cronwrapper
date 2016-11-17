@@ -1,0 +1,41 @@
+#!/bin/bash
+
+CONFIGURED=false
+
+CONF=
+SCRIPT=/home/john.doe/plexupdate/plexupdate.sh
+LOGGING=false
+
+if ! $CONFIGURED; then
+  echo "ERROR: You have not configured this script" >&2
+  exit 255
+fi
+
+if [ ! -z "$CONF" ]; then
+  # We have a config file, prefix it with parameter
+  CONF="--config \"${CONF}\""
+fi
+
+LOGFILE=$(mktemp /tmp/plexupdate.cron.XXXX)
+
+RET=0
+if $LOGGING; then
+  "${SCRIPT}" "${CONF}" 2>&1 | tee ${LOGFILE} | logger -t plexupdate -p daemon.info
+  if grep -q '^ERROR:' ${LOGFILE}; then
+    RET=1
+  fi
+else
+  "${SCRIPT}" "${CONF}" 2>&1 >${LOGFILE}
+  RET=$?
+fi
+
+if [ $RET -ne 0 -a $RET -ne 2 -a $RET -ne 5 ]; then
+  # Make sure user gets an email about this
+  cat ${LOGFILE} >&2
+else
+  # Nah, not important
+  RET=0
+fi
+
+rm "${LOGFILE}" 2>/dev/null
+exit $RET

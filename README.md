@@ -20,7 +20,7 @@ wget https://github.com/mrworf/plexupdate/archive/master.zip && unzip master.zip
 Note that unzip is required (`sudo apt-get install unzip`).
 
 ####Using git to clone (Recommended)
-Using git is way easier and recommended, if you ask me. 
+Using git is way easier and recommended, if you ask me.
 ```
 git clone https://github.com/mrworf/plexupdate.git
 ```
@@ -54,11 +54,11 @@ There are also a few additional options for the more enterprising user. Setting 
   Makes plexupdate.sh automatically update itself using git. Note! This will fail if git isn't available on the command line.
 - AUTOINSTALL
   Automatically installs the newly downloaded version. Currently works for Debian based systems as well as rpm based distros. Will fail miserably if you're not root.
-- AUTODELETE 
+- AUTODELETE
   Once successfully downloaded and installed, it will delete the package (want not, waste not? ;-))
-- PUBLIC 
+- PUBLIC
   The default behavior of plexupdate.sh is to download the PlexPass edition of Plex Media Center. Setting this option to `yes` will make it download the public version instead. If this is yes, then `EMAIL` and `PASS` is no longer needed.
-- FORCE 
+- FORCE
   Normally plexupdate.sh will avoid downloading a file it already has or if it's the same as the installed version. Using this option will force it to download again UNLESS the file already downloaded has the correct checksum. If you have AUTOINSTALL set, plexupdate.sh will then reinstall it.
 - FORCEALL
   Using this option will force plexupdate.sh to override the checksum check and will download the file again, and if you have AUTOINSTALL set, will reinstall it.
@@ -74,16 +74,16 @@ Most of these options can be specified on the command-line as well, this is just
 
 ### Using it from CRON
 
-If you want to use plexupdate as either a cron job or as a [systemd job](https://github.com/mrworf/plexupdate/wiki/Running-plexupdate-daily-as-a-systemd-timer), the -c option should do what you want. All non-error exit codes will be set to 0 and no output will be printed to stdout unless something has actually been done. (a new version was downloaded, installed, etc)
+Generally, you copy the cronwrapper from the extras folder into the ```/etc/cron.weekly``` and edit the script to suite your needs. It  will require you to create a configuration file (or at least, it's highly recommended). It also provides logging via syslog if needed. Should the script fail, it will print why and in most cases, this will result in an email to you.
 
-If you don't even want to know when something has been done, you can combine this with the -q option and you will only receive output in the event of an error. Everything else will just silently finish without producing any output.
+[Also checkout the newly written wiki for more details]
 
 ### Command Line Options
 
 Several new command line options are available. They can be specified in any order.
 
 - ```--config <path/to/config/file>```
-  Defines the location the script should look for the config file. 
+  Defines the location the script should look for the config file.
 - ```--email <Plex.tv email>```
   Email to sign in to Plex.tv
 - ```--pass <Plex.tv password>```
@@ -95,8 +95,8 @@ Several new command line options are available. They can be specified in any ord
 - ```--port <Plex server port>```
   This is the port that Plex Media Server uses.
 - ```--saveconfig```
-  Saves the configuration as it is currently. This will take whatever is in the config file, plus whatever is specified on the command line and will save the config file with that information. Any information in the config file that plexupdate.sh does not understand or use WILL BE LOST. 
-	
+  Saves the configuration as it is currently. This will take whatever is in the config file, plus whatever is specified on the command line and will save the config file with that information. Any information in the config file that plexupdate.sh does not understand or use WILL BE LOST.
+
 ### Logs
 
 The script now outputs everything to a file (by default `/tmp/plexupdate.log`). This log ***MAY*** contain passwords, so if you post it online, ***USE CAUTION***.
@@ -131,7 +131,7 @@ sudo plexupdate/plexupdate.sh -p -u -a
 
 ## What username and password are you talking about
 
-The username and password for http://plex.tv 
+The username and password for http://plex.tv
 
 ## My password is rejected even though correct
 
