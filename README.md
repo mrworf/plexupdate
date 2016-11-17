@@ -76,7 +76,7 @@ Most of these options can be specified on the command-line as well, this is just
 
 Generally, you copy the cronwrapper from the extras folder into the ```/etc/cron.weekly``` and edit the script to suite your needs. It  will require you to create a configuration file (or at least, it's highly recommended). It also provides logging via syslog if needed. Should the script fail, it will print why and in most cases, this will result in an email to you.
 
-[Also checkout the newly written wiki for more details]
+[Also checkout the wiki for more details](https://github.com/mrworf/plexupdate/wiki/Ubuntu%3A-Run-plexupdate.sh-from-cron)
 
 ### Command Line Options
 
