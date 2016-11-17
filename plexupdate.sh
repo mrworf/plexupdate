@@ -383,7 +383,7 @@ done
 # valid will NOT be saved.
 if [ "${SAVECONFIG}" = "yes" ]; then
 	if [ ! -d "$(eval cd ${DOWNLOADDIR// /\\ } 2>/dev/null && pwd)" ]; then
-		error "Download directory does not exist or is not a directory (tried \"${DOWNLOADDIR}\")"
+		errorLog "Download directory does not exist or is not a directory (tried \"${DOWNLOADDIR}\")"
 		exit 1
 	fi
 	echo "# Config file for plexupdate" >${CONFIGFILE:="${HOME}/.plexupdate"}
