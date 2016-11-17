@@ -295,7 +295,7 @@ do
 		(-U) IGNOREAUTOUPDATE=yes;;
 
 		(--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes ${CONFIGFILE});;
-		(--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes ${DOWNLOADDIR_CL});; 
+		(--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes ${DOWNLOADDIR_CL});;
 		(--email) shift; EMAIL_CL="$1"; EMAIL_CL=$(trimQuotes ${EMAIL_CL});;
 		(--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes ${PASS_CL});;
 		(--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes ${PLEXSERVER_CL});;
@@ -382,6 +382,10 @@ done
 # This will destroy and recreate the config file. Any settings that are set in the config file but are no longer
 # valid will NOT be saved.
 if [ "${SAVECONFIG}" = "yes" ]; then
+	if [ ! -d "$(eval cd ${DOWNLOADDIR// /\\ } 2>/dev/null && pwd)" ]; then
+		error "Download directory does not exist or is not a directory (tried \"${DOWNLOADDIR}\")"
+		exit 1
+	fi
 	echo "# Config file for plexupdate" >${CONFIGFILE:="${HOME}/.plexupdate"}
 
 	for VAR in AUTOINSTALL CRON AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC QUIET AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE
