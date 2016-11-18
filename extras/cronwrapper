@@ -51,7 +51,7 @@ if $LOGGING; then
     RET=1
   fi
 else
-  "${SCRIPT}" "${CONF}" 2>&1 >${LOGFILE}
+  "${SCRIPT}" "${CONF}" >${LOGFILE} 2>&1
   RET=$?
 fi
 
