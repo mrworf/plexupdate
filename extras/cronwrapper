@@ -55,7 +55,7 @@ else
   RET=$?
 fi
 
-if [ $RET -ne 0 -a $RET -ne 2 -a $RET -ne 5 ]; then
+if [ $RET -ne 2 -a $RET -ne 5 ]; then
   # Make sure user gets an email about this
   cat ${LOGFILE} >&2
 else
