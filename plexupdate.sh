@@ -192,7 +192,7 @@ keypair() {
 
 # Setup an exit handler so we cleanup
 cleanup() {
-	for F in "${FILE_RAW}" "${FILE_FAILCAUSE}" "${FILE_POSTDATA}" "${FILE_KAKA}" "${FILE_SHA}" "${FILE_LOCAL}" "${FILE_REMOTE}"; do
+	for F in "${FILE_RAW}" "${FILE_FAILCAUSE}" "${FILE_POSTDATA}" "${FILE_KAKA}" "${FILE_SHA}" "${FILE_LOCAL}" "${FILE_REMOTE}" "${FILE_WGETLOG}"; do
 		rm "$F" 2>/dev/null >/dev/null
 	done
 }
