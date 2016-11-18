@@ -39,7 +39,7 @@ if [ ! -z "$CONF" ]; then
     echo "ERROR: Cannot find config file (tried ${CONF})" >&2
     exit 255
   fi
-  CONF="--config \"${CONF}\""
+  CONF="--config=${CONF}"
 fi
 
 LOGFILE=$(mktemp /tmp/plexupdate.cron.XXXX)
