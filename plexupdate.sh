@@ -210,11 +210,7 @@ fi
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,port:,saveconfig"
-getopt -T >/dev/null
-if [ $? -eq 4 ]; then
-	optstring="-o $optstring"
-fi
+optstring="-o acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,port:,saveconfig"
 GETOPTRES=$(getopt $optstring -- "$@")
 if [ $? -eq 1 ]; then
 	exit 1
