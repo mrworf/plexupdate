@@ -490,9 +490,13 @@ fi
 
 # Sanity check
 if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ]; then
-	errorLog "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
+	errorLog "Need email & password to download PlexPass version. Otherwise run with -p to download public version."
+	cronexit 1
+elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" != *"@"*"."* ]]; then
+	errorLog "EMAIL field must contain an email address"
 	cronexit 1
 fi
+
 
 if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ]; then
 	id | grep -i 'uid=0(' 2>&1 >/dev/null
@@ -640,7 +644,7 @@ if [ "${PUBLIC}" = "no" ]; then
 	# Provide some details to the end user
 	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
 	if [ $RESULTCODE -eq 401 ]; then
-		errorLog "Username and/or password incorrect"
+		errorLog "email and/or password incorrect"
 		if [ "$VERBOSE" = "yes" ]; then
 			errorLog "Tried using \"${EMAIL}\" and \"${PASS}\" "
 		fi
