@@ -150,6 +150,7 @@ IGNOREAUTOUPDATE=no
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
+VERBOSE=no
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="yum -y install"
@@ -263,7 +264,7 @@ fi
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,port:,saveconfig"
+optstring="acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:,saveconfig"
 getopt -T >/dev/null
 if [ $? -eq 4 ]; then
 	optstring="-o $optstring"
@@ -293,6 +294,7 @@ do
 		(-S) errorLog "SILENT option has been removed, please use QUIET (-q) instead"; cronexit 255;;
 		(-u) AUTOUPDATE_CL=yes;;
 		(-U) IGNOREAUTOUPDATE=yes;;
+		(-v) VERBOSE=yes;;
 
 		(--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes ${CONFIGFILE});;
 		(--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes ${DOWNLOADDIR_CL});;
@@ -487,7 +489,7 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 fi
 
 # Sanity check
-if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ] && [ ! -f "${FILE_KAKA}" ]; then
+if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ]; then
 	errorLog "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
 	cronexit 1
 fi
@@ -639,6 +641,9 @@ if [ "${PUBLIC}" = "no" ]; then
 	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
 	if [ $RESULTCODE -eq 401 ]; then
 		errorLog "Username and/or password incorrect"
+		if [ "$VERBOSE" = "yes" ]; then
+			errorLog "Tried using \"${EMAIL}\" and \"${PASS}\" "
+		fi
 		cronexit 1
 	elif [ $RESULTCODE -ne 201 ]; then
 		errorLog "Failed to login, debug information:"
