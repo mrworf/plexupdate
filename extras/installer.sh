@@ -22,8 +22,6 @@ install() {
 	fi
 
 	if [ $EUID != 0 ]; then
-		echo "You don't have permissions to continue, trying sudo instead..."
-		sleep 1
 		sudo $DISTRO_INSTALL
 	else
 		$DISTRO_INSTALL
@@ -171,6 +169,12 @@ save_config() {
 	echo "done"
 }
 
+if [ $EUID -ne 0 ]; then
+	echo
+	echo "This script needs to be run with root/sudo, but you are running as '$(whoami)'. Enabling sudo."
+	sudo -v
+fi
+
 if [ -f /etc/redhat-release ]; then
 	REDHAT=true
 else
@@ -189,13 +193,12 @@ read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
 if [ ! -d "$FULL_PATH" ]; then
 	echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
 	if ! mkdir -p "$FULL_PATH" 2>/dev/null; then
-		echo "trying with sudo... "
 		sudo mkdir -p "$FULL_PATH" || abort "failed, cannot continue"
 		sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
 	fi
 	echo "done"
 elif [ ! -w "$FULL_PATH" ]; then
-	echo -n "'$FULL_PATH' exists, but you don't have permission to write to it. Changing owner with sudo... "
+	echo -n "'$FULL_PATH' exists, but you don't have permission to write to it. Changing owner... "
 	sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
 	echo "done"
 fi
