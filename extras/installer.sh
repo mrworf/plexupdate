@@ -29,29 +29,31 @@ install() {
 }
 
 yesno() {
-	read -n 1 -p "[Y/n] " answer
+	while true; do
+		read -n 1 -p "[Y/n] " answer
 
-	if [ "$answer" == "n" -o "$answer" == "N" ]; then
-		echo
-		return 1
-	elif [ ! -z "$answer" ]; then
-		echo
-	fi
-
-	return 0
+		if [ "$answer" == "n" -o "$answer" == "N" ]; then
+			echo
+			return 1
+		elif [ -z "$answer" -o "$answer" == "y" -o "$answer" == "Y" ]; then
+			echo
+			return 0
+		fi
+	done
 }
 
 noyes() {
-	read -n 1 -p "[N/y] " answer
+	while true; do
+		read -n 1 -p "[N/y] " answer
 
-	if [ "$answer" == "y" -o "$answer" == "Y" ]; then
-		echo
-		return 1
-	elif [ ! -z "$answer" ]; then
-		echo
-	fi
-
-	return 0
+		if [ "$answer" == "y" -o "$answer" == "Y" ]; then
+			echo
+			return 1
+		elif [ -z "$answer" -o "$answer" == "n" -o "$answer" == "N" ]; then
+			echo
+			return 0
+		fi
+	done
 }
 
 abort() {
@@ -70,8 +72,22 @@ configure_plexupdate() {
 	echo -n "Do you want to install the latest PlexPass releases? "
 	if yesno; then
 		PUBLIC=
-		read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
-		read -e -p "PlexPass Password: " -i "$PASS" PASS
+		while true; do
+			read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
+			if [ -z "$EMAIL" ] || [[ "$EMAIL" != *"@"*"."* ]]; then
+				echo "Please provide a valid email address"
+			else
+				break
+			fi
+		done
+		while true; do
+			read -e -p "PlexPass Password: " -i "$PASS" PASS
+			if [ -z "$PASS" ]; then
+				echo "Please provide a password"
+			else
+				break
+			fi
+		done
 	else
 		EMAIL=
 		PASS=
@@ -93,12 +109,29 @@ configure_plexupdate() {
 			if [ -z "$PLEXSERVER" ]; then
 				PLEXSERVER="127.0.0.1"
 			fi
-			read -e -p "Plex Server IP/DNS name: " -i "$PLEXSERVER" PLEXSERVER
+			while true; do
+				read -e -p "Plex Server IP/DNS name: " -i "$PLEXSERVER" PLEXSERVER
+				if ! ping -c 1 -w 1 "$PLEXSERVER" &>/dev/null ; then
+					echo -n "Server $PLEXSERVER isn't responding, are you sure you entered it correctly? "
+					if ! noyes; then
+						break
+					fi
+				else
+					break
+				fi
+			done
 			if [ -z "$PLEXPORT" ]; then
 				PLEXPORT=32400
 			fi
-
-			read -e -p "Plex Server Port: " -i "$PLEXPORT" PLEXPORT
+			while true; do
+				read -e -p "Plex Server Port: " -i "$PLEXPORT" PLEXPORT
+				if ! [[ "$PLEXPORT" =~ ^[1-9][0-9]*$ ]]; then
+					echo "Port $PLEXPORT isn't valid, please try again"
+					PLEXPORT=32400
+				else
+					break
+				fi
+			done
 		else
 			PLEXSERVER=
 			PLEXPORT=
@@ -224,4 +257,8 @@ else
 fi
 
 configure_plexupdate
-configure_cron
+if [ -d "$(dirname "$CRONWRAPPER")" ]; then
+	configure_cron
+else
+	echo "Seems like you don't have a supported cron job setup, please see README.md for more details."
+fi
