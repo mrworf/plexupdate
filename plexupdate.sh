@@ -268,7 +268,13 @@ if [ ! -z "${CONFIGFILE}" ]; then
 	fi
 else
 	# Load settings from config file if it exists
-	# Also, respect SUDO_USER and try that first
+	if [ -f /etc/plexupdate.conf ]; then
+		info "Reading configuration in: /etc/plexupdate.conf"
+		CONFIGFILE=/etc/plexupdate.conf
+		source /etc/plexupdate.conf
+	fi
+
+	# Check for a SUDO_USER config
 	if [ ! -z "${SUDO_USER}" ]; then
 		# Make sure nothing bad comes from this (since we use eval)
 		ERROR=0
@@ -292,18 +298,18 @@ else
 		fi
 
 		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
-			info "Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate" #>/dev/null
+			info "Reading \"${SUDO_USER}\" configuration in: ${CONFIGDIR}/.plexupdate"
 			CONFIGFILE="${CONFIGDIR}/.plexupdate"
 			source "${CONFIGDIR}/.plexupdate"
 		elif [ -f ~/.plexupdate ]; then
 			# Fallback for compatibility
-			info "Using \"${SUDO_USER}\" configuration: ${HOME}/.plexupdate" #>/dev/null
+			info "Reading \"${SUDO_USER}\" configuration in: ${HOME}/.plexupdate"
 			CONFIGFILE="${HOME}/.plexupdate"		# tilde expansion won't happen later.
 			source ~/.plexupdate
 		fi
 	elif [ -f ~/.plexupdate ]; then
 		# Fallback for compatibility
-		info "Using configuration: ${HOME}/.plexupdate" #>/dev/null
+		info "Reading configuration in: ${HOME}/.plexupdate"
 		CONFIGFILE="${HOME}/.plexupdate"
 		source ~/.plexupdate
 	fi
