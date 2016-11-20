@@ -67,7 +67,7 @@ WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
 
 # Default options for package managers, override if needed
-REDHAT_INSTALL="yum -y install"
+REDHAT_INSTALL="dnf -y install"
 DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
@@ -260,7 +260,7 @@ fi
 # Allow manual control of configfile
 if [ ! -z "${CONFIGFILE}" ]; then
 	if [ -f "${CONFIGFILE}" ]; then
-		info "Using configuration: ${CONFIGFILE}" #>/dev/null
+		info "Using configuration: ${CONFIGFILE}"
 		source "${CONFIGFILE}"
 	else
 		error "Cannot load configuration ${CONFIGFILE}"
@@ -450,7 +450,11 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 			REDHAT=yes
 			BUILD="linux-ubuntu-${ARCH}"
 			DISTRO="redhat"
-			DISTRO_INSTALL="${REDHAT_INSTALL}"
+			if ! hash dnf 2>/dev/null; then
+				DISTRO_INSTALL="${REDHAT_INSTALL/dnf/yum}"
+			else
+				DISTRO_INSTALL="${REDHAT_INSTALL}"
+			fi
 		else
 			REDHAT=no
 			BUILD="linux-ubuntu-${ARCH}"
