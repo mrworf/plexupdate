@@ -4,7 +4,8 @@ ORIGIN_REPO="https://github.com/mrworf/plexupdate"
 OPT_PATH="/opt"
 FULL_PATH="$OPT_PATH/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
-CONFIGCRON="/etc/plexpass.cron.conf"
+CONFIGCRON="/etc/plexupdate.cron.conf"
+CRONWRAPPER="/etc/cron.daily/plexupdate"
 
 install() {
 	echo "'$req' is required but not installed, attempting to install..."
@@ -131,11 +132,21 @@ configure_cron() {
 		echo
 		echo -n "Installing daily cron job... "
 		if [ $EUID -ne 0 ]; then
-			sudo ln -sf ${FULL_PATH}/extras/cronwrapper /etc/cron.daily/plexupdate
+			sudo ln -sf ${FULL_PATH}/extras/cronwrapper "$CRONWRAPPER"
 		else
-			ln -sf ${FULL_PATH}/extras/cronwrapper /etc/cron.daily/plexupdate
+			ln -sf ${FULL_PATH}/extras/cronwrapper "$CRONWRAPPER"
 		fi
 		echo "done"
+	elif [ -f "$CRONWRAPPER" -o -f "$CONFIGCRON" ]; then
+		echo
+		echo -n "Cleaning up old cron configuration... "
+		if [ -f "$CRONWRAPPER" ]; then
+			sudo rm "$CRONWRAPPER" || echo "Failed to remove old cron script, please check '$CRONWRAPPER'"
+		fi
+		if [ -f "$CONFIGCRON" ]; then
+			sudo rm "$CONFIGCRON" || echo "Failed to remove old cron configuration, please check '$CONFIGCRON'"
+		fi
+		echo done
 	fi
 }
 
@@ -149,7 +160,7 @@ save_config() {
 	done
 
 	echo
-	echo "Writing configuration file '$2'..."
+	echo -n "Writing configuration file '$2'... "
 	if [ $EUID -ne 0 ]; then
 		# make sure that new file is owned by root instead of owner of CONFIGTEMP
 		sudo tee "$2" > /dev/null < "$CONFIGTEMP"
@@ -157,6 +168,7 @@ save_config() {
 	else
 		mv "$CONFIGTEMP" "$2"
 	fi
+	echo "done"
 }
 
 if [ -f /etc/redhat-release ]; then
