@@ -70,6 +70,7 @@ configure_plexupdate() {
 	echo
 	echo -n "Do you want to install the latest PlexPass releases? "
 	if yesno; then
+		PUBLIC=
 		read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
 		read -e -p "PlexPass Password: " -i "$PASS" PASS
 	else
@@ -103,6 +104,9 @@ configure_plexupdate() {
 			PLEXSERVER=
 			PLEXPORT=
 		fi
+	else
+		PLEXSERVER=
+		PLEXPORT=
 	fi
 
 	save_config "AUTOUPDATE EMAIL PASS PUBLIC AUTOINSTALL PLEXSERVER PLEXPORT" "$CONFIGFILE"
