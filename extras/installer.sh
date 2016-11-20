@@ -66,6 +66,7 @@ configure_plexupdate() {
 
 	[ -f "$CONFIGFILE" ] && source "$CONFIGFILE"
 
+	echo
 	echo -n "Do you want to install the latest PlexPass releases? "
 	if yesno; then
 		read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
@@ -76,6 +77,7 @@ configure_plexupdate() {
 		PUBLIC=yes
 	fi
 
+	echo
 	echo -n "Would you like to automatically install the latest release when it is downloaded? "
 	if yesno; then
 		AUTOINSTALL=yes
@@ -84,6 +86,7 @@ configure_plexupdate() {
 	fi
 
 	if [ "$AUTOINSTALL" == "yes" ]; then
+		echo
 		echo -n "When using the auto-install option, would you like to check if the server is in use before upgrading? "
 		if yesno; then
 			if [ -z "$PLEXSERVER" ]; then
@@ -105,12 +108,14 @@ configure_plexupdate() {
 }
 
 configure_cron() {
+	echo
 	echo -n "Would you like to set up automatic daily updates for Plex? "
 	if yesno; then
 		CONF="$CONFIGFILE"
 		SCRIPT="${FULL_PATH}/plexupdate.sh"
 		LOGGING=false
 
+		echo
 		echo -n "Do you want to log the daily update runs to syslog so you can examine the output later? "
 		if yesno; then
 			LOGGING=true
@@ -118,12 +123,14 @@ configure_cron() {
 
 		save_config "CONF SCRIPT LOGGING" "/etc/plexupdate.cron.conf"
 
-		echo "Installing daily cron job..."
+		echo
+		echo -n "Installing daily cron job... "
 		if [ $EUID -ne 0 ]; then
 			sudo ln -sf ${FULL_PATH}/extras/cronwrapper /etc/cron.daily/plexupdate
 		else
 			ln -sf ${FULL_PATH}/extras/cronwrapper /etc/cron.daily/plexupdate
 		fi
+		echo "done"
 	fi
 }
 
@@ -136,6 +143,7 @@ save_config() {
 		fi
 	done
 
+	echo
 	echo "Writing configuration file '$2'..."
 	if [ $EUID -ne 0 ]; then
 		# make sure that new file is owned by root instead of owner of CONFIGTEMP
@@ -164,31 +172,34 @@ read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
 if [ ! -d "$FULL_PATH" ]; then
 	echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
 	if ! mkdir -p "$FULL_PATH" 2>/dev/null; then
-		echo "failed"
 		echo "trying with sudo... "
 		sudo mkdir -p "$FULL_PATH" || abort "failed, cannot continue"
 		sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
 	fi
 	echo "done"
 elif [ ! -w "$FULL_PATH" ]; then
-	echo "'$FULL_PATH' exists, but you don't have permission to write to it. Changing owner with sudo..."
+	echo -n "'$FULL_PATH' exists, but you don't have permission to write to it. Changing owner with sudo... "
 	sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
+	echo "done"
 fi
 
 if [ -d "${FULL_PATH}/.git" ]; then
 	cd "$FULL_PATH"
 	if git remote -v | grep -q "mrworf/plexupdate"; then
-		echo "Found existing plexupdate repository in '$FULL_PATH', updating..."
+		echo -n "Found existing plexupdate repository in '$FULL_PATH', updating... "
 		git pull >/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
 	else
 		abort "'$FULL_PATH' appears to contain a different git repository, cannot continue"
 	fi
+	echo "done"
 	cd - &> /dev/null
 else
-	git clone "$ORIGIN_REPO" "$FULL_PATH"
+	echo -n "Installing plexupdate into '$FULL_PATH'... "
+	git clone "$ORIGIN_REPO" "$FULL_PATH" &> /dev/null || abort "install failed, cannot continue"
+	echo "done"
 	# FIXME These 3 lines are just to allow us to test easily while we're still using this branch. Remember to take this out before merging to master.
 	cd "$FULL_PATH"
-	git checkout reworklog
+	git checkout reworklog > /dev/null
 	cd - &> /dev/null
 fi
 
