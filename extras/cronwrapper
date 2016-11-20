@@ -17,15 +17,13 @@
 # Set CONFIGURED to true once you've setup the previous three
 # options.
 #
-CONFIGURED=false
 
-CONF=
-SCRIPT=/home/john.doe/plexupdate/plexupdate.sh
-LOGGING=true
 
-if ! $CONFIGURED; then
-  echo "ERROR: You have not configured this script" >&2
+if [ ! -f /etc/plexpass.cron.conf ]; then
+  echo "ERROR: You have not configured /etc/plexpass.cron.conf" >&2
   exit 255
+else
+  source /etc/plexpass.cron.conf
 fi
 
 if [ -z "${SCRIPT}" -o ! -f "${SCRIPT}" ]; then
