@@ -63,6 +63,7 @@ abort() {
 configure_plexupdate() {
 
 	CONFIGTEMP=$(mktemp /tmp/plexupdate.tempconf.XXX)
+	AUTOUPDATE=yes
 
 	[ -f "$CONFIGFILE" ] && source "$CONFIGFILE"
 
@@ -104,7 +105,7 @@ configure_plexupdate() {
 		fi
 	fi
 
-	save_config "EMAIL PASS PUBLIC AUTOINSTALL PLEXSERVER PLEXPORT" "$CONFIGFILE"
+	save_config "AUTOUPDATE EMAIL PASS PUBLIC AUTOINSTALL PLEXSERVER PLEXPORT" "$CONFIGFILE"
 }
 
 configure_cron() {
