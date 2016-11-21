@@ -257,63 +257,9 @@ if ! hash wget 2>/dev/null; then
 	exit 1
 fi
 
-# Allow manual control of configfile
-if [ ! -z "${CONFIGFILE}" ]; then
-	if [ -f "${CONFIGFILE}" ]; then
-		info "Using configuration: ${CONFIGFILE}"
-		source "${CONFIGFILE}"
-	else
-		error "Cannot load configuration ${CONFIGFILE}"
-		exit 1
-	fi
-else
-	# Load settings from config file if it exists
-	if [ -f /etc/plexupdate.conf ]; then
-		info "Reading configuration in: /etc/plexupdate.conf"
-		CONFIGFILE=/etc/plexupdate.conf
-		source /etc/plexupdate.conf
-	fi
+# If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
 
-	# Check for a SUDO_USER config
-	if [ ! -z "${SUDO_USER}" ]; then
-		# Make sure nothing bad comes from this (since we use eval)
-		ERROR=0
-		if   [[ $SUDO_USER == *";"* ]]; then ERROR=1 ; # Allows more commands
-		elif [[ $SUDO_USER == *" "* ]]; then ERROR=1 ; # Space is not a good thing
-		elif [[ $SUDO_USER == *"&"* ]]; then ERROR=1 ; # Spinning off the command is bad
-		elif [[ $SUDO_USER == *"<"* ]]; then ERROR=1 ; # No redirection
-		elif [[ $SUDO_USER == *">"* ]]; then ERROR=1 ; # No redirection
-		elif [[ $SUDO_USER == *"|"* ]]; then ERROR=1 ; # No pipes
-		elif [[ $SUDO_USER == *"~"* ]]; then ERROR=1 ; # No tilde
-		fi
-		if [ ${ERROR} -gt 0 ]; then
-			error "SUDO_USER variable is COMPROMISED: \"${SUDO_USER}\""
-			exit 255
-		fi
-
-		# Try using original user's config
-		CONFIGDIR="$( eval cd ~${SUDO_USER} 2>/dev/null && pwd )"
-		if [ -z "${CONFIGDIR}" ]; then
-			warn "SUDO_USER \"${SUDO_USER}\" does not have a valid home directory, ignoring."
-		fi
-
-		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
-			info "Reading \"${SUDO_USER}\" configuration in: ${CONFIGDIR}/.plexupdate"
-			CONFIGFILE="${CONFIGDIR}/.plexupdate"
-			source "${CONFIGDIR}/.plexupdate"
-		elif [ -f ~/.plexupdate ]; then
-			# Fallback for compatibility
-			info "Reading \"${SUDO_USER}\" configuration in: ${HOME}/.plexupdate"
-			CONFIGFILE="${HOME}/.plexupdate"		# tilde expansion won't happen later.
-			source ~/.plexupdate
-		fi
-	elif [ -f ~/.plexupdate ]; then
-		# Fallback for compatibility
-		info "Reading configuration in: ${HOME}/.plexupdate"
-		CONFIGFILE="${HOME}/.plexupdate"
-		source ~/.plexupdate
-	fi
-fi
+source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
 
 # The way I wrote this, it assumes that whatever we put on the command line is what we want and should override
 #   any values in the configuration file. As a result, we need to check if they've been set on the command line
