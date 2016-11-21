@@ -79,6 +79,9 @@ URL_LOGIN='https://plex.tv/users/sign_in.json'
 URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
 URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
 
+#URL for new version check
+UPSTREAM_GIT_URL='https://raw.githubusercontent.com/demonbane/plexupdate/reworklog/plexupdate.sh' #FIXME
+
 FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
 FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
 FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
@@ -392,7 +395,7 @@ else
 fi
 
 if [ "${CHECKUPDATE}" = "yes" ]; then
-	(wget -q https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh -O - 2>/dev/null || echo ERROR) | shasum >"${FILE_REMOTE}" 2>/dev/null
+	(wget -q "$UPSTREAM_GIT_URL" -O - 2>/dev/null || echo ERROR) | shasum >"${FILE_REMOTE}" 2>/dev/null
 	ERR1=$?
 	(cat "$0" 2>/dev/null || echo ERROR) | shasum >"${FILE_LOCAL}" 2>/dev/null
 	ERR2=$?
