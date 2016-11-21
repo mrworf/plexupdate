@@ -19,11 +19,11 @@
 #
 
 
-if [ ! -f /etc/plexpass.cron.conf ]; then
-  echo "ERROR: You have not configured /etc/plexpass.cron.conf" >&2
+if [ ! -f /etc/plexupdate.cron.conf ]; then
+  echo "ERROR: You have not configured /etc/plexupdate.cron.conf" >&2
   exit 255
 else
-  source /etc/plexpass.cron.conf
+  source /etc/plexupdate.cron.conf
 fi
 
 if [ -z "${SCRIPT}" -o ! -f "${SCRIPT}" ]; then
