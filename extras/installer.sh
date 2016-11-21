@@ -17,7 +17,6 @@ install() {
 	sleep 1
 
 	[ -z "$DISTRO_INSTALL" ] && check_distro
-	echo "DISTRO_INSTALL='$DISTRO_INSTALL'"
 
 	if [ $EUID != 0 ]; then
 		sudo $DISTRO_INSTALL $1
@@ -42,9 +41,6 @@ check_distro() {
 	else
 		DISTRO="unknown"
 	fi
-	echo "DISTRO='$DISTRO'"
-	echo "DISTRO_INSTALL='$DISTRO_INSTALL'"
-	echo "check_distro completed"
 }
 
 yesno() {
@@ -73,7 +69,6 @@ yesno() {
 	if [ "$default" == "Y" ]; then
 		prompt="[Y/n] "
 	else
-		if [ "$default" != "N" ]; then echo "default='$default'"; fi
 		prompt="[N/y] "
 	fi
 
