@@ -261,8 +261,18 @@ if ! hash wget 2>/dev/null; then
 	exit 1
 fi
 
-# If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
+#FIXME: Temporary error checking to notify people of change from .plexupdate to plexupdate.conf
+if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]; then
+	warn ".plexupdate has been deprecated. You should move your configuration to /etc/plexupdate.conf"
+	if [ -t 1 ]; then
+		for i in `seq 1 5`; do echo -n .\ ; sleep 1; done
+		echo .
+	fi
+	CONFIGFILE=~/.plexupdate
+fi
+#FIXME
 
+# If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
 source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
 
 # The way I wrote this, it assumes that whatever we put on the command line is what we want and should override
