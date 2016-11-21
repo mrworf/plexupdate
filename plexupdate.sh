@@ -264,15 +264,8 @@ if ! hash wget 2>/dev/null; then
 fi
 
 # If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
-if [ -z "${CONFIGFILE}" ]; then
-	if [ -f "/etc/plexupdate.conf" ]; then
-		CONFIGFILE=/etc/plexupdate.conf
-	else
-		error "Due to recent changes, config file must be specified or placed in /etc/plexupdate.conf"
-		exit 1
-	fi
-fi
-source "${CONFIGFILE}" 2>/dev/null
+
+source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
 
 # DO NOT ALLOW VERBOSE FROM CONFIGURATION FILE!
 if [ "${VERBOSE_CL}" = "yes" ]; then
