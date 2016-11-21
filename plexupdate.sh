@@ -309,7 +309,11 @@ if [ "${SAVECONFIG}" = "yes" ]; then
 fi
 
 if [ "${SHOWPROGRESS}" = "yes" ]; then
-	WGETOPTIONS="--show-progress"
+	if ! wget --show-progress -V &>/dev/null; then
+		warn "Your wget is too old to support --show-progress, ignoring"
+	else
+		WGETOPTIONS="--show-progress"
+	fi
 fi
 
 if [ "${IGNOREAUTOUPDATE}" = "yes" ]; then
@@ -593,12 +597,6 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	info "Downloading release \"${FILENAME}\""
 	wget ${WGETOPTIONS} -o "${FILE_WGETLOG}" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
 	CODE=$?
-	if [ ${CODE} -eq 2 ]; then
-		error "Your wget is too old to support --show-progress"
-		info "Trying to download release \"${FILENAME}\" again"
-		wget -o "${FILE_WGETLOG}" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
-		CODE=$?
-	fi
 
 	if [ ${CODE} -ne 0 ]; then
 		error "Download failed with code ${CODE}:"
