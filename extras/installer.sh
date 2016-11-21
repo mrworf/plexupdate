@@ -1,59 +1,99 @@
 #!/bin/bash
 
-ORIGIN_REPO="https://github.com/mrworf/plexupdate"
+ORIGIN_REPO="https://github.com/demonbane/plexupdate" #FIXME
 OPT_PATH="/opt"
 FULL_PATH="$OPT_PATH/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
 CRONWRAPPER="/etc/cron.daily/plexupdate"
 
+# default options
+AUTOINSTALL=yes
+AUTOUPDATE=yes
+PUBLIC=
+
 install() {
 	echo "'$req' is required but not installed, attempting to install..."
 	sleep 1
 
-	if $UBUNTU; then
-		DISTRO_INSTALL="apt install $1"
-	elif $REDHAT; then
-		if hash dnf 2>/dev/null; then
-			DISTRO_INSTALL="dnf install $1"
-		else
-			DISTRO_INSTALL="yum install $1"
-		fi
-	fi
+	[ -z "$DISTRO_INSTALL" ] && check_distro
+	echo "DISTRO_INSTALL='$DISTRO_INSTALL'"
 
 	if [ $EUID != 0 ]; then
-		sudo $DISTRO_INSTALL
+		sudo $DISTRO_INSTALL $1
 	else
-		$DISTRO_INSTALL
+		$DISTRO_INSTALL $1
 	fi
 }
 
-yesno() {
-	while true; do
-		read -n 1 -p "[Y/n] " answer
+check_distro() {
+	if [ -f /etc/redhat-release ] && hash dnf 2>/dev/null; then
+		DISTRO="redhat"
+		DISTRO_INSTALL="dnf -y install"
+	elif [ -f /etc/redhat-release ] && hash yum 2>/dev/null; then
+		DISTRO="redhat" #or CentOS but functionally the same
+		DISTRO_INSTALL="yum -y install"
+	elif hash apt 2>/dev/null; then
+		DISTRO="debian" #or Ubuntu
+		DISTRO_INSTALL="apt install"
+	elif hash apt-get 2>/dev/null; then
+		DISTRO="debian"
+		DISTRO_INSTALL="apt-get install"
+	else
+		DISTRO="unknown"
+	fi
+	echo "DISTRO='$DISTRO'"
+	echo "DISTRO_INSTALL='$DISTRO_INSTALL'"
+	echo "check_distro completed"
+}
 
-		if [ "$answer" == "n" -o "$answer" == "N" ]; then
-			echo
-			return 1
-		elif [ -z "$answer" -o "$answer" == "y" -o "$answer" == "Y" ]; then
+yesno() {
+	case "$1" in
+		"")
+			default="Y"
+			;;
+		yes)
+			default="Y"
+			;;
+		true)
+			default="Y"
+			;;
+		no)
+			default="N"
+			;;
+		false)
+			default="N"
+			;;
+		*)
+			default="$1"
+			;;
+	esac
+
+	default="$(tr "[:lower:]" "[:upper:]" <<< "$default")"
+	if [ "$default" == "Y" ]; then
+		prompt="[Y/n] "
+	else
+		if [ "$default" != "N" ]; then echo "default='$default'"; fi
+		prompt="[N/y] "
+	fi
+
+	while true; do
+		read -n 1 -p "$prompt" answer
+		answer=${answer:-$default}
+		answer="$(tr "[:lower:]" "[:upper:]" <<< "$answer")"
+
+		if [ "$answer" == "Y" ]; then
 			echo
 			return 0
+		elif [ "$answer" == "N" ]; then
+			echo
+			return 1
 		fi
 	done
 }
 
 noyes() {
-	while true; do
-		read -n 1 -p "[N/y] " answer
-
-		if [ "$answer" == "y" -o "$answer" == "Y" ]; then
-			echo
-			return 1
-		elif [ -z "$answer" -o "$answer" == "n" -o "$answer" == "N" ]; then
-			echo
-			return 0
-		fi
-	done
+	yesno N
 }
 
 abort() {
@@ -64,13 +104,16 @@ abort() {
 configure_plexupdate() {
 
 	CONFIGTEMP=$(mktemp /tmp/plexupdate.tempconf.XXX)
-	AUTOUPDATE=yes
 
 	[ -f "$CONFIGFILE" ] && source "$CONFIGFILE"
 
 	echo
 	echo -n "Do you want to install the latest PlexPass releases? "
-	if yesno; then
+	# The answer to this question and the value of PUBLIC are basically inverted
+	if [ "$PUBLIC" == "yes" ]; then
+		default=N
+	fi
+	if yesno $default; then
 		PUBLIC=
 		while true; do
 			read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
@@ -89,6 +132,7 @@ configure_plexupdate() {
 			fi
 		done
 	else
+		# don't forget to erase old settings if they changed their answer
 		EMAIL=
 		PASS=
 		PUBLIC=yes
@@ -96,15 +140,20 @@ configure_plexupdate() {
 
 	echo
 	echo -n "Would you like to automatically install the latest release when it is downloaded? "
-	if yesno; then
-		AUTOINSTALL=yes
-	else
-		AUTOINSTALL=no
-	fi
 
-	if [ "$AUTOINSTALL" == "yes" ]; then
+	if yesno "$AUTOINSTALL"; then
+		AUTOINSTALL=yes
+
+		[ -z "$DISTRO" ] && check_distro
+		if [ "$DISTRO" == "redhat" ]; then
+			AUTOSTART=yes
+		else
+			AUTOSTART=
+		fi
+
 		echo
 		echo -n "When using the auto-install option, would you like to check if the server is in use before upgrading? "
+		#We can't tell if they previously selected no or if this is their first run, so we have to assume Yes
 		if yesno; then
 			if [ -z "$PLEXSERVER" ]; then
 				PLEXSERVER="127.0.0.1"
@@ -113,7 +162,7 @@ configure_plexupdate() {
 				read -e -p "Plex Server IP/DNS name: " -i "$PLEXSERVER" PLEXSERVER
 				if ! ping -c 1 -w 1 "$PLEXSERVER" &>/dev/null ; then
 					echo -n "Server $PLEXSERVER isn't responding, are you sure you entered it correctly? "
-					if ! noyes; then
+					if yesno N; then
 						break
 					fi
 				else
@@ -137,24 +186,32 @@ configure_plexupdate() {
 			PLEXPORT=
 		fi
 	else
+		AUTOINSTALL=no
 		PLEXSERVER=
 		PLEXPORT=
 	fi
 
-	save_config "AUTOUPDATE EMAIL PASS PUBLIC AUTOINSTALL PLEXSERVER PLEXPORT" "$CONFIGFILE"
+	save_config "AUTOUPDATE EMAIL PASS PUBLIC AUTOINSTALL AUTOSTART PLEXSERVER PLEXPORT" "$CONFIGFILE"
 }
 
 configure_cron() {
+	if [ ! -d "$(dirname "$CRONWRAPPER")" ]; then
+		echo "Seems like you don't have a supported cron job setup, please see README.md for more details."
+		return 1
+	fi
+
+	[ -f "$CONFIGCRON" ] && source "$CONFIGCRON"
+
 	echo
 	echo -n "Would you like to set up automatic daily updates for Plex? "
 	if yesno; then
 		CONF="$CONFIGFILE"
 		SCRIPT="${FULL_PATH}/plexupdate.sh"
-		LOGGING=false
+		LOGGING=${LOGGING:-false}
 
 		echo
 		echo -n "Do you want to log the daily update runs to syslog so you can examine the output later? "
-		if yesno; then
+		if yesno $LOGGING; then
 			LOGGING=true
 		fi
 
@@ -205,13 +262,7 @@ save_config() {
 if [ $EUID -ne 0 ]; then
 	echo
 	echo "This script needs to be run with root/sudo, but you are running as '$(whoami)'. Enabling sudo."
-	sudo -v
-fi
-
-if [ -f /etc/redhat-release ]; then
-	REDHAT=true
-else
-	UBUNTU=true
+	sudo -v || abort "Root permissions are required for setup, cannot continue"
 fi
 
 for req in wget git; do
@@ -238,7 +289,7 @@ fi
 
 if [ -d "${FULL_PATH}/.git" ]; then
 	cd "$FULL_PATH"
-	if git remote -v | grep -q "mrworf/plexupdate"; then
+	if git remote -v | grep -q "plexupdate"; then
 		echo -n "Found existing plexupdate repository in '$FULL_PATH', updating... "
 		git pull >/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
 	else
@@ -257,8 +308,14 @@ else
 fi
 
 configure_plexupdate
-if [ -d "$(dirname "$CRONWRAPPER")" ]; then
-	configure_cron
-else
-	echo "Seems like you don't have a supported cron job setup, please see README.md for more details."
+configure_cron
+
+echo
+echo -n "Configuration complete. Would you like to run plexupdate with these settings now? "
+if yesno; then
+	if [ "$AUTOINSTALL" == "yes" -a $EUID -ne 0 ]; then
+		sudo "$FULL_PATH/plexupdate.sh" -P --config "$CONFIGFILE"
+	else
+		"$FULL_PATH/plexupdate.sh" -P --config "$CONFIGFILE"
+	fi
 fi
