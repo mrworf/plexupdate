@@ -23,14 +23,14 @@ But, if it failed, read on and we'll guide you.
 
 ## 1. Getting the code
 
-####Using git to clone (Recommended)
-Using git is way easier and recommended
+####Using git to clone
+Using git is the recommended way of getting it
 ```
 git clone https://github.com/mrworf/plexupdate.git
 ```
 Note that git is required (`sudo apt-get install git`)
 
-The main benefit with git clone is that you can update to latest version very easily. If you want to use the auto update feature, you must be using a git clone.
+The main benefit with git clone is that you can update to latest version very easily and it also allows you to use the auto update feature.
 
 ####Using wget and unzip
 
