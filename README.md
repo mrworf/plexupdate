@@ -7,9 +7,7 @@ This tool will automatically download the latest version for linux (Using plexpa
 
 # What happened to `.plexupdate` ?
 
-It has gone away. Due to the fact that most of the time, the script is run as root, it meant a lot of code which had the potential to include the wrong configuration file. So it has been streamlined to only check for `/etc/plexupdate.conf`. You can always call out any config you want using `--config` parameter, but from now on, `.plexupdate` is dead.
-
-On the other hand, `plexupdate.sh` now supports cron out of the box and comes with an easy to use installer (see more below).
+It has gone away to keep it simpler and more secure. You can either provide the config you want using `--config` parameter or place it in `/etc/plexupdate.conf`.
 
 # Installation
 
