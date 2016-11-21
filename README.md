@@ -1,13 +1,13 @@
 ![plexupdate.sh](http://i.imgur.com/ThY5Rvl.png "plexupdate")
 # plexupdate
 
-Plex Update is a BASH script which simplifies the life of headless Linux Plex Media Server users (how's that for a strange description).
+Plex Update is a bash script which helps you keep Plex Media Server up to date on Linux.
 
-This tool will automatically download the latest version for linux (Using plexpass or public version) and if you **kindly ask**, also install it for you.
+plexupdate will automatically download the latest version of Plex Media Server for Linux and, optionally, also install it for you.
 
-# What happened to `.plexupdate` ?
+### What happened to `.plexupdate` ?
 
-It has gone away to keep it simpler and more secure. You can either provide the config you want using `--config` parameter or place it in `/etc/plexupdate.conf`.
+It has gone away to keep things simpler and more secure. You can either provide the config you want using the `--config` parameter or place it in `/etc/plexupdate.conf`.
 
 # Installation
 
@@ -17,20 +17,21 @@ In the old days, this used to be a bit of a chore. But no more!
 bash -c "$(wget -O - https://raw.githubusercontent.com/mrworf/plexupdate/master/extras/installer.sh)"
 ```
 
-will automatically install the tool as well as any dependencies. This has been tested on Ubuntu, Fedora and CentOS but should, for the most part, work on any modern linux distribution.
+will automatically install the tool as well as any dependencies. This has been tested on Ubuntu, Fedora and CentOS but should, for the most part, work on any modern Linux distribution.
 
-But, if it failed, read on and we'll guide you.
+If you'd ever like to change your configuration, you can just re-run this from the extras folder inside your plexupdate directory. (`/opt/plexupdate/extras/installer.sh` by default)
+
+If you have any trouble with the installer, or would just prefer to set plexupdate up manually, read on.
 
 ## 1. Getting the code
 
-####Using git to clone
-Using git is the recommended way of getting it
+####Using git to clone (recommended)
 ```
 git clone https://github.com/mrworf/plexupdate.git
 ```
 Note that git is required (`sudo apt-get install git`)
 
-The main benefit with git clone is that you can update to latest version very easily and it also allows you to use the auto update feature.
+This is the recommended way to install plexupdate. Using git allows you to know when a new version is available as well allowing plexupdate to keep itself up to date (with the AUTOUPDATE option).
 
 ####Using wget and unzip
 
@@ -45,7 +46,7 @@ Note that unzip is required (`sudo apt-get install unzip`).
 In order to use `plexupdate.sh`, it's recommended you create a configuration file.
 
 ```
-nano -w plexupdate.conf
+sudo nano -w /etc/plexupdate.conf
 ```
 
 In the newly opened editor, insert the following (and make *sure* to change email and password)
@@ -58,7 +59,7 @@ DOWNLOADDIR='/tmp/'
 
 This will make `plexupdate.sh` login and download the latest version and save it to /tmp/ folder.
 
-If you don't have plexpass, you can still use `plexupdate.sh`, just set `PUBLIC=yes` instead. The section above becomes
+If you don't have PlexPass, you can still use `plexupdate.sh`, just set `PUBLIC=yes` instead. The section above becomes
 
 ```
 PUBLIC=yes
@@ -116,7 +117,7 @@ There are also a few additional options for the more enterprising user. Setting 
 - AUTODELETE
   Once successfully downloaded and installed, it will delete the package (want not, waste not? ;-))
 - PUBLIC
-  The default behavior of plexupdate.sh is to download the PlexPass edition of Plex Media Center. Setting this option to `yes` will make it download the public version instead. If this is yes, then `EMAIL` and `PASS` is no longer needed.
+  The default behavior of plexupdate.sh is to download the PlexPass edition of Plex Media Server. Setting this option to `yes` will make it download the public version instead. If this is yes, then `EMAIL` and `PASS` is no longer needed.
 - FORCE
   Normally plexupdate.sh will avoid downloading a file it already has or if it's the same as the installed version. Using this option will force it to download again UNLESS the file already downloaded has the correct checksum. If you have AUTOINSTALL set, plexupdate.sh will then reinstall it.
 - FORCEALL
@@ -133,7 +134,7 @@ Most of these options can be specified on the command-line as well, this is just
 
 ### Command Line Options
 
-Plexupdate comes with many command line options, for the most up-to-date, I'd recommend you run plexupdate.sh with -h
+Plexupdate comes with many command line options. For the most up-to-date list, I'd recommend you run plexupdate.sh with -h
 
 But here are some of the more useful ones:
 
