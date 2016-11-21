@@ -158,7 +158,7 @@ But here are some of the more useful ones:
 
 ## Where is `.plexupdate`
 
-See explaination in the top of this document.
+See explanation in the top of this document.
 
 ## What email and password are you talking about
 
