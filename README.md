@@ -5,11 +5,34 @@ Plex Update is a BASH script which simplifies the life of headless Linux Plex Me
 
 This tool will automatically download the latest version for linux (Using plexpass or public version) and if you **kindly ask**, also install it for you.
 
+# What happened to `.plexupdate` ?
+
+It has gone away. Due to the fact that most of the time, the script is run as root, it meant a lot of code which had the potential to include the wrong configuration file. So it has been streamlined to only check for `/etc/plexupdate.conf`. You can always call out any config you want using `--config` parameter, but from now on, `.plexupdate` is dead.
+
+On the other hand, `plexupdate.sh` now supports cron out of the box and comes with an easy to use installer (see more below).
+
 # Installation
 
-It's fairly easy, but let's take it step by step (if it seems too much, skip to the end for a short version)
+In the old days, this used to be a bit of a chore. But no more!
+
+```
+bash -c "$(wget -O - https://raw.githubusercontent.com/mrworf/plexupdate/master/extras/installer.sh)"
+```
+
+will automatically install the tool as well as any dependencies. This has been tested on Ubuntu, Fedora and CentOS but should, for the most part, work on any modern linux distribution.
+
+But, if it failed, read on and we'll guide you.
 
 ## 1. Getting the code
+
+####Using git to clone (Recommended)
+Using git is way easier and recommended
+```
+git clone https://github.com/mrworf/plexupdate.git
+```
+Note that git is required (`sudo apt-get install git`)
+
+The main benefit with git clone is that you can update to latest version very easily. If you want to use the auto update feature, you must be using a git clone.
 
 ####Using wget and unzip
 
@@ -19,33 +42,71 @@ wget https://github.com/mrworf/plexupdate/archive/master.zip && unzip master.zip
 ```
 Note that unzip is required (`sudo apt-get install unzip`).
 
-####Using git to clone (Recommended)
-Using git is way easier and recommended, if you ask me.
-```
-git clone https://github.com/mrworf/plexupdate.git
-```
-Note that git is required (`sudo apt-get install git`)
-
-The main benefit with git clone is that you can update to latest version very easily. If you want to use the auto update feature, you must be using a git clone.
-
 ## 2. Setting it up
 
-To quickly setup plexupdate.sh, you should run it the first time like below:
+In order to use `plexupdate.sh`, it's recommended you create a configuration file.
 
 ```
-./plexupdate.sh --email='my.email@plex-server.com' --pass='my-secret-plex-password' --dldir='/a/folder/to/save/the/files/in' --saveconfig
+nano -w plexupdate.conf
 ```
 
-Obviously you need to change these so they match your account information. And if you don't put anything as for the ```--dldir``` option, the tool will use the folder you're executing the script from. So take care.
+In the newly opened editor, insert the following (and make *sure* to change email and password)
 
-## 3. Advanced options
+```
+EMAIL='john.doe@void.com'
+PASS='verySecretPassword'
+DOWNLOADDIR='/tmp/'
+```
 
-You can point out a different file than ```.plexupdate``` by providing it as the argument to the ```--config``` option. Any options set by the config file can be overridden with command-line options.
+This will make `plexupdate.sh` login and download the latest version and save it to /tmp/ folder.
+
+If you don't have plexpass, you can still use `plexupdate.sh`, just set `PUBLIC=yes` instead. The section above becomes
+
+```
+PUBLIC=yes
+DOWNLOADDIR='/tmp/'
+```
+
+## 3. Cronjob
+
+You might be more interested in running this on a regular basis. To accomplish this, we need to do the following. Locate the `extras` folder which was included with plexupdate. In this folder you'll find `cronwrapper`. You need to "symlink" this into `/etc/cron.daily/`. Symlink means we tell the system that there should be reference/link to the file included in plexupdate. By not copying, we will automatically get updates to the `cronwrapper` when we update plexupdate.
+
+When doing the symlink, it's important to provide the complete path to the file in question, so you will need to edit the path to it in the following snippet. Also, we need to run as root, since only root is allowed to edit files under `/etc`.
+
+```
+sudo ln -s /home/john/plexupdate/extras/cronwrapper /etc/cron.daily/plexupdate
+```
+
+We also need to tell cronwrapper where to find plexupdate, again, this needs to be done as root for the same reasons as above.
+
+```
+sudo nano -w /etc/plexupdate.cron.conf
+```
+
+In the new file, we simply point out the location of `plexupdate.sh` and `plexupdate.conf`
+
+```
+SCRIPT=/home/john/plexupdate/plexupdate.sh
+CONF=/home/john/plexupdate.conf
+```
+
+If you've installed it somewhere else and/or the path to the config is somewhere else, please *make sure* to write the correct paths.
+
+Almost done. Final step is to make `plexupdate.sh` a bit smarter and have it install the newly downloaded version, so open the `plexupdate.conf` file you created previously and add the following:
+
+```
+AUTOINSTALL=yes
+AUTODELETE=yes
+```
+
+This tells `plexupdate.sh` to install the file once downloaded and delete it when done, keeping your server nice and clean.
+
+## 4. Advanced options
 
 There are also a few additional options for the more enterprising user. Setting any of these to `yes` will enable the function.
 
 - CHECKUPDATE
-  If set (and it is by default), it will compare your local copy with the one stored on github. If there is any difference, it will let you know. This is handy if you're not using ```git clone``` but want to be alerted to new versions.
+  If set (and it is by default), it will compare your local copy with the one stored on github. If there is any difference, it will let you know. This is handy if you're not using `git clone` but want to be alerted to new versions.
 - PLEXSERVER
   If set, and combined with AUTOINSTALL, the script will automatically check if the server is in-use and defer the update. Great for crontab users. PLEXSERVER should be set to the IP/DNS of your Plex Media Server, which typically is 127.0.0.1
 - PLEXPORT
@@ -72,69 +133,43 @@ There are also a few additional options for the more enterprising user. Setting 
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
 
-### Using it from CRON
-
-Generally, you copy the cronwrapper from the extras folder into the ```/etc/cron.weekly``` and edit the script to suite your needs. It  will require you to create a configuration file (or at least, it's highly recommended). It also provides logging via syslog if needed. Should the script fail, it will print why and in most cases, this will result in an email to you.
-
-[Also checkout the wiki for more details](https://github.com/mrworf/plexupdate/wiki/Ubuntu%3A-Run-plexupdate.sh-from-cron)
-
 ### Command Line Options
 
-Several new command line options are available. They can be specified in any order.
+Plexupdate comes with many command line options, for the most up-to-date, I'd recommend you run plexupdate.sh with -h
 
-- ```--config <path/to/config/file>```
+But here are some of the more useful ones:
+
+- `--config <path/to/config/file>`
   Defines the location the script should look for the config file.
-- ```--email <Plex.tv email>```
+- `--email <Plex.tv email>`
   Email to sign in to Plex.tv
-- ```--pass <Plex.tv password>```
+- `--pass <Plex.tv password>`
   Password to sign in to Plex.tv
-- ```--dldir <path/to/where/you/want/files/downloaded/to>```
+- `--dldir <path/to/where/you/want/files/downloaded/to>`
   This is the folder that the files will be downloaded to.
-- ```--server <Plex server address>```
+- `--server <Plex server address>`
   This is the address that Plex Media Server is on. Setting this will enable a check to see if users are on the server prior to the software being updated.
-- ```--port <Plex server port>```
+- `--port <Plex server port>`
   This is the port that Plex Media Server uses.
-- ```--saveconfig```
-  Saves the configuration as it is currently. This will take whatever is in the config file, plus whatever is specified on the command line and will save the config file with that information. Any information in the config file that plexupdate.sh does not understand or use WILL BE LOST.
-
-### Logs
-
-The script now outputs everything to a file (by default `/tmp/plexupdate.log`). This log ***MAY*** contain passwords, so if you post it online, ***USE CAUTION***.
-
-To change the default log file, you can specify a new location:
-
-```FILE_STDOUTLOG="<new/path/to/log>" ./plexupdate.sh <options>```
-
-# Running it
-
-It's very simple, just execute the tool once configured. It will complain if you've forgotten to set it up. If you want to use the autoinstall (-a option or `AUTOINSTALL=YES` is set), you must run as root or use sudo when executing or plexupdate.sh will stop and give you an error.
-
-Overall it tries to give you hints regarding why it isn't doing what you expected it to.
 
 # Trivia
 
 - "kaka" is Swedish for "cookie"
 
-# TL;DR
-Open a terminal or SSH on the server running Plex Media Center
-## First install
-```
-git clone https://github.com/mrworf/plexupdate.git
-sudo plexupdate/plexupdate.sh -p -a
-```
-## Updating Plex and the script
-```
-sudo plexupdate/plexupdate.sh -p -u -a
-```
-
 # FAQ
 
-## What username and password are you talking about
+## Where is `.plexupdate`
 
-The username and password for http://plex.tv
+See explaination in the top of this document.
+
+## What email and password are you talking about
+
+The email and password for http://plex.tv
 
 ## My password is rejected even though correct
 
 If you use certain characters (such as `$`) in your password, bash will interpret that as a reference to a variable. To resolve this, enclose your password within single quotes (`'`) instead of the normal quotes (`"`).
 
 i.e. `PASS="MyP4$$w0rD"` will not work, but changing to it to `PASS='MyP4$$w0rD'` will
+
+If it's still not working, run `plexupdate.sh` with `-v` which prints out the email and password used to login which might help you understand what the problem is.
