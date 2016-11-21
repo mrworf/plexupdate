@@ -128,7 +128,6 @@ usage() {
 	echo "    --pass <plex.tv password> Plex.TV password"
 	echo "    --server <Plex server address> Address of Plex Server"
 	echo "    --port <Plex server port> Port for Plex Server. Used with --server"
-	echo "    --saveconfig Save the configuration to config file"
 	echo
 	exit 0
 }
@@ -213,7 +212,7 @@ fi
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="-o acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,port:,saveconfig"
+optstring="-o acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,port:"
 GETOPTRES=$(getopt $optstring -- "$@")
 if [ $? -eq 1 ]; then
 	exit 1
@@ -245,7 +244,6 @@ do
 		(--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes ${PASS_CL});;
 		(--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes ${PLEXSERVER_CL});;
 		(--port) shift; PLEXPORT_CL="$1"; PLEXPORT_CL=$(trimQuotes ${PLEXPORT_CL});;
-		(--saveconfig) SAVECONFIG=yes;;
 
 		(--) ;;
 		(-*) error "Unrecognized option $1"; usage; exit 1;;
@@ -275,38 +273,6 @@ do
 		eval $VAR='${!VAR2}'
 	fi
 done
-
-# This will destroy and recreate the config file. Any settings that are set in the config file but are no longer
-# valid will NOT be saved.
-if [ "${SAVECONFIG}" = "yes" ]; then
-	echo "# Config file for plexupdate" >${CONFIGFILE}
-
-	for VAR in AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE
-	do
-		if [ ! -z ${!VAR} ]; then
-
-			# The following keys have defaults set in this file. We don't want to include these values if they are the default.
-			if [ ${VAR} = "FORCE" \
-			-o ${VAR} = "FORCEALL" \
-			-o ${VAR} = "PUBLIC" \
-			-o ${VAR} = "AUTOINSTALL" \
-			-o ${VAR} = "AUTODELETE" \
-			-o ${VAR} = "AUTOUPDATE" \
-			-o ${VAR} = "AUTOSTART" ]; then
-
-				if [ ${!VAR} = "yes" ]; then
-					echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
-				fi
-			elif [ ${VAR} = "PLEXPORT" ]; then
-				if [ ! "${!VAR}" = "32400" ]; then
-					echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
-				fi
-			else
-				echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
-			fi
-		fi
-	done
-fi
 
 if [ "${SHOWPROGRESS}" = "yes" ]; then
 	if ! wget --show-progress -V &>/dev/null; then
