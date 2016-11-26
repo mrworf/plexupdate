@@ -199,7 +199,7 @@ configure_cron() {
 
 	echo
 	echo -n "Would you like to set up automatic daily updates for Plex? "
-	if yesno; then
+	if yesno $CRON; then
 		CONF="$CONFIGFILE"
 		SCRIPT="${FULL_PATH}/plexupdate.sh"
 		LOGGING=${LOGGING:-false}
@@ -233,7 +233,6 @@ configure_cron() {
 	fi
 }
 
-
 save_config() {
 	CONFIGTEMP=$(mktemp /tmp/plexupdate.XXX)
 	for VAR in $1; do
@@ -266,8 +265,17 @@ for req in wget git; do
 	fi
 done
 
-echo -e "\n"
+if [ -f ~/.plexupdate ]; then
+	echo
+	echo -n "Existing configuration found in ~/.plexupdate, would you like to import these settings? "
+	if yesno; then
+		echo "Backing up old configuration as ~/.plexupdate.old. All new settings should be modified through this script, or by editing ${CONFIGFILE} directly. Please see README.md for more details."
+		source ~/.plexupdate
+		mv ~/.plexupdate ~/.plexupdate.old
+	fi
+fi
 
+echo
 read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
 if [ ! -d "$FULL_PATH" ]; then
 	echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
@@ -287,6 +295,7 @@ if [ -d "${FULL_PATH}/.git" ]; then
 	if git remote -v | grep -q "plexupdate"; then
 		echo -n "Found existing plexupdate repository in '$FULL_PATH', updating... "
 		git pull >/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
+		echo
 	else
 		abort "'$FULL_PATH' appears to contain a different git repository, cannot continue"
 	fi
