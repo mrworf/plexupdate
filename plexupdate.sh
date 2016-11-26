@@ -534,7 +534,7 @@ SKIP_DOWNLOAD="no"
 if [ "${REDHAT}" != "yes" ]; then
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 else
-	if [ "${AUTOSTART}" = "no" ]; then
+	if [ "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
 		warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 	fi
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
