@@ -262,7 +262,9 @@ if ! hash wget 2>/dev/null; then
 fi
 
 #FIXME: Temporary error checking to notify people of change from .plexupdate to plexupdate.conf
-if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]; then
+# We have to double-check that both files exist before trying to stat them. This is going away soon.
+if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
+	[ -f "${CONFIGFILE}" -a -f ~/.plexupdate ] && [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]; then
 	warn ".plexupdate has been deprecated. You should move your configuration to /etc/plexupdate.conf"
 	if [ -t 1 ]; then
 		for i in `seq 1 5`; do echo -n .\ ; sleep 1; done
