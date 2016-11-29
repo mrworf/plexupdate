@@ -150,7 +150,6 @@ IGNOREAUTOUPDATE=no
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
-VERBOSE=no
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="yum -y install"
@@ -203,6 +202,7 @@ usage() {
 	echo "    -s Auto start (needed for some distros)"
 	echo "    -u Auto update plexupdate.sh before running it (experimental)"
 	echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
+	echo "    -v Show additional debug information (cannot be saved or set via config)"
 	echo ""
 	echo "    Long Argument Options:"
 	echo "    --config <path/to/config/file> Configuration file to use"
@@ -294,7 +294,7 @@ do
 		(-S) errorLog "SILENT option has been removed, please use QUIET (-q) instead"; cronexit 255;;
 		(-u) AUTOUPDATE_CL=yes;;
 		(-U) IGNOREAUTOUPDATE=yes;;
-		(-v) VERBOSE=yes;;
+		(-v) VERBOSE_CL=yes;;
 
 		(--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes ${CONFIGFILE});;
 		(--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes ${DOWNLOADDIR_CL});;
@@ -367,6 +367,13 @@ else
 		CONFIGFILE="${HOME}/.plexupdate"
 		source ~/.plexupdate
 	fi
+fi
+
+# DO NOT ALLOW VERBOSE FROM CONFIGURATION FILE!
+if [ "${VERBOSE_CL}" = "yes" ]; then
+	VERBOSE=yes
+else
+	VERBOSE=no
 fi
 
 # The way I wrote this, it assumes that whatever we put on the command line is what we want and should override
@@ -492,8 +499,8 @@ fi
 if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ]; then
 	errorLog "Need email & password to download PlexPass version. Otherwise run with -p to download public version."
 	cronexit 1
-elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" != *"@"*"."* ]]; then
-	errorLog "EMAIL field must contain an email address"
+elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
+	errorLog "EMAIL field must contain a valid email address"
 	cronexit 1
 fi
 
