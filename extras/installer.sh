@@ -277,9 +277,13 @@ fi
 
 echo
 read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
-if [[ "$FULL_PATH" == *"~"* ]]; then
-	abort "Invalid character in path, cannot continue"
-fi
+
+while [[ "$FULL_PATH" == *"~"* ]]; do
+	echo "Using '~' in your path can cause problems, please type out the full path instead"
+	echo
+	read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
+done
+
 if [ ! -d "$FULL_PATH" ]; then
 	echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
 	if ! mkdir -p "$FULL_PATH" 2>/dev/null; then
