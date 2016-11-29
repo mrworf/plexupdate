@@ -201,6 +201,12 @@ cleanup() {
 	for F in "${FILE_RAW}" "${FILE_FAILCAUSE}" "${FILE_POSTDATA}" "${FILE_KAKA}" "${FILE_SHA}" "${FILE_LOCAL}" "${FILE_REMOTE}" "${FILE_WGETLOG}"; do
 		rm "$F" 2>/dev/null >/dev/null
 	done
+
+	plexupdate_path="$(dirname $0)"
+	# Make sure .git permissions haven't been modified by running as sudo and not sudo on different occasions
+	if [ -d "${plexupdate_path}/.git" ]; then
+		chown -R --reference="${plexupdate_path}" "${plexupdate_path}/.git" &> /dev/null
+	fi
 }
 trap cleanup EXIT
 
@@ -400,9 +406,9 @@ else
 fi
 
 if [ "${CHECKUPDATE}" = "yes" ]; then
-	(wget -q "$UPSTREAM_GIT_URL" -O - 2>/dev/null || echo ERROR) | shasum >"${FILE_REMOTE}" 2>/dev/null
+	(wget -q "$UPSTREAM_GIT_URL" -O - 2>/dev/null || echo ERROR) | sha1sum >"${FILE_REMOTE}" 2>/dev/null
 	ERR1=$?
-	(cat "$0" 2>/dev/null || echo ERROR) | shasum >"${FILE_LOCAL}" 2>/dev/null
+	(cat "$0" 2>/dev/null || echo ERROR) | sha1sum >"${FILE_LOCAL}" 2>/dev/null
 	ERR2=$?
 	if [ $ERR1 -ne 0 -o $ERR2 -ne 0 ]; then
 		error "When checking for version, was unable to confirm version of script"
