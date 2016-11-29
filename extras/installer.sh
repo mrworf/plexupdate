@@ -96,6 +96,51 @@ abort() {
 	exit 1
 }
 
+install_plexupdate() {
+	echo
+	read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
+
+	while [[ "$FULL_PATH" == *"~"* ]]; do
+		echo "Using '~' in your path can cause problems, please type out the full path instead"
+		echo
+		read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
+	done
+
+	if [ ! -d "$FULL_PATH" ]; then
+		echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
+		if ! mkdir -p "$FULL_PATH" 2>/dev/null; then
+			sudo mkdir -p "$FULL_PATH" || abort "failed, cannot continue"
+			sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
+		fi
+		echo "done"
+	elif [ ! -w "$FULL_PATH" ]; then
+		echo -n "'$FULL_PATH' exists, but you don't have permission to write to it. Changing owner... "
+		sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
+		echo "done"
+	fi
+
+	if [ -d "${FULL_PATH}/.git" ]; then
+		cd "$FULL_PATH"
+		if git remote -v 2>/dev/null | grep -q "plexupdate"; then
+			echo -n "Found existing plexupdate repository in '$FULL_PATH', updating... "
+			git pull &>/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
+			echo
+		else
+			abort "'$FULL_PATH' appears to contain a different git repository, cannot continue"
+		fi
+		echo "done"
+		cd - &> /dev/null
+	else
+		echo -n "Installing plexupdate into '$FULL_PATH'... "
+		git clone "$ORIGIN_REPO" "$FULL_PATH" &> /dev/null || abort "install failed, cannot continue"
+		echo "done"
+		# FIXME These 3 lines are just to allow us to test easily while we're still using this branch. Remember to take this out before merging to master.
+		cd "$FULL_PATH"
+		git checkout reworklog > /dev/null
+		cd - &> /dev/null
+	fi
+}
+
 configure_plexupdate() {
 
 	CONFIGTEMP=$(mktemp /tmp/plexupdate.tempconf.XXX)
@@ -278,48 +323,15 @@ if [ -f ~/.plexupdate ]; then
 	fi
 fi
 
-echo
-read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
-
-while [[ "$FULL_PATH" == *"~"* ]]; do
-	echo "Using '~' in your path can cause problems, please type out the full path instead"
+if [ -f "$(dirname $0)/../plexupdate.sh" -a -d "$(dirname $0)/../.git" ]; then
+	FULL_PATH=$(readlink -f $(dirname $0)/../)
 	echo
-	read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
-done
-
-if [ ! -d "$FULL_PATH" ]; then
-	echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
-	if ! mkdir -p "$FULL_PATH" 2>/dev/null; then
-		sudo mkdir -p "$FULL_PATH" || abort "failed, cannot continue"
-		sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
-	fi
-	echo "done"
-elif [ ! -w "$FULL_PATH" ]; then
-	echo -n "'$FULL_PATH' exists, but you don't have permission to write to it. Changing owner... "
-	sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
-	echo "done"
-fi
-
-if [ -d "${FULL_PATH}/.git" ]; then
-	cd "$FULL_PATH"
-	if git remote -v 2>/dev/null | grep -q "plexupdate"; then
-		echo -n "Found existing plexupdate repository in '$FULL_PATH', updating... "
-		git pull &>/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
-		echo
-	else
-		abort "'$FULL_PATH' appears to contain a different git repository, cannot continue"
-	fi
-	echo "done"
-	cd - &> /dev/null
+	echo "Found plexupdate.sh in '$FULL_PATH', using that as your install path"
 else
-	echo -n "Installing plexupdate into '$FULL_PATH'... "
-	git clone "$ORIGIN_REPO" "$FULL_PATH" &> /dev/null || abort "install failed, cannot continue"
-	echo "done"
-	# FIXME These 3 lines are just to allow us to test easily while we're still using this branch. Remember to take this out before merging to master.
-	cd "$FULL_PATH"
-	git checkout reworklog > /dev/null
-	cd - &> /dev/null
+	install_plexupdate
 fi
+
+
 
 configure_plexupdate
 configure_cron
