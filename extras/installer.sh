@@ -110,12 +110,12 @@ install_plexupdate() {
 		echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
 		if ! mkdir -p "$FULL_PATH" 2>/dev/null; then
 			sudo mkdir -p "$FULL_PATH" || abort "failed, cannot continue"
-			sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
+			sudo chown $(id -un):$(id -gn) "$FULL_PATH" || abort "failed, cannot continue"
 		fi
 		echo "done"
 	elif [ ! -w "$FULL_PATH" ]; then
 		echo -n "'$FULL_PATH' exists, but you don't have permission to write to it. Changing owner... "
-		sudo chown $(whoami) "$FULL_PATH" || abort "failed, cannot continue"
+		sudo chown $(id -un):$(id -gn) "$FULL_PATH" || abort "failed, cannot continue"
 		echo "done"
 	fi
 
