@@ -216,7 +216,7 @@ fi
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="-o acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,port:"
+optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:"
 GETOPTRES=$(getopt $optstring -- "$@")
 if [ $? -eq 1 ]; then
 	exit 1
