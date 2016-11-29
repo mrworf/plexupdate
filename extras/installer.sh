@@ -112,7 +112,7 @@ configure_plexupdate() {
 		PUBLIC=
 		while true; do
 			read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
-			if [ -z "$EMAIL" ] || [[ "$EMAIL" != *"@"*"."* ]]; then
+			if [ -z "${EMAIL}" ] || [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
 				echo "Please provide a valid email address"
 			else
 				break
