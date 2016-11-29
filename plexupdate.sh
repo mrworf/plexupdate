@@ -204,16 +204,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ ! $# -eq 0 ]; then
-	HASCFG="${@: -1}"
-	if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" -a ! "${@:(-2):1}" = "--config" ]; then
-		if [ -f "${HASCFG}" ]; then
-			warn "Specifying config file as last argument is deprecated. Use --config <path> instead."
-			CONFIGFILE=${HASCFG}
-		fi
-	fi
-fi
-
 # Parse commandline
 ALLARGS=( "$@" )
 optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:"
