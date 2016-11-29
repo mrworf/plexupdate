@@ -223,32 +223,57 @@ if [ $? -eq 1 ]; then
 fi
 
 set -- ${GETOPTRES}
+
+for i in `seq 1 $#`; do
+	if [ "${!i}" == "--config" ]; then
+		config_index=$((++i))
+		CONFIGFILE=$(trimQuotes ${!config_index})
+		break
+	fi
+done
+
+#FIXME: Temporary error checking to notify people of change from .plexupdate to plexupdate.conf
+# We have to double-check that both files exist before trying to stat them. This is going away soon.
+if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
+	([ -f "${CONFIGFILE}" -a -f ~/.plexupdate ] && [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]); then
+	warn ".plexupdate has been deprecated. You should move your configuration to /etc/plexupdate.conf"
+	if [ -t 1 ]; then
+		for i in `seq 1 5`; do echo -n .\ ; sleep 1; done
+		echo .
+	fi
+	CONFIGFILE=~/.plexupdate
+fi
+#FIXME
+
+# If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
+source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
+
 while true;
 do
 	case "$1" in
 		(-h) usage;;
-		(-a) AUTOINSTALL_CL=yes;;
+		(-a) AUTOINSTALL=yes;;
 		(-c) error "CRON option is deprecated, please use cronwrapper (see README.md)"; exit 255;;
 		(-C) error "CRON option is deprecated, please use cronwrapper (see README.md)"; exit 255;;
-		(-d) AUTODELETE_CL=yes;;
-		(-f) FORCE_CL=yes;;
-		(-F) FORCEALL_CL=yes;;
+		(-d) AUTODELETE=yes;;
+		(-f) FORCE=yes;;
+		(-F) FORCEALL=yes;;
 		(-l) LISTOPTS=yes;;
-		(-p) PUBLIC_CL=yes;;
+		(-p) PUBLIC=yes;;
 		(-P) SHOWPROGRESS=yes;;
 		(-q) error "QUIET option is deprecated, please redirect to /dev/null instead"; exit 255;;
 		(-r) PRINT_URL=yes;;
-		(-s) AUTOSTART_CL=yes;;
-		(-u) AUTOUPDATE_CL=yes;;
+		(-s) AUTOSTART=yes;;
+		(-u) AUTOUPDATE=yes;;
 		(-U) IGNOREAUTOUPDATE=yes;;
-		(-v) VERBOSE_CL=yes;;
+		(-v) VERBOSE=yes;;
 
-		(--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes ${CONFIGFILE});;
-		(--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes ${DOWNLOADDIR_CL});;
-		(--email) shift; EMAIL_CL="$1"; EMAIL_CL=$(trimQuotes ${EMAIL_CL});;
-		(--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes ${PASS_CL});;
-		(--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes ${PLEXSERVER_CL});;
-		(--port) shift; PLEXPORT_CL="$1"; PLEXPORT_CL=$(trimQuotes ${PLEXPORT_CL});;
+		(--config) shift;; #gobble up the paramater and silently continue parsing
+		(--dldir) shift; DOWNLOADDIR=$(trimQuotes ${1});;
+		(--email) shift; EMAIL=$(trimQuotes ${1});;
+		(--pass) shift; PASS=$(trimQuotes ${1});;
+		(--server) shift; PLEXSERVER=$(trimQuotes ${1});;
+		(--port) shift; PLEXPORT=$(trimQuotes ${1});;
 
 		(--) ;;
 		(-*) error "Unrecognized option $1"; usage; exit 1;;
@@ -262,44 +287,6 @@ if ! hash wget 2>/dev/null; then
 	error "This script requires wget in the path. It could also signify that you don't have the tool installed."
 	exit 1
 fi
-
-#FIXME: Temporary error checking to notify people of change from .plexupdate to plexupdate.conf
-# We have to double-check that both files exist before trying to stat them. This is going away soon.
-if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
-	[ -f "${CONFIGFILE}" -a -f ~/.plexupdate ] && [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]; then
-	warn ".plexupdate has been deprecated. You should move your configuration to /etc/plexupdate.conf"
-	if [ -t 1 ]; then
-		for i in `seq 1 5`; do echo -n .\ ; sleep 1; done
-		echo .
-	fi
-	CONFIGFILE=~/.plexupdate
-fi
-#FIXME
-
-# If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
-source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
-
-# DO NOT ALLOW VERBOSE FROM CONFIGURATION FILE!
-if [ "${VERBOSE_CL}" = "yes" ]; then
-	VERBOSE=yes
-else
-	VERBOSE=no
-fi
-
-# If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
-source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
-
-# The way I wrote this, it assumes that whatever we put on the command line is what we want and should override
-#   any values in the configuration file. As a result, we need to check if they've been set on the command line
-#   and overwrite the values that may have been loaded with the config file
-
-for VAR in AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT
-do
-	VAR2="$VAR""_CL"
-	if [ ! -z ${!VAR2} ]; then
-		eval $VAR='${!VAR2}'
-	fi
-done
 
 if [ "${SHOWPROGRESS}" = "yes" ]; then
 	if ! wget --show-progress -V &>/dev/null; then
