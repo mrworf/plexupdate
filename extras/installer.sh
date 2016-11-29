@@ -255,7 +255,7 @@ save_config() {
 
 if [ $EUID -ne 0 ]; then
 	echo
-	echo "This script needs to install files in system locations and will need to additional permissions (root) from you to continue."
+	echo "This script needs to install files in system locations and will ask for sudo/root permissions now"
 	sudo -v || abort "Root permissions are required for setup, cannot continue"
 elif [ ! -z "$SUDO_USER" ]; then
 	echo
