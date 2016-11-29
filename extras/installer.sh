@@ -257,6 +257,9 @@ if [ $EUID -ne 0 ]; then
 	echo
 	echo "This script needs to be run with root/sudo, but you are running as '$(whoami)'. Enabling sudo."
 	sudo -v || abort "Root permissions are required for setup, cannot continue"
+elif [ ! -z "$SUDO_USER" ]; then
+	echo
+	abort "This script will ask for sudo as necessary, but you should not run it as sudo. Please try again."
 fi
 
 for req in wget git; do
@@ -299,9 +302,9 @@ fi
 
 if [ -d "${FULL_PATH}/.git" ]; then
 	cd "$FULL_PATH"
-	if git remote -v | grep -q "plexupdate"; then
+	if git remote -v 2>/dev/null | grep -q "plexupdate"; then
 		echo -n "Found existing plexupdate repository in '$FULL_PATH', updating... "
-		git pull >/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
+		git pull &>/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
 		echo
 	else
 		abort "'$FULL_PATH' appears to contain a different git repository, cannot continue"
