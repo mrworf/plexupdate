@@ -286,6 +286,9 @@ else
 	VERBOSE=no
 fi
 
+# If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
+source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
+
 # The way I wrote this, it assumes that whatever we put on the command line is what we want and should override
 #   any values in the configuration file. As a result, we need to check if they've been set on the command line
 #   and overwrite the values that may have been loaded with the config file
