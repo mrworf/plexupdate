@@ -64,7 +64,6 @@ AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
 ARCH=$(uname -m)
-IGNOREAUTOUPDATE=no
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
@@ -261,7 +260,7 @@ do
 		(-r) PRINT_URL=yes;;
 		(-s) AUTOSTART=yes;;
 		(-u) AUTOUPDATE=yes;;
-		(-U) IGNOREAUTOUPDATE=yes;;
+		(-U) AUTOUPDATE=no;;
 		(-v) VERBOSE=yes;;
 
 		(--config) shift;; #gobble up the paramater and silently continue parsing
@@ -290,10 +289,6 @@ if [ "${SHOWPROGRESS}" = "yes" ]; then
 	else
 		WGETOPTIONS="--show-progress"
 	fi
-fi
-
-if [ "${IGNOREAUTOUPDATE}" = "yes" ]; then
-	AUTOUPDATE=no
 fi
 
 if [ "${CRON}" = "yes" ]; then
@@ -405,7 +400,7 @@ else
 	fi
 fi
 
-if [ "${CHECKUPDATE}" = "yes" ]; then
+if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
 	(wget -q "$UPSTREAM_GIT_URL" -O - 2>/dev/null || echo ERROR) | sha1sum >"${FILE_REMOTE}" 2>/dev/null
 	ERR1=$?
 	(cat "$0" 2>/dev/null || echo ERROR) | sha1sum >"${FILE_LOCAL}" 2>/dev/null
