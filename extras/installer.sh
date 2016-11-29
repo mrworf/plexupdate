@@ -277,6 +277,9 @@ fi
 
 echo
 read -e -p "Directory to install into: " -i "/opt/plexupdate" FULL_PATH
+if [[ "$FULL_PATH" == *"~"* ]]; then # If path contains a tilde
+	FULL_PATH=${FULL_PATH/[~]/$HOME} # Replace tilde with the home path
+fi
 if [ ! -d "$FULL_PATH" ]; then
 	echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
 	if ! mkdir -p "$FULL_PATH" 2>/dev/null; then
