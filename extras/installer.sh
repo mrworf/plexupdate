@@ -323,8 +323,8 @@ if [ -f ~/.plexupdate ]; then
 	fi
 fi
 
-if [ -f "$(dirname $0)/../plexupdate.sh" -a -d "$(dirname $0)/../.git" ]; then
-	FULL_PATH=$(readlink -f $(dirname $0)/../)
+if [ -f "$(dirname "$0")/../plexupdate.sh" -a -d "$(dirname "$0")/../.git" ]; then
+	FULL_PATH=$(readlink -f $(dirname "$0")/../)
 	echo
 	echo "Found plexupdate.sh in '$FULL_PATH', using that as your install path"
 else
