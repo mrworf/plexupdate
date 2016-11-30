@@ -260,9 +260,9 @@ configure_cron() {
 		echo
 		echo -n "Installing daily cron job... "
 		if [ $EUID -ne 0 ]; then
-			sudo ln -sf ${FULL_PATH}/extras/cronwrapper "$CRONWRAPPER"
+			sudo ln -sf "${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
 		else
-			ln -sf ${FULL_PATH}/extras/cronwrapper "$CRONWRAPPER"
+			ln -sf "${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
 		fi
 		echo "done"
 	elif [ -f "$CRONWRAPPER" -o -f "$CONFIGCRON" ]; then
