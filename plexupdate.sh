@@ -361,11 +361,8 @@ elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* 
 fi
 
 
-if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ]; then
-	if [ ${EUID} -ne 0 ]; then
-		error "You need to be root to use AUTOINSTALL/AUTOSTART option."
-		exit 1
-	fi
+if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ] && [ ${EUID} -ne 0 ]; then
+	error "You need to be root to use AUTOINSTALL/AUTOSTART option."
 fi
 
 
@@ -533,7 +530,7 @@ fi
 # By default, try downloading
 SKIP_DOWNLOAD="no"
 
-# Installed version detection (only supported for deb based systems, feel free to submit rpm equivalent)
+# Installed version detection
 if [ "${REDHAT}" != "yes" ]; then
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 else
