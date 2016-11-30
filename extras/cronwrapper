@@ -45,9 +45,7 @@ LOGFILE=$(mktemp /tmp/plexupdate.cron.XXXX)
 RET=0
 if $LOGGING; then
   "${SCRIPT}" "${CONF}" 2>&1 | tee ${LOGFILE} | logger -t plexupdate -p daemon.info
-  if grep -q '^ERROR:' ${LOGFILE}; then
-    RET=1
-  fi
+  RET="${PIPESTATUS[0]}"
 else
   "${SCRIPT}" "${CONF}" >${LOGFILE} 2>&1
   RET=$?
