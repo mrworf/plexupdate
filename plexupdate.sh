@@ -327,7 +327,7 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 		exit 1
 	fi
 
-	if git fetch --quiet && git diff --quiet FETCH_HEAD; then
+	if git fetch --quiet && ! git diff --quiet FETCH_HEAD; then
 		info "Auto-updating..."
 		if ! git merge --quiet FETCH_HEAD; then
 			error 'Unable to update git, try running "git pull" manually to see what is wrong'
