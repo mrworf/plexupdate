@@ -143,8 +143,6 @@ install_plexupdate() {
 
 configure_plexupdate() {
 
-	CONFIGTEMP=$(mktemp /tmp/plexupdate.tempconf.XXX)
-
 	[ -f "$CONFIGFILE" ] && source "$CONFIGFILE"
 
 	echo
