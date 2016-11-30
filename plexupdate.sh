@@ -206,6 +206,10 @@ cleanup() {
 	if [ -d "${plexupdate_path}/.git" ]; then
 		chown -R --reference="${plexupdate_path}" "${plexupdate_path}/" &> /dev/null
 	fi
+
+	if [ -f "${plexupdate_path}/extras/cronwrapper" -a $EUID -eq 0 ]; then
+		chown root:root "${plexupdate_path}/extras/cronwrapper" &> /dev/null
+	fi
 }
 trap cleanup EXIT
 
