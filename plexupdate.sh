@@ -322,7 +322,7 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 		exit 1
 	fi
 
-	if git diff --quiet; then
+	if ! git diff --quiet; then
 		error "You have made changes to the plexupdate files, cannot auto update"
 		exit 1
 	fi
