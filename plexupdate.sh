@@ -120,9 +120,9 @@ usage() {
 	echo "    -P Show progressbar when downloading big files"
 	echo "    -r Print download URL and exit"
 	echo "    -s Auto start (needed for some distros)"
-	echo "    -u Auto update plexupdate.sh before running it (experimental)"
-	echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
-	echo "    -v Show additional debug information (cannot be saved or set via config)"
+	echo "    -u Auto update plexupdate.sh before running it (default with installer)"
+	echo "    -U Do not autoupdate plexupdate.sh"
+	echo "    -v Show additional debug information"
 	echo ""
 	echo "    Long Argument Options:"
 	echo "    --config <path/to/config/file> Configuration file to use"
@@ -308,40 +308,47 @@ if [ ! -z "${RELEASE}" ]; then
 fi
 
 if [ "${AUTOUPDATE}" = "yes" ]; then
+	GIT_UPDATED=no
+
 	if ! hash git 2>/dev/null; then
 		error "You need to have git installed for this to work"
 		exit 1
 	fi
+
 	pushd "$(dirname "$0")" >/dev/null
+
 	if [ ! -d .git ]; then
-		error "This is not a git repository, auto update only works if you've done a git clone"
+		error "This is not a git repository. Auto-update only works if you've done a git clone"
 		exit 1
 	fi
-	git status | grep "git commit -a" >/dev/null 2>/dev/null
-	if [ $? -eq 0 ]; then
-		error "You have made changes to the script, cannot auto update"
+
+	if git diff --quiet; then
+		error "You have made changes to the plexupdate files, cannot auto update"
 		exit 1
 	fi
-	info "Auto updating"
-	git pull >/dev/null
-	if [ $? -ne 0 ]; then
-		error 'Unable to update git, try running "git pull" manually to see what is wrong'
-		exit 1
+
+	if git fetch --quiet && git diff --quiet FETCH_HEAD; then
+		info "Auto-updating..."
+		if ! git merge --quiet FETCH_HEAD; then
+			error 'Unable to update git, try running "git pull" manually to see what is wrong'
+			exit 1
+		else
+			info "Update complete"
+			GIT_UPDATED=yes
+		fi
 	fi
-	info "Update complete"
+
 	popd >/dev/null
 
-	if ! type "$0" 2>/dev/null >/dev/null ; then
-		if [ -f "$0" ]; then
-			/bin/bash "$0" -U ${ALLARGS[@]}
-		else
-			error "Unable to relaunch, couldn't find $0"
-			exit 1
-		fi
-	else
-		"$0" -U ${ALLARGS[@]}
+	if [ ! -f "$0" ]; then
+		error "Unable to relaunch, couldn't find $0"
+		exit 1
+	elif [ "${GIT_UPDATED}" = "yes" ]; then
+		[ -x "$0" ] || chmod 755 "$0"
+		"$0" ${ALLARGS[@]}
+		exit $?
+	#else we now return you to your regularly scheduled programming
 	fi
-	exit $?
 fi
 
 # Sanity check
@@ -355,8 +362,7 @@ fi
 
 
 if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ]; then
-	id | grep -i 'uid=0(' 2>&1 >/dev/null
-	if [ $? -ne 0 ]; then
+	if [ ${EUID} -ne 0 ]; then
 		error "You need to be root to use AUTOINSTALL/AUTOSTART option."
 		exit 1
 	fi
