@@ -202,9 +202,9 @@ cleanup() {
 	done
 
 	plexupdate_path="$(dirname $0)"
-	# Make sure .git permissions haven't been modified by running as sudo and not sudo on different occasions
+	# Make sure permissions haven't been modified by running as sudo and not sudo on different occasions
 	if [ -d "${plexupdate_path}/.git" ]; then
-		chown -R --reference="${plexupdate_path}" "${plexupdate_path}/.git" &> /dev/null
+		chown -R --reference="${plexupdate_path}" "${plexupdate_path}/" &> /dev/null
 	fi
 }
 trap cleanup EXIT
