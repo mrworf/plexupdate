@@ -18,7 +18,7 @@ install() {
 
 	[ -z "$DISTRO_INSTALL" ] && check_distro
 
-	if [ $EUID != 0 ]; then
+	if [ $EUID -ne 0 ]; then
 		sudo $DISTRO_INSTALL $1
 	else
 		$DISTRO_INSTALL $1
@@ -281,7 +281,7 @@ configure_cron() {
 save_config() {
 	CONFIGTEMP=$(mktemp /tmp/plexupdate.XXX)
 	for VAR in $1; do
-		if [ ! -z ${!VAR} ]; then
+		if [ ! -z "${!VAR}" ]; then
 			echo "${VAR}='${!VAR}'" >> $CONFIGTEMP
 		fi
 	done
