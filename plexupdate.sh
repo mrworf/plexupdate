@@ -334,6 +334,7 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 		exit 1
 	fi
 
+	# Force FETCH_HEAD to point to the correct branch (for older versions of git which don't default to current branch)
 	if git fetch origin $BRANCHNAME --quiet && ! git diff --quiet FETCH_HEAD; then
 		info "Auto-updating..."
 		if ! git merge --quiet FETCH_HEAD; then
