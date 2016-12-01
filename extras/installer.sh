@@ -19,9 +19,7 @@ install() {
 	[ -z "$DISTRO_INSTALL" ] && check_distro
 
 	if [ $EUID -ne 0 ]; then
-		sudo $DISTRO_INSTALL $1
-	else
-		$DISTRO_INSTALL $1
+		sudo $DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
 	fi
 }
 
@@ -243,6 +241,17 @@ configure_cron() {
 	echo
 	echo -n "Would you like to set up automatic daily updates for Plex? "
 	if yesno $CRON; then
+		if [ $(stat -c %u "${FULL_PATH}") -ne 0 ]; then
+			echo
+			echo "WARNING: For security reasons, plexupdate needs to be installed as root in order to run automatically. In order to finish setting up automatic updates, we will change the ownership of '${FULL_PATH}' to root:root."
+			echo -n "Do you wish to continue? "
+			yesno || return 1
+			echo
+			echo -n "Changing ownership of '${FULL_PATH}'... "
+			sudo chown -R root:root "${FULL_PATH}" || abort "Unable to change ownership, cannot continue"
+			echo "done"
+		fi
+
 		CONF="$CONFIGFILE"
 		SCRIPT="${FULL_PATH}/plexupdate.sh"
 		LOGGING=${LOGGING:-false}
@@ -257,13 +266,7 @@ configure_cron() {
 
 		echo
 		echo -n "Installing daily cron job... "
-		if [ $EUID -ne 0 ]; then
-			sudo chown root:root "${FULL_PATH}/extras/cronwrapper"
-			sudo ln -sf "${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
-		else
-			chown root:root "${FULL_PATH}/extras/cronwrapper"
-			ln -sf "${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
-		fi
+		sudo ln -sf "${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
 		echo "done"
 	elif [ -f "$CRONWRAPPER" -o -f "$CONFIGCRON" ]; then
 		echo
@@ -288,13 +291,11 @@ save_config() {
 
 	echo
 	echo -n "Writing configuration file '$2'... "
-	if [ $EUID -ne 0 ]; then
-		# make sure that new file is owned by root instead of owner of CONFIGTEMP
-		sudo tee "$2" > /dev/null < "$CONFIGTEMP"
-		rm "$CONFIGTEMP"
-	else
-		mv "$CONFIGTEMP" "$2"
-	fi
+
+	# make sure that new file is owned by root instead of owner of CONFIGTEMP
+	sudo tee "$2" > /dev/null < "$CONFIGTEMP"
+	rm "$CONFIGTEMP"
+
 	echo "done"
 }
 
@@ -339,7 +340,7 @@ configure_cron
 echo
 echo -n "Configuration complete. Would you like to run plexupdate with these settings now? "
 if yesno; then
-	if [ "$AUTOINSTALL" == "yes" -a $EUID -ne 0 ]; then
+	if [ "$AUTOINSTALL" == "yes" ]; then
 		sudo "$FULL_PATH/plexupdate.sh" -P --config "$CONFIGFILE"
 	else
 		"$FULL_PATH/plexupdate.sh" -P --config "$CONFIGFILE"

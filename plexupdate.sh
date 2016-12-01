@@ -81,6 +81,9 @@ URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
 #URL for new version check
 UPSTREAM_GIT_URL='https://raw.githubusercontent.com/demonbane/plexupdate/reworklog/plexupdate.sh' #FIXME
 
+#Branch to fetch updates from
+BRANCHNAME="reworklog" #FIXME
+
 FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
 FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
 FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
@@ -331,7 +334,7 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 		exit 1
 	fi
 
-	if git fetch --quiet && ! git diff --quiet FETCH_HEAD; then
+	if git fetch origin $BRANCHNAME --quiet && ! git diff --quiet FETCH_HEAD; then
 		info "Auto-updating..."
 		if ! git merge --quiet FETCH_HEAD; then
 			error 'Unable to update git, try running "git pull" manually to see what is wrong'

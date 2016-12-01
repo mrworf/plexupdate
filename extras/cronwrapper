@@ -29,6 +29,14 @@ fi
 if [ -z "${SCRIPT}" -o ! -f "${SCRIPT}" ]; then
   echo "ERROR: Cannot find plexupdate.sh (tried ${SCRIPT})" >&2
   exit 255
+elif [ ${EUID} -eq 0 ]; then
+  UNSAFE_FILES=$(find -L "$(dirname "${SCRIPT}")" -perm /002 -or -not -uid 0 -or -not -gid 0)
+  if [ ! -z "${UNSAFE_FILES}" ]; then
+    echo "ERROR: Permissions on some files are too lax for running as root. Files must be owned by root:root and not world-writeable." >&2
+    echo "Unsafe files found:" >&2
+    echo "${UNSAFE_FILES}" >&2
+    exit 255
+  fi
 fi
 
 if [ ! -z "$CONF" ]; then
