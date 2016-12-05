@@ -84,6 +84,9 @@ UPSTREAM_GIT_URL='https://raw.githubusercontent.com/demonbane/plexupdate/reworkl
 #Branch to fetch updates from
 BRANCHNAME="reworklog" #FIXME
 
+#Files "owned" by plexupdate, for autoupdate
+PLEXUPDATE_FILES="plexupdate.sh extras/installer.sh extras/cronwrapper"
+
 FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
 FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
 FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
@@ -203,16 +206,6 @@ cleanup() {
 	for F in "${FILE_RAW}" "${FILE_FAILCAUSE}" "${FILE_POSTDATA}" "${FILE_KAKA}" "${FILE_SHA}" "${FILE_LOCAL}" "${FILE_REMOTE}" "${FILE_WGETLOG}"; do
 		rm "$F" 2>/dev/null >/dev/null
 	done
-
-	plexupdate_path="$(dirname "$0")"
-	# Make sure permissions haven't been modified by running as sudo and not sudo on different occasions
-	if [ -d "${plexupdate_path}/.git" ]; then
-		chown -R --reference="${plexupdate_path}" "${plexupdate_path}/" &> /dev/null
-	fi
-
-	if [ -f "${plexupdate_path}/extras/cronwrapper" -a $EUID -eq 0 ]; then
-		chown root:root "${plexupdate_path}/extras/cronwrapper" &> /dev/null
-	fi
 }
 trap cleanup EXIT
 
@@ -315,8 +308,6 @@ if [ ! -z "${RELEASE}" ]; then
 fi
 
 if [ "${AUTOUPDATE}" = "yes" ]; then
-	GIT_UPDATED=no
-
 	if ! hash git 2>/dev/null; then
 		error "You need to have git installed for this to work"
 		exit 1
@@ -337,26 +328,44 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 	# Force FETCH_HEAD to point to the correct branch (for older versions of git which don't default to current branch)
 	if git fetch origin $BRANCHNAME --quiet && ! git diff --quiet FETCH_HEAD; then
 		info "Auto-updating..."
+
+		#Use an associative array to store permissions. If you're running bash < 4, the declare will fail and we'll
+		#just run in "dumb" mode without trying to restore permissions
+		declare -A FILE_OWNER FILE_PERMS && \
+		for filename in $PLEXUPDATE_FILES; do
+			FILE_OWNER[$filename]=$(stat -c "%u:%g")
+			FILE_PERMS[$filename]=$(stat -c "%a")
+		done
+
 		if ! git merge --quiet FETCH_HEAD; then
 			error 'Unable to update git, try running "git pull" manually to see what is wrong'
 			exit 1
+		fi
+
+		if [ $FILE_OWNER ]; then
+			for filename in $PLEXUPDATE_FILES; do
+				chown ${FILE_OWNER[$filename]} $filename &> /dev/null || error "Failed to restore ownership for '$filename' after auto-update"
+				chmod ${FILE_PERMS[$filename]} $filename &> /dev/null || error "Failed to restore permissions for '$filename' after auto-update"
+			done
+		fi
+
+		info "Update complete"
+
+		#make sure we're back in the right relative location before testing $0
+		popd >/dev/null
+
+		if [ ! -f "$0" ]; then
+			error "Unable to relaunch, couldn't find $0"
+			exit 1
 		else
-			info "Update complete"
-			GIT_UPDATED=yes
+			[ -x "$0" ] || chmod 755 "$0"
+			"$0" ${ALLARGS[@]}
+			exit $?
 		fi
 	fi
 
-	popd >/dev/null
-
-	if [ ! -f "$0" ]; then
-		error "Unable to relaunch, couldn't find $0"
-		exit 1
-	elif [ "${GIT_UPDATED}" = "yes" ]; then
-		[ -x "$0" ] || chmod 755 "$0"
-		"$0" ${ALLARGS[@]}
-		exit $?
-	#else we now return you to your regularly scheduled programming
-	fi
+	#we may have already returned, so ignore any errors as well
+	popd &>/dev/null
 fi
 
 # Sanity check
