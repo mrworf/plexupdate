@@ -342,7 +342,7 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 			exit 1
 		fi
 
-		if [ $FILE_OWNER ]; then
+		if [ ${#FILE_OWNER[@]} -gt 0 ]; then
 			for filename in $PLEXUPDATE_FILES; do
 				chown ${FILE_OWNER[$filename]} $filename &> /dev/null || error "Failed to restore ownership for '$filename' after auto-update"
 				chmod ${FILE_PERMS[$filename]} $filename &> /dev/null || error "Failed to restore permissions for '$filename' after auto-update"
