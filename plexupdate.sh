@@ -333,8 +333,8 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 		# just run in "dumb" mode without trying to restore permissions
 		declare -A FILE_OWNER FILE_PERMS && \
 		for filename in $PLEXUPDATE_FILES; do
-			FILE_OWNER[$filename]=$(stat -c "%u:%g")
-			FILE_PERMS[$filename]=$(stat -c "%a")
+			FILE_OWNER[$filename]=$(stat -c "%u:%g" "$filename")
+			FILE_PERMS[$filename]=$(stat -c "%a" "$filename")
 		done
 
 		if ! git merge --quiet FETCH_HEAD; then
