@@ -249,6 +249,7 @@ configure_cron() {
 			echo
 			echo -n "Changing ownership of '${FULL_PATH}'... "
 			sudo chown -R root:root "${FULL_PATH}" || abort "Unable to change ownership, cannot continue"
+			sudo chmod -R o-w "${FULL_PATH}" || abort "Unable to change permissions, cannot continue"
 			echo "done"
 		fi
 
