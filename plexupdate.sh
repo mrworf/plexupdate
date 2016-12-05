@@ -329,8 +329,8 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 	if git fetch origin $BRANCHNAME --quiet && ! git diff --quiet FETCH_HEAD; then
 		info "Auto-updating..."
 
-		#Use an associative array to store permissions. If you're running bash < 4, the declare will fail and we'll
-		#just run in "dumb" mode without trying to restore permissions
+		# Use an associative array to store permissions. If you're running bash < 4, the declare will fail and we'll
+		# just run in "dumb" mode without trying to restore permissions
 		declare -A FILE_OWNER FILE_PERMS && \
 		for filename in $PLEXUPDATE_FILES; do
 			FILE_OWNER[$filename]=$(stat -c "%u:%g")
@@ -348,6 +348,10 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 				chmod ${FILE_PERMS[$filename]} $filename &> /dev/null || error "Failed to restore permissions for '$filename' after auto-update"
 			done
 		fi
+
+		# .git permissions don't seem to be affected by running as root even though files inside do, so just reset
+		# the permissions to match the folder
+		chown -R --reference=.git .git
 
 		info "Update complete"
 
