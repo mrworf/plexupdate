@@ -144,7 +144,7 @@ configure_plexupdate() {
 	[ -f "$CONFIGFILE" ] && source "$CONFIGFILE"
 
 	echo
-	echo -n "Do you want to install the latest PlexPass releases? "
+	echo -n "Do you want to install the latest PlexPass releases? (requires PlexPass username and password) "
 	# The answer to this question and the value of PUBLIC are basically inverted
 	if [ "$PUBLIC" == "yes" ]; then
 		default=N
@@ -232,7 +232,7 @@ configure_plexupdate() {
 
 configure_cron() {
 	if [ ! -d "$(dirname "$CRONWRAPPER")" ]; then
-		echo "Seems like you don't have a supported cron job setup, please see README.md for more details."
+		echo "It seems like you don't have a supported cron job setup, please see README.md for more details."
 		return 1
 	fi
 
