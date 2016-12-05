@@ -1,8 +1,7 @@
 #!/bin/bash
 
 ORIGIN_REPO="https://github.com/demonbane/plexupdate" #FIXME
-OPT_PATH="/opt"
-FULL_PATH="$OPT_PATH/plexupdate"
+FULL_PATH="/opt/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
 CRONWRAPPER="/etc/cron.daily/plexupdate"
