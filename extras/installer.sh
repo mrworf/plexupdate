@@ -240,7 +240,7 @@ configure_cron() {
 	echo
 	echo -n "Would you like to set up automatic daily updates for Plex? "
 	if yesno $CRON; then
-		if [ $(stat -c %u "${FULL_PATH}") -ne 0 ]; then
+		if [ $(sudo find -L "${FULL_PATH}" -perm /002 -or -not -uid 0 -or -not -gid 0 | wc -l) -ne 0 ]; then
 			echo
 			echo "WARNING: For security reasons, plexupdate needs to be installed as root in order to run automatically. In order to finish setting up automatic updates, we will change the ownership of '${FULL_PATH}' to root:root."
 			echo -n "Do you wish to continue? "
