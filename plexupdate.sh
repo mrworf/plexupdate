@@ -43,6 +43,14 @@ if [ -z "${BASH_VERSINFO}" ]; then
 	exit 255
 fi
 
+if [ $(stat -Lc %u "$0") -eq 0 -a $EUID -ne 0 ]; then
+	# Script is owned by root but is being run by regular user
+	echo "This script is owned by root and must be run as root to work properly"
+	echo "Re-running as root user"
+	sudo "$0" ${ALLARGS[@]}
+	exit $?
+fi
+
 ##############################################################################
 # Don't change anything below this point, use a plexupdate.conf file
 # to override this section.
