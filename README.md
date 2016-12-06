@@ -138,3 +138,9 @@ The username and password for http://plex.tv
 If you use certain characters (such as `$`) in your password, bash will interpret that as a reference to a variable. To resolve this, enclose your password within single quotes (`'`) instead of the normal quotes (`"`).
 
 i.e. `PASS="MyP4$$w0rD"` will not work, but changing to it to `PASS='MyP4$$w0rD'` will
+
+## Plex is always "Looking for servers"
+
+Plex requires you to be connected locally to setup your server. As such, you will need to create an ssh tunnel in order to configure it the first time. You can do by following these steps:
+- Open the ssh tunnel by doing `ssh ip.address.of.server -L 8888:localhost:32400`
+- Go to [http://localhost:8888/web](http://localhost:8888/web) and setup your Plex server
