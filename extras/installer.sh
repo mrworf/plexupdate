@@ -339,9 +339,12 @@ configure_cron
 echo
 echo -n "Configuration complete. Would you like to run plexupdate with these settings now? "
 if yesno; then
+	if wget --show-progress -V &> /dev/null; then
+		PROGRESS_OPT="-P"
+	fi
 	if [ "$AUTOINSTALL" == "yes" ]; then
-		sudo "$FULL_PATH/plexupdate.sh" -P --config "$CONFIGFILE"
+		sudo "$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	else
-		"$FULL_PATH/plexupdate.sh" -P --config "$CONFIGFILE"
+		"$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	fi
 fi
