@@ -148,7 +148,7 @@ configure_plexupdate() {
 		default=N
 	fi
 	if yesno $default; then
-		PUBLIC=
+		PUBLIC=no
 		while true; do
 			read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
 			if [ -z "${EMAIL}" ] || [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
