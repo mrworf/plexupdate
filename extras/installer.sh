@@ -121,7 +121,6 @@ install_plexupdate() {
 		if git remote -v 2>/dev/null | grep -q "plexupdate"; then
 			echo -n "Found existing plexupdate repository in '$FULL_PATH', updating... "
 			git pull &>/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
-			echo
 		else
 			abort "'$FULL_PATH' appears to contain a different git repository, cannot continue"
 		fi
