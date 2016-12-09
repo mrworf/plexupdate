@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ORIGIN_REPO="https://github.com/demonbane/plexupdate" #FIXME
+ORIGIN_REPO="https://github.com/mrworf/plexupdate"
 FULL_PATH="/opt/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
@@ -130,10 +130,6 @@ install_plexupdate() {
 		echo -n "Installing plexupdate into '$FULL_PATH'... "
 		git clone "$ORIGIN_REPO" "$FULL_PATH" &> /dev/null || abort "install failed, cannot continue"
 		echo "done"
-		# FIXME These 3 lines are just to allow us to test easily while we're still using this branch. Remember to take this out before merging to master.
-		cd "$FULL_PATH"
-		git checkout reworklog > /dev/null
-		cd - &> /dev/null
 	fi
 }
 

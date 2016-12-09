@@ -79,10 +79,10 @@ URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
 URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
 
 #URL for new version check
-UPSTREAM_GIT_URL='https://raw.githubusercontent.com/demonbane/plexupdate/reworklog/plexupdate.sh' #FIXME
+UPSTREAM_GIT_URL='https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh'
 
 #Branch to fetch updates from
-BRANCHNAME="reworklog" #FIXME
+BRANCHNAME="master"
 
 #Files "owned" by plexupdate, for autoupdate
 PLEXUPDATE_FILES="plexupdate.sh extras/installer.sh extras/cronwrapper"
@@ -227,7 +227,7 @@ for i in `seq 1 $#`; do
 	fi
 done
 
-#FIXME: Temporary error checking to notify people of change from .plexupdate to plexupdate.conf
+#DEPRECATED SUPPORT: Temporary error checking to notify people of change from .plexupdate to plexupdate.conf
 # We have to double-check that both files exist before trying to stat them. This is going away soon.
 if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
 	([ -f "${CONFIGFILE}" -a -f ~/.plexupdate ] && [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]); then
@@ -238,7 +238,7 @@ if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
 	fi
 	CONFIGFILE=~/.plexupdate
 fi
-#FIXME
+#DEPRECATED END
 
 # If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
 source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
