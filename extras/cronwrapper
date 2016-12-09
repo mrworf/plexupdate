@@ -17,50 +17,54 @@
 # Set CONFIGURED to true once you've setup the previous three
 # options.
 #
-CONFIGURED=false
 
-CONF=
-SCRIPT=/home/john.doe/plexupdate/plexupdate.sh
-LOGGING=true
 
-if ! $CONFIGURED; then
-  echo "ERROR: You have not configured this script" >&2
-  exit 255
+if [ ! -f /etc/plexupdate.cron.conf ]; then
+	echo "ERROR: You have not configured /etc/plexupdate.cron.conf" >&2
+	exit 255
+else
+	source /etc/plexupdate.cron.conf
 fi
 
 if [ -z "${SCRIPT}" -o ! -f "${SCRIPT}" ]; then
-  echo "ERROR: Cannot find plexupdate.sh (tried ${SCRIPT})" >&2
-  exit 255
+	echo "ERROR: Cannot find plexupdate.sh (tried ${SCRIPT})" >&2
+	exit 255
+elif [ ${EUID} -eq 0 ]; then
+	UNSAFE_FILES=$(find -L "$(dirname "${SCRIPT}")" -perm /002 -or -not -uid 0 -or -not -gid 0)
+	if [ ! -z "${UNSAFE_FILES}" ]; then
+		echo "ERROR: Permissions on some files are too lax for running as root. Files must be owned by root:root and not world-writeable." >&2
+		echo "Unsafe files found:" >&2
+		echo "${UNSAFE_FILES}" >&2
+		exit 255
+	fi
 fi
 
 if [ ! -z "$CONF" ]; then
-  # We have a config file, prefix it with parameter
-  if [ ! -f "${CONF}" ]; then
-    echo "ERROR: Cannot find config file (tried ${CONF})" >&2
-    exit 255
-  fi
-  CONF="--config=${CONF}"
+	# We have a config file, prefix it with parameter
+	if [ ! -f "${CONF}" ]; then
+		echo "ERROR: Cannot find config file (tried ${CONF})" >&2
+		exit 255
+	fi
+	CONF="--config=${CONF}"
 fi
 
 LOGFILE=$(mktemp /tmp/plexupdate.cron.XXXX)
 
 RET=0
 if $LOGGING; then
-  "${SCRIPT}" "${CONF}" 2>&1 | tee ${LOGFILE} | logger -t plexupdate -p daemon.info
-  if grep -q '^ERROR:' ${LOGFILE}; then
-    RET=1
-  fi
+	"${SCRIPT}" "${CONF}" 2>&1 | tee ${LOGFILE} | logger -t plexupdate -p daemon.info
+	RET="${PIPESTATUS[0]}"
 else
-  "${SCRIPT}" "${CONF}" >${LOGFILE} 2>&1
-  RET=$?
+	"${SCRIPT}" "${CONF}" >${LOGFILE} 2>&1
+	RET=$?
 fi
 
 if [ $RET -ne 2 -a $RET -ne 5 ]; then
-  # Make sure user gets an email about this
-  cat ${LOGFILE} >&2
+	# Make sure user gets an email about this
+	cat ${LOGFILE} >&2
 else
-  # Nah, not important
-  RET=0
+	# Nah, not important
+	RET=0
 fi
 
 rm "${LOGFILE}" 2>/dev/null

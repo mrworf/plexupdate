@@ -7,12 +7,15 @@
 # as well as the PlexPass versions.
 #
 # PlexPass users:
-#   Create a separate .plexupdate file in your home directory with these
+#   Create a plexupdate.conf file in your home directory with these
 #   values:
 #
 #   EMAIL='<whatever your plexpass email was>'
 #   PASS='<whatever password you used>'
 #   DOWNLOADDIR='<where you would like to save the downloaded package>'
+#
+# And run the tool using: ./plexupdate.sh --config plexupdate.conf
+# or place the config in /etc/plexupdate.conf
 #
 # See https://github.com/mrworf/plexupdate for more details.
 #
@@ -33,21 +36,21 @@
 # Check out https://github.com/mrworf/plexupdate for latest version
 # and also what's new.
 #
-####################################################################
+##############################################################################
 # Quick-check before we allow bad things to happen
 if [ -z "${BASH_VERSINFO}" ]; then
 	echo "ERROR: You must execute this script with BASH" >&2
 	exit 255
 fi
 
-#################################################################
-# Don't change anything below this point, use a .plexupdate file
-# in your home directory to override this section.
+##############################################################################
+# Don't change anything below this point, use a plexupdate.conf file
+# to override this section.
 # DOWNLOADDIR is the full directory path you would like the download to go.
 #
 EMAIL=
 PASS=
-DOWNLOADDIR="."
+DOWNLOADDIR="/tmp"
 PLEXSERVER=
 PLEXPORT=32400
 
@@ -61,13 +64,12 @@ AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
 ARCH=$(uname -m)
-IGNOREAUTOUPDATE=no
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
 
 # Default options for package managers, override if needed
-REDHAT_INSTALL="yum -y install"
+REDHAT_INSTALL="dnf -y install"
 DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
@@ -75,6 +77,15 @@ DISTRO_INSTALL=""
 URL_LOGIN='https://plex.tv/users/sign_in.json'
 URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
 URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
+
+#URL for new version check
+UPSTREAM_GIT_URL='https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh'
+
+#Branch to fetch updates from
+BRANCHNAME="master"
+
+#Files "owned" by plexupdate, for autoupdate
+PLEXUPDATE_FILES="plexupdate.sh extras/installer.sh extras/cronwrapper"
 
 FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
 FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
@@ -115,8 +126,9 @@ usage() {
 	echo "    -P Show progressbar when downloading big files"
 	echo "    -r Print download URL and exit"
 	echo "    -s Auto start (needed for some distros)"
-	echo "    -u Auto update plexupdate.sh before running it (experimental)"
-	echo "    -U Do not autoupdate plexupdate.sh (experimental, default)"
+	echo "    -u Auto update plexupdate.sh before running it (default with installer)"
+	echo "    -U Do not autoupdate plexupdate.sh"
+	echo "    -v Show additional debug information"
 	echo ""
 	echo "    Long Argument Options:"
 	echo "    --config <path/to/config/file> Configuration file to use"
@@ -125,7 +137,6 @@ usage() {
 	echo "    --pass <plex.tv password> Plex.TV password"
 	echo "    --server <Plex server address> Address of Plex Server"
 	echo "    --port <Plex server port> Port for Plex Server. Used with --server"
-	echo "    --saveconfig Save the configuration to config file"
 	echo
 	exit 0
 }
@@ -198,55 +209,66 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ ! $# -eq 0 ]; then
-	HASCFG="${@: -1}"
-	if [ ! -z "${HASCFG}" -a ! "${HASCFG:0:1}" = "-" -a ! "${@:(-2):1}" = "--config" ]; then
-		if [ -f "${HASCFG}" ]; then
-			warn "Specifying config file as last argument is deprecated. Use --config <path> instead."
-			CONFIGFILE=${HASCFG}
-		fi
-	fi
-fi
-
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="acCdfFhlpPqrSsuU -l config:,dldir:,email:,pass:,server:,port:,saveconfig"
-getopt -T >/dev/null
-if [ $? -eq 4 ]; then
-	optstring="-o $optstring"
-fi
+optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:"
 GETOPTRES=$(getopt $optstring -- "$@")
 if [ $? -eq 1 ]; then
 	exit 1
 fi
 
 set -- ${GETOPTRES}
+
+for i in `seq 1 $#`; do
+	if [ "${!i}" == "--config" ]; then
+		config_index=$((++i))
+		CONFIGFILE=$(trimQuotes ${!config_index})
+		break
+	fi
+done
+
+#DEPRECATED SUPPORT: Temporary error checking to notify people of change from .plexupdate to plexupdate.conf
+# We have to double-check that both files exist before trying to stat them. This is going away soon.
+if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
+	([ -f "${CONFIGFILE}" -a -f ~/.plexupdate ] && [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]); then
+	warn ".plexupdate has been deprecated. You should move your configuration to /etc/plexupdate.conf"
+	if [ -t 1 ]; then
+		for i in `seq 1 5`; do echo -n .\ ; sleep 1; done
+		echo .
+	fi
+	CONFIGFILE=~/.plexupdate
+fi
+#DEPRECATED END
+
+# If a config file was specified, or if /etc/plexupdate.conf exists, we'll use it. Otherwise, just skip it.
+source "${CONFIGFILE:-"/etc/plexupdate.conf"}" 2>/dev/null
+
 while true;
 do
 	case "$1" in
 		(-h) usage;;
-		(-a) AUTOINSTALL_CL=yes;;
+		(-a) AUTOINSTALL=yes;;
 		(-c) error "CRON option is deprecated, please use cronwrapper (see README.md)"; exit 255;;
 		(-C) error "CRON option is deprecated, please use cronwrapper (see README.md)"; exit 255;;
-		(-d) AUTODELETE_CL=yes;;
-		(-f) FORCE_CL=yes;;
-		(-F) FORCEALL_CL=yes;;
+		(-d) AUTODELETE=yes;;
+		(-f) FORCE=yes;;
+		(-F) FORCEALL=yes;;
 		(-l) LISTOPTS=yes;;
-		(-p) PUBLIC_CL=yes;;
+		(-p) PUBLIC=yes;;
 		(-P) SHOWPROGRESS=yes;;
 		(-q) error "QUIET option is deprecated, please redirect to /dev/null instead"; exit 255;;
 		(-r) PRINT_URL=yes;;
-		(-s) AUTOSTART_CL=yes;;
-		(-u) AUTOUPDATE_CL=yes;;
-		(-U) IGNOREAUTOUPDATE=yes;;
+		(-s) AUTOSTART=yes;;
+		(-u) AUTOUPDATE=yes;;
+		(-U) AUTOUPDATE=no;;
+		(-v) VERBOSE=yes;;
 
-		(--config) shift; CONFIGFILE="$1"; CONFIGFILE=$(trimQuotes ${CONFIGFILE});;
-		(--dldir) shift; DOWNLOADDIR_CL="$1"; DOWNLOADDIR_CL=$(trimQuotes ${DOWNLOADDIR_CL});;
-		(--email) shift; EMAIL_CL="$1"; EMAIL_CL=$(trimQuotes ${EMAIL_CL});;
-		(--pass) shift; PASS_CL="$1"; PASS_CL=$(trimQuotes ${PASS_CL});;
-		(--server) shift; PLEXSERVER_CL="$1"; PLEXSERVER_CL=$(trimQuotes ${PLEXSERVER_CL});;
-		(--port) shift; PLEXPORT_CL="$1"; PLEXPORT_CL=$(trimQuotes ${PLEXPORT_CL});;
-		(--saveconfig) SAVECONFIG=yes;;
+		(--config) shift;; #gobble up the paramater and silently continue parsing
+		(--dldir) shift; DOWNLOADDIR=$(trimQuotes ${1});;
+		(--email) shift; EMAIL=$(trimQuotes ${1});;
+		(--pass) shift; PASS=$(trimQuotes ${1});;
+		(--server) shift; PLEXSERVER=$(trimQuotes ${1});;
+		(--port) shift; PLEXPORT=$(trimQuotes ${1});;
 
 		(--) ;;
 		(-*) error "Unrecognized option $1"; usage; exit 1;;
@@ -261,108 +283,12 @@ if ! hash wget 2>/dev/null; then
 	exit 1
 fi
 
-# Allow manual control of configfile
-if [ ! -z "${CONFIGFILE}" ]; then
-	if [ -f "${CONFIGFILE}" ]; then
-		info "Using configuration: ${CONFIGFILE}" #>/dev/null
-		source "${CONFIGFILE}"
-	else
-		error "Cannot load configuration ${CONFIGFILE}"
-		exit 1
-	fi
-else
-	# Load settings from config file if it exists
-	# Also, respect SUDO_USER and try that first
-	if [ ! -z "${SUDO_USER}" ]; then
-		# Make sure nothing bad comes from this (since we use eval)
-		ERROR=0
-		if   [[ $SUDO_USER == *";"* ]]; then ERROR=1 ; # Allows more commands
-		elif [[ $SUDO_USER == *" "* ]]; then ERROR=1 ; # Space is not a good thing
-		elif [[ $SUDO_USER == *"&"* ]]; then ERROR=1 ; # Spinning off the command is bad
-		elif [[ $SUDO_USER == *"<"* ]]; then ERROR=1 ; # No redirection
-		elif [[ $SUDO_USER == *">"* ]]; then ERROR=1 ; # No redirection
-		elif [[ $SUDO_USER == *"|"* ]]; then ERROR=1 ; # No pipes
-		elif [[ $SUDO_USER == *"~"* ]]; then ERROR=1 ; # No tilde
-		fi
-		if [ ${ERROR} -gt 0 ]; then
-			error "SUDO_USER variable is COMPROMISED: \"${SUDO_USER}\""
-			exit 255
-		fi
-
-		# Try using original user's config
-		CONFIGDIR="$( eval cd ~${SUDO_USER} 2>/dev/null && pwd )"
-		if [ -z "${CONFIGDIR}" ]; then
-			warn "SUDO_USER \"${SUDO_USER}\" does not have a valid home directory, ignoring."
-		fi
-
-		if [ ! -z "${CONFIGDIR}" -a -f "${CONFIGDIR}/.plexupdate" ]; then
-			info "Using \"${SUDO_USER}\" configuration: ${CONFIGDIR}/.plexupdate" #>/dev/null
-			CONFIGFILE="${CONFIGDIR}/.plexupdate"
-			source "${CONFIGDIR}/.plexupdate"
-		elif [ -f ~/.plexupdate ]; then
-			# Fallback for compatibility
-			info "Using \"${SUDO_USER}\" configuration: ${HOME}/.plexupdate" #>/dev/null
-			CONFIGFILE="${HOME}/.plexupdate"		# tilde expansion won't happen later.
-			source ~/.plexupdate
-		fi
-	elif [ -f ~/.plexupdate ]; then
-		# Fallback for compatibility
-		info "Using configuration: ${HOME}/.plexupdate" #>/dev/null
-		CONFIGFILE="${HOME}/.plexupdate"
-		source ~/.plexupdate
-	fi
-fi
-
-# The way I wrote this, it assumes that whatever we put on the command line is what we want and should override
-#   any values in the configuration file. As a result, we need to check if they've been set on the command line
-#   and overwrite the values that may have been loaded with the config file
-
-for VAR in AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT
-do
-	VAR2="$VAR""_CL"
-	if [ ! -z ${!VAR2} ]; then
-		eval $VAR='${!VAR2}'
-	fi
-done
-
-# This will destroy and recreate the config file. Any settings that are set in the config file but are no longer
-# valid will NOT be saved.
-if [ "${SAVECONFIG}" = "yes" ]; then
-	echo "# Config file for plexupdate" >${CONFIGFILE:="${HOME}/.plexupdate"}
-
-	for VAR in AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE
-	do
-		if [ ! -z ${!VAR} ]; then
-
-			# The following keys have defaults set in this file. We don't want to include these values if they are the default.
-			if [ ${VAR} = "FORCE" \
-			-o ${VAR} = "FORCEALL" \
-			-o ${VAR} = "PUBLIC" \
-			-o ${VAR} = "AUTOINSTALL" \
-			-o ${VAR} = "AUTODELETE" \
-			-o ${VAR} = "AUTOUPDATE" \
-			-o ${VAR} = "AUTOSTART" ]; then
-
-				if [ ${!VAR} = "yes" ]; then
-					echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
-				fi
-			elif [ ${VAR} = "PLEXPORT" ]; then
-				if [ ! "${!VAR}" = "32400" ]; then
-					echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
-				fi
-			else
-				echo "${VAR}='${!VAR}'" >> ${CONFIGFILE}
-			fi
-		fi
-	done
-fi
-
 if [ "${SHOWPROGRESS}" = "yes" ]; then
-	WGETOPTIONS="--show-progress"
-fi
-
-if [ "${IGNOREAUTOUPDATE}" = "yes" ]; then
-	AUTOUPDATE=no
+	if ! wget --show-progress -V &>/dev/null; then
+		warn "Your wget is too old to support --show-progress, ignoring"
+	else
+		WGETOPTIONS="--show-progress"
+	fi
 fi
 
 if [ "${CRON}" = "yes" ]; then
@@ -371,12 +297,12 @@ if [ "${CRON}" = "yes" ]; then
 fi
 
 if [ "${KEEP}" = "yes" ]; then
-	error "KEEP is deprecated and should be removed from .plexupdate"
+	error "KEEP is deprecated and should be removed from config file"
 	exit 255
 fi
 
 if [ ! -z "${RELEASE}" ]; then
-	error "RELEASE keyword is deprecated and should be removed from .plexupdate"
+	error "RELEASE keyword is deprecated and should be removed from config file"
 	error "Use DISTRO and BUILD instead to manually select what to install (check README.md)"
 	exit 255
 fi
@@ -386,50 +312,78 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 		error "You need to have git installed for this to work"
 		exit 1
 	fi
-	pushd "$(dirname "$0")" >/dev/null
-	if [ ! -d .git ]; then
-		error "This is not a git repository, auto update only works if you've done a git clone"
-		exit 1
-	fi
-	git status | grep "git commit -a" >/dev/null 2>/dev/null
-	if [ $? -eq 0 ]; then
-		error "You have made changes to the script, cannot auto update"
-		exit 1
-	fi
-	info "Auto updating"
-	git pull >/dev/null
-	if [ $? -ne 0 ]; then
-		error 'Unable to update git, try running "git pull" manually to see what is wrong'
-		exit 1
-	fi
-	info "Update complete"
-	popd >/dev/null
 
-	if ! type "$0" 2>/dev/null >/dev/null ; then
-		if [ -f "$0" ]; then
-			/bin/bash "$0" -U ${ALLARGS[@]}
-		else
-			error "Unable to relaunch, couldn't find $0"
+	pushd "$(dirname "$0")" >/dev/null
+
+	if [ ! -d .git ]; then
+		error "This is not a git repository. Auto-update only works if you've done a git clone"
+		exit 1
+	fi
+
+	if ! git diff --quiet; then
+		error "You have made changes to the plexupdate files, cannot auto update"
+		exit 1
+	fi
+
+	# Force FETCH_HEAD to point to the correct branch (for older versions of git which don't default to current branch)
+	if git fetch origin $BRANCHNAME --quiet && ! git diff --quiet FETCH_HEAD; then
+		info "Auto-updating..."
+
+		# Use an associative array to store permissions. If you're running bash < 4, the declare will fail and we'll
+		# just run in "dumb" mode without trying to restore permissions
+		declare -A FILE_OWNER FILE_PERMS && \
+		for filename in $PLEXUPDATE_FILES; do
+			FILE_OWNER[$filename]=$(stat -c "%u:%g" "$filename")
+			FILE_PERMS[$filename]=$(stat -c "%a" "$filename")
+		done
+
+		if ! git merge --quiet FETCH_HEAD; then
+			error 'Unable to update git, try running "git pull" manually to see what is wrong'
 			exit 1
 		fi
-	else
-		"$0" -U ${ALLARGS[@]}
+
+		if [ ${#FILE_OWNER[@]} -gt 0 ]; then
+			for filename in $PLEXUPDATE_FILES; do
+				chown ${FILE_OWNER[$filename]} $filename &> /dev/null || error "Failed to restore ownership for '$filename' after auto-update"
+				chmod ${FILE_PERMS[$filename]} $filename &> /dev/null || error "Failed to restore permissions for '$filename' after auto-update"
+			done
+		fi
+
+		# .git permissions don't seem to be affected by running as root even though files inside do, so just reset
+		# the permissions to match the folder
+		chown -R --reference=.git .git
+
+		info "Update complete"
+
+		#make sure we're back in the right relative location before testing $0
+		popd >/dev/null
+
+		if [ ! -f "$0" ]; then
+			error "Unable to relaunch, couldn't find $0"
+			exit 1
+		else
+			[ -x "$0" ] || chmod 755 "$0"
+			"$0" ${ALLARGS[@]}
+			exit $?
+		fi
 	fi
-	exit $?
+
+	#we may have already returned, so ignore any errors as well
+	popd &>/dev/null
 fi
 
 # Sanity check
 if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ]; then
 	error "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
 	exit 1
+elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
+	error "EMAIL field must contain a valid email address"
+	exit 1
 fi
 
-if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ]; then
-	id | grep -i 'uid=0(' 2>&1 >/dev/null
-	if [ $? -ne 0 ]; then
-		error "You need to be root to use AUTOINSTALL/AUTOSTART option."
-		exit 1
-	fi
+
+if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ] && [ ${EUID} -ne 0 ]; then
+	error "You need to be root to use AUTOINSTALL/AUTOSTART option."
 fi
 
 
@@ -448,7 +402,11 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 			REDHAT=yes
 			BUILD="linux-ubuntu-${ARCH}"
 			DISTRO="redhat"
-			DISTRO_INSTALL="${REDHAT_INSTALL}"
+			if ! hash dnf 2>/dev/null; then
+				DISTRO_INSTALL="${REDHAT_INSTALL/dnf/yum}"
+			else
+				DISTRO_INSTALL="${REDHAT_INSTALL}"
+			fi
 		else
 			REDHAT=no
 			BUILD="linux-ubuntu-${ARCH}"
@@ -466,10 +424,10 @@ else
 	fi
 fi
 
-if [ "${CHECKUPDATE}" = "yes" ]; then
-	(wget -q https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh -O - 2>/dev/null || echo ERROR) | shasum >"${FILE_REMOTE}" 2>/dev/null
+if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
+	(wget -q "$UPSTREAM_GIT_URL" -O - 2>/dev/null || echo ERROR) | sha1sum >"${FILE_REMOTE}" 2>/dev/null
 	ERR1=$?
-	(cat "$0" 2>/dev/null || echo ERROR) | shasum >"${FILE_LOCAL}" 2>/dev/null
+	(cat "$0" 2>/dev/null || echo ERROR) | sha1sum >"${FILE_LOCAL}" 2>/dev/null
 	ERR2=$?
 	if [ $ERR1 -ne 0 -o $ERR2 -ne 0 ]; then
 		error "When checking for version, was unable to confirm version of script"
@@ -519,6 +477,9 @@ if [ "${PUBLIC}" = "no" ]; then
 	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
 	if [ $RESULTCODE -eq 401 ]; then
 		error "Username and/or password incorrect"
+		if [ "$VERBOSE" = "yes" ]; then
+			info "Tried using \"${EMAIL}\" and \"${PASS}\" "
+		fi
 		exit 1
 	elif [ $RESULTCODE -ne 201 ]; then
 		error "Failed to login, debug information:"
@@ -590,11 +551,11 @@ fi
 # By default, try downloading
 SKIP_DOWNLOAD="no"
 
-# Installed version detection (only supported for deb based systems, feel free to submit rpm equivalent)
+# Installed version detection
 if [ "${REDHAT}" != "yes" ]; then
 	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
 else
-	if [ "${AUTOSTART}" = "no" ]; then
+	if [ "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
 		warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 	fi
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
@@ -638,12 +599,6 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	info "Downloading release \"${FILENAME}\""
 	wget ${WGETOPTIONS} -o "${FILE_WGETLOG}" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
 	CODE=$?
-	if [ ${CODE} -eq 2 ]; then
-		error "Your wget is too old to support --show-progress"
-		info "Trying to download release \"${FILENAME}\" again"
-		wget -o "${FILE_WGETLOG}" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
-		CODE=$?
-	fi
 
 	if [ ${CODE} -ne 0 ]; then
 		error "Download failed with code ${CODE}:"
