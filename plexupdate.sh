@@ -231,7 +231,7 @@ done
 # We have to double-check that both files exist before trying to stat them. This is going away soon.
 if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
 	([ -f "${CONFIGFILE}" -a -f ~/.plexupdate ] && [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]); then
-	warn ".plexupdate has been deprecated. You should move your configuration to /etc/plexupdate.conf"
+warn ".plexupdate has been deprecated. Please run $(dirname "$0")/extras/installer.sh to update your configuration."
 	if [ -t 1 ]; then
 		for i in `seq 1 5`; do echo -n .\ ; sleep 1; done
 		echo .
