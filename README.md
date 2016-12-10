@@ -14,7 +14,7 @@ It has gone away to keep things simpler and more secure. You can either provide 
 In the old days, this used to be a bit of a chore. But no more!
 
 ```
-bash -c "$(wget -O - https://raw.githubusercontent.com/mrworf/plexupdate/master/extras/installer.sh)"
+bash -c "$(wget -qO - https://raw.githubusercontent.com/mrworf/plexupdate/master/extras/installer.sh)"
 ```
 
 will automatically install the tool as well as any dependencies. This has been tested on Ubuntu, Fedora and CentOS but should, for the most part, work on any modern Linux distribution.
