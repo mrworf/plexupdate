@@ -14,10 +14,6 @@
 # LOGGING if true, logs all output to syslog daemon facility
 #         (typically /var/log/daemon.log or /var/log/syslog)
 #
-# NOTIFYONRETURN is used to define which return codes from plexupdate
-#                that you want to be notified for. By default, all
-#                non-zero return codes produce a notification.
-#
 
 if [ ! -f /etc/plexupdate.cron.conf ]; then
 	echo "ERROR: You have not configured /etc/plexupdate.cron.conf" >&2
@@ -59,7 +55,7 @@ else
 	RET=$?
 fi
 
-if [ -z "${NOTIFYONRETURN}" -a $RET -ne 0 ] || [[ "${NOTIFYONRETURN}" == *$RET* ]] ; then
+if [ $RET -ne 0 ] ; then
 	# Make sure user gets an email about this (when not success or if user has specified when)
 	cat ${LOGFILE} >&2
 fi
