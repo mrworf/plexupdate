@@ -161,6 +161,10 @@ But here are some of the more useful ones:
 
 See explanation in the top of this document.
 
+## Do I have to use the `extras/installer.sh` ?
+
+Of course not, anything you find under `extras/` is optional and only provided as a easier way to get `plexupdate.sh` up and running quickly.
+
 ## What email and password are you talking about
 
 The email and password for http://plex.tv
@@ -172,3 +176,7 @@ If you use certain characters (such as `$`) in your password, bash will interpre
 i.e. `PASS="MyP4$$w0rD"` will not work, but changing to it to `PASS='MyP4$$w0rD'` will
 
 If it's still not working, run `plexupdate.sh` with `-v` which prints out the email and password used to login which might help you understand what the problem is.
+
+# Not finding what you're looking for?
+
+See https://github.com/mrworf/plexupdate/wiki for more information

@@ -14,10 +14,6 @@
 # LOGGING if true, logs all output to syslog daemon facility
 #         (typically /var/log/daemon.log or /var/log/syslog)
 #
-# Set CONFIGURED to true once you've setup the previous three
-# options.
-#
-
 
 if [ ! -f /etc/plexupdate.cron.conf ]; then
 	echo "ERROR: You have not configured /etc/plexupdate.cron.conf" >&2
@@ -59,12 +55,9 @@ else
 	RET=$?
 fi
 
-if [ $RET -ne 2 -a $RET -ne 5 ]; then
-	# Make sure user gets an email about this
+if [ $RET -ne 0 ] ; then
+	# Make sure user gets an email about this (when not success or if user has specified when)
 	cat ${LOGFILE} >&2
-else
-	# Nah, not important
-	RET=0
 fi
 
 rm "${LOGFILE}" 2>/dev/null
