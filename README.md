@@ -161,18 +161,6 @@ But here are some of the more useful ones:
 
 See explanation in the top of this document.
 
-## I saw it, but I miss `.plexupdate`
-
-If you desparately want the old behavior, please add the following to `/etc/plexupdate.conf` :
-
-```
-if [ -f ~/.plexupdate ]
-  source ~/.plexupdate
-fi
-```
-
-This will make `plexupdate.sh` look in current user's home directory for configuration file. But this should be considered a stop-gap solution and is not officially endorsed.
-
 ## Do I have to use the `extras/installer.sh` ?
 
 Of course not, anything you find under `extras/` is optional and only provided as a easier way to get `plexupdate.sh` up and running quickly.
@@ -188,3 +176,7 @@ If you use certain characters (such as `$`) in your password, bash will interpre
 i.e. `PASS="MyP4$$w0rD"` will not work, but changing to it to `PASS='MyP4$$w0rD'` will
 
 If it's still not working, run `plexupdate.sh` with `-v` which prints out the email and password used to login which might help you understand what the problem is.
+
+# Not finding what you're looking for?
+
+See https://github.com/mrworf/plexupdate/wiki for more information
