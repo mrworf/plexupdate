@@ -59,12 +59,9 @@ else
 	RET=$?
 fi
 
-if [ $RET -ne 2 -a $RET -ne 5 ]; then
+if [ $RET -ne 0 ]; then
 	# Make sure user gets an email about this
 	cat ${LOGFILE} >&2
-else
-	# Nah, not important
-	RET=0
 fi
 
 rm "${LOGFILE}" 2>/dev/null

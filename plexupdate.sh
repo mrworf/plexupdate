@@ -24,7 +24,6 @@
 #         2 if file already downloaded
 #         3 if page layout has changed.
 #         4 if download fails
-#         5 if version already installed
 #         6 if update was deferred due to usage
 #
 # All other return values not documented.
@@ -563,7 +562,7 @@ fi
 
 if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
 	info "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
-	exit 5
+	exit 0
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then

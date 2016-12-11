@@ -161,6 +161,22 @@ But here are some of the more useful ones:
 
 See explanation in the top of this document.
 
+## I saw it, but I miss `.plexupdate`
+
+If you desparately want the old behavior, please add the following to `/etc/plexupdate.conf` :
+
+```
+if [ -f ~/.plexupdate ]
+  source ~/.plexupdate
+fi
+```
+
+This will make `plexupdate.sh` look in current user's home directory for configuration file. But this should be considered a stop-gap solution and is not officially endorsed.
+
+## Do I have to use the `extras/installer.sh` ?
+
+Of course not, anything you find under `extras/` is optional and only provided as a easier way to get `plexupdate.sh` up and running quickly.
+
 ## What email and password are you talking about
 
 The email and password for http://plex.tv
