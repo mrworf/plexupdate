@@ -287,8 +287,11 @@ save_config() {
 	echo
 	echo -n "Writing configuration file '$2'... "
 
-	# make sure that new file is owned by root instead of owner of CONFIGTEMP
+	# most likely writing to /etc, so we need sudo
 	sudo tee "$2" > /dev/null < "$CONFIGTEMP"
+	sudo chmod 640 "$2"
+	# only root can modify the config, but the user can still read it
+	sudo chown 0:$(id -gn) "$2"
 	rm "$CONFIGTEMP"
 
 	echo "done"
