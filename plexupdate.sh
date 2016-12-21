@@ -607,8 +607,7 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	info "File downloaded"
 fi
 
-sha1sum --status -c "${FILE_SHA}"
-if [ $? -ne 0 ]; then
+if ! sha1sum --status -c "${FILE_SHA}"; then
 	error "Downloaded file corrupt. Try again."
 	exit 4
 fi
@@ -628,6 +627,11 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 	# no elif since DISTRO_INSTALL will produce error output for us
 
 	${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
+	RET=$?
+	if [ $RET -ne 0 ]; then
+		error "Error reported while installing ${FILENAME}."
+		exit $RET
+	fi
 fi
 
 if [ "${AUTODELETE}" = "yes" ]; then
@@ -656,4 +660,5 @@ if [ "${AUTOSTART}" = "yes" ]; then
 	fi
 fi
 
-exit 0
+# If we've made it this far and haven't exited it means an update was downloaded and/or installed
+exit 6
