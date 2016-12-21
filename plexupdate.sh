@@ -21,10 +21,8 @@
 #
 # Returns 0 on success
 #         1 on error
-#         2 if file already downloaded
-#         3 if page layout has changed.
-#         4 if download fails
-#         6 if update was deferred due to usage
+#         2 an update was found/installed
+#       255 an invalid parameter/combination was passed to plexupdate
 #
 # All other return values not documented.
 #
@@ -531,13 +529,13 @@ CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"check
 
 if [ -z "${DOWNLOAD}" ]; then
 	error "Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)"
-	exit 3
+	exit 1
 fi
 
 FILENAME="$(basename 2>/dev/null ${DOWNLOAD})"
 if [ $? -ne 0 ]; then
 	error "Failed to parse HTML, download cancelled."
-	exit 3
+	exit 1
 fi
 
 echo "${CHECKSUM}  ${DOWNLOADDIR}/${FILENAME}" >"${FILE_SHA}"
@@ -570,9 +568,6 @@ if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 		sha1sum --status -c "${FILE_SHA}"
 		if [ $? -eq 0 ]; then
 			info "File already exists (${FILENAME}), won't download."
-			if [ "${AUTOINSTALL}" != "yes" ]; then
-				exit 2
-			fi
 			SKIP_DOWNLOAD="yes"
 		else
 			info "File exists but fails checksum. Redownloading."
@@ -607,17 +602,16 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	info "File downloaded"
 fi
 
-sha1sum --status -c "${FILE_SHA}"
-if [ $? -ne 0 ]; then
+if ! sha1sum --status -c "${FILE_SHA}"; then
 	error "Downloaded file corrupt. Try again."
-	exit 4
+	exit 1
 fi
 
 if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 	# Check if server is in-use before continuing (thanks @AltonV, @hakong and @sufr3ak)...
 	if running ${PLEXSERVER} ${TOKEN} ${PLEXPORT}; then
 		error "Server ${PLEXSERVER} is currently being used by one or more users, skipping installation. Please run again later"
-		exit 6
+		exit 2
 	fi
 fi
 
@@ -628,6 +622,11 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 	# no elif since DISTRO_INSTALL will produce error output for us
 
 	${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
+	RET=$?
+	if [ $RET -ne 0 ]; then
+		error "Error reported while installing ${FILENAME}."
+		exit $RET
+	fi
 fi
 
 if [ "${AUTODELETE}" = "yes" ]; then
@@ -656,4 +655,5 @@ if [ "${AUTOSTART}" = "yes" ]; then
 	fi
 fi
 
-exit 0
+# If we've made it this far and haven't exited it means an update was downloaded and/or installed
+exit 2
