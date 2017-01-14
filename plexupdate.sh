@@ -371,15 +371,6 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 	popd &>/dev/null
 fi
 
-# Sanity check
-if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ]; then
-	error "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
-	exit 1
-elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
-	error "EMAIL field must contain a valid email address"
-	exit 1
-fi
-
 
 if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ] && [ ${EUID} -ne 0 ]; then
 	error "You need to be root to use AUTOINSTALL/AUTOSTART option."
@@ -444,7 +435,13 @@ if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
 	rm "${FILE_REMOTE}" 2>/dev/null >/dev/null
 fi
 
-
+getPlexServerToken() {
+  [ -f /etc/default/plexmediaserver ] && . /etc/default/plexmediaserver
+  local pmsApplicationSupportDir="${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR:-${HOME}/Library/Application Support}"
+  local prefFile="${pmsApplicationSupportDir}/Plex Media Server/Preferences.xml"
+  
+  sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "$prefFile"
+}
 
 # Fields we need to submit for login to work
 #
@@ -457,10 +454,21 @@ fi
 # commit		Sign in
 
 if [ "${PUBLIC}" = "no" ]; then
-	info "Authenticating with plex.tv"
-
 	# Clean old session
 	rm "${FILE_KAKA}" 2>/dev/null
+  
+  if [ -z "${EMAIL}" -o -z "${PASS}" ]; then
+    TOKEN=$(getPlexServerToken)
+    
+    if [ -z "${TOKEN}" ]; then
+    	error "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
+    	exit 1
+    fi
+  elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
+  	error "EMAIL field must contain a valid email address"
+  	exit 1
+  
+	info "Authenticating with plex.tv"
 
 	# Build post data
 	echo -ne >"${FILE_POSTDATA}" "$(keypair "user[login]" "${EMAIL}" )"
@@ -492,6 +500,7 @@ if [ "${PUBLIC}" = "no" ]; then
 
 	# Remove this, since it contains more information than we should leave hanging around
 	rm "${FILE_FAILCAUSE}"
+fi
 
 elif [ "$PUBLIC" != "no" ]; then
 	# It's a public version, so change URL and make doubly sure that cookies are empty
