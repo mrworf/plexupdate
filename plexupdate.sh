@@ -531,6 +531,10 @@ CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"check
 
 if [ -z "${DOWNLOAD}" ]; then
 	error "Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)"
+	if [ ! -z "${RELEASE}" ]; then
+		error "It seems release info is missing a link"
+		error "Please try https://plex.tv and confirm it works there before reporting this issue"
+	fi
 	exit 3
 fi
 
