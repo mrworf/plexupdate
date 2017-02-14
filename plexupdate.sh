@@ -378,6 +378,8 @@ if [ -z "${EMAIL}" -o -z "${PASS}" ] && [ "${PUBLIC}" = "no" ]; then
 elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
 	error "EMAIL field must contain a valid email address"
 	exit 1
+elif [ ! -z "${EMAIL}" -a ! -z "${PASS}" -a "${PUBLIC}" = "yes" ]; then
+	warn "You have defined email and password but PUBLIC is set to yes, this will not download the PlexPass version"
 fi
 
 
