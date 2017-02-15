@@ -510,8 +510,6 @@ if [ "${PUBLIC}" = "no" ]; then
 	else
 		info "Using Plex Server credentials to authenticate"
 	fi
-fi
-
 elif [ "$PUBLIC" != "no" ]; then
 	# It's a public version, so change URL and make doubly sure that cookies are empty
 	rm 2>/dev/null >/dev/null "${FILE_KAKA}"
