@@ -21,7 +21,6 @@
 #
 # Returns 0 on success
 #         1 on error
-#         2 if file already downloaded
 #         3 if page layout has changed.
 #         4 if download fails
 #         6 if update was deferred due to usage
@@ -700,7 +699,7 @@ if [ "${AUTOSTART}" = "yes" ]; then
 fi
 
 if [ "${NOTIFY}" = "yes" ]; then
-	# Notify of success where we did download and possibly install the update
+	# Notify success if we downloaded and possibly installed the update
 	exit 10
 fi
 exit 0
