@@ -653,9 +653,12 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 	if ! hash ldconfig 2>/dev/null && [ "${DISTRO}" = "ubuntu" ]; then
 		export PATH=$PATH:/sbin
 	fi
-	# no elif since DISTRO_INSTALL will produce error output for us
 
 	${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
+	if [ $? -ne 0 ]; then
+		# Clarify why this failed, so user won't be left in the dark
+		error "Was unable to install due to problems with package from plex.tv or your local linux setup"
+	fi
 fi
 
 if [ "${AUTODELETE}" = "yes" ]; then
