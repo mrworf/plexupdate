@@ -187,8 +187,8 @@ rawurlencode() {
 		case "$c" in
 		[-_.~a-zA-Z0-9] ) o="${c}" ;;
 		* )               printf -v o '%%%02x' "'$c"
-	esac
-	encoded+="${o}"
+		esac
+		encoded+="${o}"
 	done
 	echo "${encoded}"
 }
@@ -198,6 +198,16 @@ keypair() {
 	local val="$( rawurlencode "$2" )"
 
 	echo "${key}=${val}"
+}
+
+getPlexServerToken() {
+	[ -f /etc/default/plexmediaserver ] && . /etc/default/plexmediaserver
+	local pmsApplicationSupportDir="${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR:-${HOME}/Library/Application Support}"
+	local prefFile="${pmsApplicationSupportDir}/Plex Media Server/Preferences.xml"
+
+	if [ -f "${prefFile}" ]; then
+		sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${prefFile}"
+	fi
 }
 
 # Setup an exit handler so we cleanup
@@ -230,7 +240,7 @@ done
 # We have to double-check that both files exist before trying to stat them. This is going away soon.
 if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
 	([ -f "${CONFIGFILE}" -a -f ~/.plexupdate ] && [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]); then
-warn ".plexupdate has been deprecated. Please run $(dirname "$0")/extras/installer.sh to update your configuration."
+	warn ".plexupdate has been deprecated. Please run $(dirname "$0")/extras/installer.sh to update your configuration."
 	if [ -t 1 ]; then
 		for i in `seq 1 5`; do echo -n .\ ; sleep 1; done
 		echo .
@@ -371,7 +381,6 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 	popd &>/dev/null
 fi
 
-
 if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ] && [ ${EUID} -ne 0 ]; then
 	error "You need to be root to use AUTOINSTALL/AUTOSTART option."
 fi
@@ -435,14 +444,6 @@ if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
 	rm "${FILE_REMOTE}" 2>/dev/null >/dev/null
 fi
 
-getPlexServerToken() {
-  [ -f /etc/default/plexmediaserver ] && . /etc/default/plexmediaserver
-  local pmsApplicationSupportDir="${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR:-${HOME}/Library/Application Support}"
-  local prefFile="${pmsApplicationSupportDir}/Plex Media Server/Preferences.xml"
-  
-  sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "$prefFile"
-}
-
 # Fields we need to submit for login to work
 #
 # Field			Value
@@ -457,49 +458,58 @@ if [ "${PUBLIC}" = "no" ]; then
 	# Clean old session
 	rm "${FILE_KAKA}" 2>/dev/null
   
-  if [ -z "${EMAIL}" -o -z "${PASS}" ]; then
-    TOKEN=$(getPlexServerToken)
-    
-    if [ -z "${TOKEN}" ]; then
-    	error "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
-    	exit 1
-    fi
-  elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
-  	error "EMAIL field must contain a valid email address"
-  	exit 1
-  
-	info "Authenticating with plex.tv"
-
-	# Build post data
-	echo -ne >"${FILE_POSTDATA}" "$(keypair "user[login]" "${EMAIL}" )"
-	echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[password]" "${PASS}" )"
-	echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[remember_me]" "0" )"
-
-	# Authenticate (using Plex Single Sign On)
-	wget --header "X-Plex-Client-Identifier: 4a745ae7-1839-e44e-1e42-aebfa578c865" --header "X-Plex-Product: Plex SSO" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_LOGIN}" --post-file="${FILE_POSTDATA}" -q -S -O "${FILE_FAILCAUSE}" 2>"${FILE_RAW}"
-	# Delete authentication data ... Bad idea to let that stick around
-	rm "${FILE_POSTDATA}"
-
-	# Provide some details to the end user
-	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
-	if [ $RESULTCODE -eq 401 ]; then
-		error "Username and/or password incorrect"
-		if [ "$VERBOSE" = "yes" ]; then
-			info "Tried using \"${EMAIL}\" and \"${PASS}\" "
-		fi
-		exit 1
-	elif [ $RESULTCODE -ne 201 ]; then
-		error "Failed to login, debug information:"
-		cat "${FILE_RAW}" >&2
-		exit 1
+	# Try to obtain token from Plex Server Installation
+	TOKEN=
+	if [ -z "${EMAIL}" -o -z "${PASS}" ]; then
+		TOKEN=$(getPlexServerToken)
 	fi
 
-	# If the system got here, it means the login was successfull, so we set the TOKEN variable to the authToken from the response
-	# I use cut -c 14- to cut off the "authToken":" string from the grepped result, can probably be done in a different way
-	TOKEN=$(<"${FILE_FAILCAUSE}"  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
+	if [ -z "${TOKEN}" ]; then
+		# If no token, go through regular process
+		if [ -z "${EMAIL}" -o -z "${PASS}" ]; then
+			error "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
+			exit 1
+		elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
+			error "EMAIL field must contain a valid email address"
+			exit 1
+		elif [ ! -z "${EMAIL}" -a ! -z "${PASS}" -a "${PUBLIC}" = "yes" ]; then
+			warn "You have defined email and password but PUBLIC is set to yes, this will not download the PlexPass version"
+		fi  
+		info "Authenticating with plex.tv using email and password"
 
-	# Remove this, since it contains more information than we should leave hanging around
-	rm "${FILE_FAILCAUSE}"
+		# Build post data
+		echo -ne >"${FILE_POSTDATA}" "$(keypair "user[login]" "${EMAIL}" )"
+		echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[password]" "${PASS}" )"
+		echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[remember_me]" "0" )"
+
+		# Authenticate (using Plex Single Sign On)
+		wget --header "X-Plex-Client-Identifier: 4a745ae7-1839-e44e-1e42-aebfa578c865" --header "X-Plex-Product: Plex SSO" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_LOGIN}" --post-file="${FILE_POSTDATA}" -q -S -O "${FILE_FAILCAUSE}" 2>"${FILE_RAW}"
+		# Delete authentication data ... Bad idea to let that stick around
+		rm "${FILE_POSTDATA}"
+
+		# Provide some details to the end user
+		RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
+		if [ $RESULTCODE -eq 401 ]; then
+			error "Username and/or password incorrect"
+			if [ "$VERBOSE" = "yes" ]; then
+				info "Tried using \"${EMAIL}\" and \"${PASS}\" "
+			fi
+			exit 1
+		elif [ $RESULTCODE -ne 201 ]; then
+			error "Failed to login, debug information:"
+			cat "${FILE_RAW}" >&2
+			exit 1
+		fi
+
+		# If the system got here, it means the login was successfull, so we set the TOKEN variable to the authToken from the response
+		# I use cut -c 14- to cut off the "authToken":" string from the grepped result, can probably be done in a different way
+		TOKEN=$(<"${FILE_FAILCAUSE}"  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
+
+		# Remove this, since it contains more information than we should leave hanging around
+		rm "${FILE_FAILCAUSE}"
+	else
+		info "Using Plex Server credentials to authenticate"
+	fi
 fi
 
 elif [ "$PUBLIC" != "no" ]; then
@@ -540,6 +550,10 @@ CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"check
 
 if [ -z "${DOWNLOAD}" ]; then
 	error "Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)"
+	if [ ! -z "${RELEASE}" ]; then
+		error "It seems release info is missing a link"
+		error "Please try https://plex.tv and confirm it works there before reporting this issue"
+	fi
 	exit 3
 fi
 
