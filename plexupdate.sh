@@ -201,13 +201,20 @@ keypair() {
 }
 
 getPlexServerToken() {
-	[ -f /etc/default/plexmediaserver ] && . /etc/default/plexmediaserver
-	local pmsApplicationSupportDir="${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR:-${HOME}/Library/Application Support}"
-	local prefFile="${pmsApplicationSupportDir}/Plex Media Server/Preferences.xml"
-
-	if [ -f "${prefFile}" ]; then
-		sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${prefFile}"
+	if [ -f /etc/default/plexmediaserver ]; then
+		source /etc/default/plexmediaserver
 	fi
+
+	# List possible locations to find Plex Server preference file
+	local VALIDPATHS=("${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR}" "/var/lib/plexmediaserver/Library/Application Support/" "${HOME}/Library/Application Support/")
+	local PREFFILE="/Plex Media Server/Preferences.xml"
+
+	for I in "${VALIDPATHS[@]}" ; do
+		if [ ! -z "${I}" -a -f "${I}${PREFFILE}" ]; then
+			sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null || error "Do not have permission to read token from Plex Server preference file"
+			exit 0
+		fi
+	done
 }
 
 # Setup an exit handler so we cleanup
