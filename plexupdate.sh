@@ -211,7 +211,10 @@ getPlexServerToken() {
 
 	for I in "${VALIDPATHS[@]}" ; do
 		if [ ! -z "${I}" -a -f "${I}${PREFFILE}" ]; then
-			sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null || error "Do not have permission to read token from Plex Server preference file"
+			sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null
+			if [ $? -ne 0 -a -z "${EMAIL}" -a -z "${PASS}" ]; then
+				error "Do not have permission to read token from Plex Server preference file"
+			fi
 			exit 0
 		fi
 	done
