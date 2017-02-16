@@ -11,6 +11,10 @@ AUTOINSTALL=yes
 AUTOUPDATE=yes
 PUBLIC=
 
+# variables to save in config
+CONFIGVARS="AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE NOTIFY"
+CRONVARS="CONF SCRIPT LOGGING"
+
 install() {
 	echo "'$req' is required but not installed, attempting to install..."
 	sleep 1
@@ -120,7 +124,11 @@ install_plexupdate() {
 		cd "$FULL_PATH"
 		if git remote -v 2>/dev/null | grep -q "plexupdate"; then
 			echo -n "Found existing plexupdate repository in '$FULL_PATH', updating... "
-			git pull &>/dev/null || abort "Unknown error while updating, please check '$FULL_PATH' and then try again."
+			if [ -w "${FULL_PATH}/.git" ]; then
+				git pull &>/dev/null || abort "unknown error while updating, please check '$FULL_PATH' and then try again."
+			else
+				sudo git pull &>/dev/null || abort "unknown error while updating, please check '$FULL_PATH' and then try again."
+			fi
 		else
 			abort "'$FULL_PATH' appears to contain a different git repository, cannot continue"
 		fi
@@ -221,7 +229,7 @@ configure_plexupdate() {
 		PLEXPORT=
 	fi
 
-	save_config "AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE" "$CONFIGFILE"
+	save_config "$CONFIGVARS" "$CONFIGFILE"
 }
 
 configure_cron() {
@@ -242,8 +250,8 @@ configure_cron() {
 			yesno || return 1
 			echo
 			echo -n "Changing ownership of '${FULL_PATH}'... "
-			sudo chown -R root:root "${FULL_PATH}" || abort "Unable to change ownership, cannot continue"
-			sudo chmod -R o-w "${FULL_PATH}" || abort "Unable to change permissions, cannot continue"
+			sudo chown -R root:root "${FULL_PATH}" || abort "unable to change ownership, cannot continue"
+			sudo chmod -R o-w "${FULL_PATH}" || abort "unable to change permissions, cannot continue"
 			echo "done"
 		fi
 
@@ -257,7 +265,14 @@ configure_cron() {
 			LOGGING=true
 		fi
 
-		save_config "CONF SCRIPT LOGGING" "/etc/plexupdate.cron.conf"
+		echo
+		echo -n "Should cron send you an email if an update is available/installed? "
+		if yesno $NOTIFY; then
+			NOTIFY=yes
+			save_config "$CONFIGVARS" "$CONFIGFILE"
+		fi
+
+		save_config "$CRONVARS" "/etc/plexupdate.cron.conf"
 
 		echo
 		echo -n "Installing daily cron job... "
