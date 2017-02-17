@@ -21,10 +21,11 @@
 #
 # Returns 0 on success
 #         1 on error
-#         2 if file already downloaded
 #         3 if page layout has changed.
 #         4 if download fails
 #         6 if update was deferred due to usage
+#        10 if new file was downloaded/installed (requires --notify-success)
+#       255 configuration is invalid
 #
 # All other return values not documented.
 #
@@ -66,6 +67,7 @@ ARCH=$(uname -m)
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
+NOTIFY=no
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="dnf -y install"
@@ -136,7 +138,8 @@ usage() {
 	echo "    --pass <plex.tv password> Plex.TV password"
 	echo "    --server <Plex server address> Address of Plex Server"
 	echo "    --port <Plex server port> Port for Plex Server. Used with --server"
-	echo
+	echo "    --notify-success Set exit code 10 if update is available/installed"
+	echo ""
 	exit 0
 }
 
@@ -213,7 +216,7 @@ getPlexServerToken() {
 		if [ ! -z "${I}" -a -f "${I}${PREFFILE}" ]; then
 			sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null
 			if [ $? -ne 0 -a -z "${EMAIL}" -a -z "${PASS}" ]; then
-				error "Do not have permission to read token from Plex Server preference file"
+				error "Do not have permission to read token from Plex Server preference file (${I}${PREFFILE})"
 			fi
 			exit 0
 		fi
@@ -230,7 +233,7 @@ trap cleanup EXIT
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:"
+optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:,notify-success"
 GETOPTRES=$(getopt $optstring -- "$@")
 if [ $? -eq 1 ]; then
 	exit 1
@@ -288,6 +291,8 @@ do
 		(--pass) shift; PASS=$(trimQuotes ${1});;
 		(--server) shift; PLEXSERVER=$(trimQuotes ${1});;
 		(--port) shift; PLEXPORT=$(trimQuotes ${1});;
+
+		(--notify-success) NOTIFY=yes;;
 
 		(--) ;;
 		(-*) error "Unrecognized option $1"; usage; exit 1;;
@@ -602,7 +607,7 @@ if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 		if [ $? -eq 0 ]; then
 			info "File already exists (${FILENAME}), won't download."
 			if [ "${AUTOINSTALL}" != "yes" ]; then
-				exit 2
+				exit 0
 			fi
 			SKIP_DOWNLOAD="yes"
 		else
@@ -618,7 +623,7 @@ if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 		else
 			info "File exists and checksum passes, won't redownload."
 			if [ "${AUTOINSTALL}" != "yes" ]; then
-				exit 2
+				exit 0
 			fi
 			SKIP_DOWNLOAD="yes"
 		fi
@@ -658,9 +663,11 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 	fi
 
 	${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"
-	if [ $? -ne 0 ]; then
+	RET=$?
+	if [ ${RET} -ne 0 ]; then
 		# Clarify why this failed, so user won't be left in the dark
-		error "Was unable to install due to problems with package from plex.tv or your local linux setup"
+		error "Failed to install update. Command '${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"' returned error code ${RET}"
+		exit ${RET}
 	fi
 fi
 
@@ -690,4 +697,8 @@ if [ "${AUTOSTART}" = "yes" ]; then
 	fi
 fi
 
+if [ "${NOTIFY}" = "yes" ]; then
+	# Notify success if we downloaded and possibly installed the update
+	exit 10
+fi
 exit 0
