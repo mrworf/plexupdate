@@ -340,55 +340,51 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 	pushd "$(dirname "$0")" >/dev/null
 
 	if [ ! -d .git ]; then
-		error "This is not a git repository. Auto-update only works if you've done a git clone"
-		exit 1
-	fi
+		warn "This is not a git repository. Auto-update only works if you've done a git clone"
+	elif ! git diff --quiet; then
+		warn "You have made changes to the plexupdate files, cannot auto update"
+	else
+		# Force FETCH_HEAD to point to the correct branch (for older versions of git which don't default to current branch)
+		if git fetch origin $BRANCHNAME --quiet && ! git diff --quiet FETCH_HEAD; then
+			info "Auto-updating..."
 
-	if ! git diff --quiet; then
-		error "You have made changes to the plexupdate files, cannot auto update"
-		exit 1
-	fi
-
-	# Force FETCH_HEAD to point to the correct branch (for older versions of git which don't default to current branch)
-	if git fetch origin $BRANCHNAME --quiet && ! git diff --quiet FETCH_HEAD; then
-		info "Auto-updating..."
-
-		# Use an associative array to store permissions. If you're running bash < 4, the declare will fail and we'll
-		# just run in "dumb" mode without trying to restore permissions
-		declare -A FILE_OWNER FILE_PERMS && \
-		for filename in $PLEXUPDATE_FILES; do
-			FILE_OWNER[$filename]=$(stat -c "%u:%g" "$filename")
-			FILE_PERMS[$filename]=$(stat -c "%a" "$filename")
-		done
-
-		if ! git merge --quiet FETCH_HEAD; then
-			error 'Unable to update git, try running "git pull" manually to see what is wrong'
-			exit 1
-		fi
-
-		if [ ${#FILE_OWNER[@]} -gt 0 ]; then
+			# Use an associative array to store permissions. If you're running bash < 4, the declare will fail and we'll
+			# just run in "dumb" mode without trying to restore permissions
+			declare -A FILE_OWNER FILE_PERMS && \
 			for filename in $PLEXUPDATE_FILES; do
-				chown ${FILE_OWNER[$filename]} $filename &> /dev/null || error "Failed to restore ownership for '$filename' after auto-update"
-				chmod ${FILE_PERMS[$filename]} $filename &> /dev/null || error "Failed to restore permissions for '$filename' after auto-update"
+				FILE_OWNER[$filename]=$(stat -c "%u:%g" "$filename")
+				FILE_PERMS[$filename]=$(stat -c "%a" "$filename")
 			done
-		fi
 
-		# .git permissions don't seem to be affected by running as root even though files inside do, so just reset
-		# the permissions to match the folder
-		chown -R --reference=.git .git
+			if ! git merge --quiet FETCH_HEAD; then
+				error 'Unable to update git, try running "git pull" manually to see what is wrong'
+				exit 1
+			fi
 
-		info "Update complete"
+			if [ ${#FILE_OWNER[@]} -gt 0 ]; then
+				for filename in $PLEXUPDATE_FILES; do
+					chown ${FILE_OWNER[$filename]} $filename &> /dev/null || error "Failed to restore ownership for '$filename' after auto-update"
+					chmod ${FILE_PERMS[$filename]} $filename &> /dev/null || error "Failed to restore permissions for '$filename' after auto-update"
+				done
+			fi
 
-		#make sure we're back in the right relative location before testing $0
-		popd >/dev/null
+			# .git permissions don't seem to be affected by running as root even though files inside do, so just reset
+			# the permissions to match the folder
+			chown -R --reference=.git .git
 
-		if [ ! -f "$0" ]; then
-			error "Unable to relaunch, couldn't find $0"
-			exit 1
-		else
-			[ -x "$0" ] || chmod 755 "$0"
-			"$0" ${ALLARGS[@]}
-			exit $?
+			info "Update complete"
+
+			#make sure we're back in the right relative location before testing $0
+			popd >/dev/null
+
+			if [ ! -f "$0" ]; then
+				error "Unable to relaunch, couldn't find $0"
+				exit 1
+			else
+				[ -x "$0" ] || chmod 755 "$0"
+				"$0" ${ALLARGS[@]}
+				exit $?
+			fi
 		fi
 	fi
 
