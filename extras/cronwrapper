@@ -48,10 +48,10 @@ LOGFILE=$(mktemp /tmp/plexupdate.cron.XXXX)
 
 RET=0
 if $LOGGING; then
-	"${SCRIPT}" --config "${CONF}" --notify-success 2>&1 | tee ${LOGFILE} | logger -t plexupdate -p daemon.info
+	"${SCRIPT}" "${CONF}" 2>&1 | tee ${LOGFILE} | logger -t plexupdate -p daemon.info
 	RET="${PIPESTATUS[0]}"
 else
-	"${SCRIPT}" --config "${CONF}" --notify-success >${LOGFILE} 2>&1
+	"${SCRIPT}" "${CONF}" >${LOGFILE} 2>&1
 	RET=$?
 fi
 

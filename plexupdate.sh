@@ -138,8 +138,7 @@ usage() {
 	echo "    --pass <plex.tv password> Plex.TV password"
 	echo "    --server <Plex server address> Address of Plex Server"
 	echo "    --port <Plex server port> Port for Plex Server. Used with --server"
-	echo ""
-	echo "    --notify-success Makes plexupdate return 10 on download/update success (instead of 0)"
+	echo "    --notify-success Set exit code 10 if update is available/installed"
 	echo ""
 	exit 0
 }
@@ -217,7 +216,7 @@ getPlexServerToken() {
 		if [ ! -z "${I}" -a -f "${I}${PREFFILE}" ]; then
 			sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null
 			if [ $? -ne 0 -a -z "${EMAIL}" -a -z "${PASS}" ]; then
-				error "Do not have permission to read token from Plex Server preference file"
+				error "Do not have permission to read token from Plex Server preference file (${I}${PREFFILE})"
 			fi
 			exit 0
 		fi
@@ -293,7 +292,7 @@ do
 		(--server) shift; PLEXSERVER=$(trimQuotes ${1});;
 		(--port) shift; PLEXPORT=$(trimQuotes ${1});;
 
-		(--notify-success) shift; NOTIFY=yes;;
+		(--notify-success) NOTIFY=yes;;
 
 		(--) ;;
 		(-*) error "Unrecognized option $1"; usage; exit 1;;
@@ -667,7 +666,7 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 	RET=$?
 	if [ ${RET} -ne 0 ]; then
 		# Clarify why this failed, so user won't be left in the dark
-		error "Was unable to install due to problems with package from plex.tv or your local linux setup"
+		error "Failed to install update. Command '${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"' returned error code ${RET}"
 		exit ${RET}
 	fi
 fi
