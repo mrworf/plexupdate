@@ -24,6 +24,7 @@
 #         3 if page layout has changed.
 #         4 if download fails
 #         6 if update was deferred due to usage
+#         7 if update is available (requires --check-update)
 #        10 if new file was downloaded/installed (requires --notify-success)
 #       255 configuration is invalid
 #
@@ -68,6 +69,7 @@ SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
 NOTIFY=no
+CHECKONLY=no
 
 # Default options for package managers, override if needed
 REDHAT_INSTALL="dnf -y install"
@@ -139,6 +141,7 @@ usage() {
 	echo "    --server <Plex server address> Address of Plex Server"
 	echo "    --port <Plex server port> Port for Plex Server. Used with --server"
 	echo "    --notify-success Set exit code 10 if update is available/installed"
+	echo "    --check-update Check for new version of plex only"
 	echo ""
 	exit 0
 }
@@ -233,7 +236,7 @@ trap cleanup EXIT
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:,notify-success"
+optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:,notify-success,check-update"
 GETOPTRES=$(getopt $optstring -- "$@")
 if [ $? -eq 1 ]; then
 	exit 1
@@ -293,6 +296,7 @@ do
 		(--port) shift; PLEXPORT=$(trimQuotes ${1});;
 
 		(--notify-success) NOTIFY=yes;;
+		(--check-update) CHECKONLY=yes;;
 
 		(--) ;;
 		(-*) error "Unrecognized option $1"; usage; exit 1;;
@@ -590,6 +594,19 @@ else
 		warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 	fi
 	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
+fi
+
+if [ "${CHECKONLY}" = "yes" ]; then
+	if [ -z "${INSTALLED_VERSION}" ]; then
+		warn "Unable to detect installed version, first time?"
+	elif [[ $FILENAME != *$INSTALLED_VERSION* ]]; then
+		AVAIL="$(echo "${FILENAME}" | sed -nr 's/^[^0-9]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\-[^_]+).*/\1/pg')"
+		info "Your OS reports Plex $INSTALLED_VERSION installed, newer version is available (${AVAIL})"
+		exit 7
+	else
+		info "You are running latest version of Plex (${INSTALLED_VERSION})"
+	fi
+	exit 0
 fi
 
 if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
