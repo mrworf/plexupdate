@@ -398,6 +398,7 @@ fi
 
 if [ "${AUTOINSTALL}" = "yes" -o "${AUTOSTART}" = "yes" ] && [ ${EUID} -ne 0 ]; then
 	error "You need to be root to use AUTOINSTALL/AUTOSTART option."
+	exit 1
 fi
 
 
