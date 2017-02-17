@@ -58,7 +58,7 @@ PLEXPORT=32400
 # (aka "Advanced" settings, can be overriden with config file)
 FORCE=no
 FORCEALL=no
-PUBLIC=yes
+PUBLIC=no
 AUTOINSTALL=no
 AUTODELETE=no
 AUTOUPDATE=no
