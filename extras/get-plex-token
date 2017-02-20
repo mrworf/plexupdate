@@ -73,7 +73,11 @@ getPlexServerToken() {
 
 	for I in "${VALIDPATHS[@]}" ; do
 		if [ ! -z "${I}" -a -f "${I}${PREFFILE}" ]; then
-			TOKEN=$(sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null)
+			if [ "$(basename $0)" = "installer.sh" ]; then
+				TOKEN=$(sudo sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null)
+			else
+				TOKEN=$(sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null)
+			fi
 		fi
 	done
 }
