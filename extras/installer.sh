@@ -12,7 +12,7 @@ AUTOUPDATE=yes
 PUBLIC=
 
 # variables to save in config
-CONFIGVARS="AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE NOTIFY"
+CONFIGVARS="AUTOINSTALL AUTODELETE DOWNLOADDIR TOKEN FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE NOTIFY"
 CRONVARS="CONF SCRIPT LOGGING"
 
 install() {
@@ -153,26 +153,16 @@ configure_plexupdate() {
 	fi
 	if yesno $default; then
 		PUBLIC=no
-		while true; do
-			read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
-			if [ -z "${EMAIL}" ] || [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
-				echo "Please provide a valid email address"
-			else
-				break
-			fi
-		done
-		while true; do
-			read -e -p "PlexPass Password: " -i "$PASS" PASS
-			if [ -z "$PASS" ]; then
-				echo "Please provide a password"
-			else
-				break
-			fi
-		done
+		source get-plex-token
+		getPlexToken
+		if [ -z "$TOKEN" ]; then
+			abort "Failed to retrieve Plex token, please try again."
+		fi
 	else
 		# don't forget to erase old settings if they changed their answer
 		EMAIL=
 		PASS=
+		TOKEN=
 		PUBLIC=yes
 	fi
 
