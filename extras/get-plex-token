@@ -33,7 +33,7 @@ getPlexToken() {
 	elif [ -n "$TOKEN" ]; then
 		echo "Fetching token from Plex server"
 	fi
-	
+
 	[ -n "$TOKEN" ] # simulate exit status
 }
 

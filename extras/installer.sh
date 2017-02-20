@@ -136,7 +136,7 @@ install_plexupdate() {
 		cd - &> /dev/null
 	else
 		echo -n "Installing plexupdate into '$FULL_PATH'... "
-		git clone "$ORIGIN_REPO" "$FULL_PATH" &> /dev/null || abort "install failed, cannot continue"
+		git clone --branch "${BRANCHNAME:-master}" "$ORIGIN_REPO" "$FULL_PATH" &> /dev/null || abort "install failed, cannot continue"
 		echo "done"
 	fi
 }
