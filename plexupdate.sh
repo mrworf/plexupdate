@@ -82,10 +82,7 @@ URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
 URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
 
 #URL for new version check
-UPSTREAM_GIT_URL='https://raw.githubusercontent.com/mrworf/plexupdate/master/plexupdate.sh'
-
-#Branch to fetch updates from
-BRANCHNAME="master"
+UPSTREAM_GIT_URL="https://raw.githubusercontent.com/${GIT_OWNER:-mrworf}/plexupdate/${BRANCHNAME:-master}/plexupdate.sh"
 
 #Files "owned" by plexupdate, for autoupdate
 PLEXUPDATE_FILES="plexupdate.sh extras/installer.sh extras/cronwrapper"

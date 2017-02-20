@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ORIGIN_REPO="https://github.com/mrworf/plexupdate"
+ORIGIN_REPO="https://github.com/${GIT_OWNER:-mrworf}/plexupdate"
 FULL_PATH="/opt/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
@@ -153,7 +153,7 @@ configure_plexupdate() {
 	fi
 	if yesno $default; then
 		PUBLIC=no
-		source get-plex-token
+		source "${FULL_PATH}/get-plex-token"
 		getPlexToken
 		if [ -z "$TOKEN" ]; then
 			abort "Failed to retrieve Plex token, please try again."
