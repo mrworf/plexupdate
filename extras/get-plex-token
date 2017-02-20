@@ -3,7 +3,7 @@
 URL_LOGIN='https://plex.tv/users/sign_in.json'
 
 getPlexToken() {
-	#getPlexServerToken
+	[ -z "$TOKEN" ] && getPlexServerToken
 	# Check if we're connected to a terminal
 	if [ -z "$TOKEN" -a -n "$EMAIL" -a -n "$PASS" ]; then
 		#TOFIX
