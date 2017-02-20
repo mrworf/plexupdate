@@ -409,8 +409,9 @@ if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
 	rm "${FILE_REMOTE}" 2>/dev/null >/dev/null
 fi
 
-if [ "${PUBLIC}" = "no" ]; then
-	[ -f extras/get-web-token ] && source extras/get-web-token
+if [ "${PUBLIC}" = "no" -a -z "$TOKEN" ]; then
+	TO_SOURCE="$(dirname "$0")/extras/get-web-token"
+	[ -f "$TO_SOURCE" ] && source $TO_SOURCE
 	if ! getPlexToken; then
 		error "Unable to get Plex token, falling back to public release"
 		PUBLiC="yes"
