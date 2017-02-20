@@ -1,0 +1,118 @@
+#!/bin/bash
+
+URL_LOGIN='https://plex.tv/users/sign_in.json'
+
+getPlexToken() {
+	#getPlexServerToken
+	# Check if we're connected to a terminal
+	if [ -z "$TOKEN" -a -t 0 ]; then
+		echo "To continue, you will need to provide your Plex account credentials."
+		echo "Your email and password will only be used to retrieve a 'token' and will not be saved anywhere."
+		echo
+		while true; do
+			read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
+			if [ -z "${EMAIL}" ] || [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
+				echo "Please provide a valid email address"
+			else
+				break
+			fi
+		done
+		while true; do
+			read -e -p "PlexPass Password: " -i "$PASS" PASS
+			if [ -z "$PASS" ]; then
+				echo "Please provide a password"
+			else
+				break
+			fi
+		done
+		getPlexWebToken
+	elif [ -n "$TOKEN" ]; then
+		echo "Fetching token from Plex server"
+	fi
+	
+	[ -n "$TOKEN" ] # simulate exit status
+}
+
+# Useful functions
+keypair() {
+	local key="$( rawurlencode "$1" )"
+	local val="$( rawurlencode "$2" )"
+
+	echo "${key}=${val}"
+}
+
+rawurlencode() {
+	local string="${1}"
+	local strlen=${#string}
+	local encoded=""
+
+	for (( pos=0 ; pos<strlen ; pos++ )); do
+		c=${string:$pos:1}
+		case "$c" in
+		[-_.~a-zA-Z0-9] ) o="${c}" ;;
+		* )               printf -v o '%%%02x' "'$c"
+		esac
+		encoded+="${o}"
+	done
+	echo "${encoded}"
+}
+
+# Worker functions
+getPlexServerToken() {
+	if [ -f /etc/default/plexmediaserver ]; then
+		source /etc/default/plexmediaserver
+	fi
+
+	# List possible locations to find Plex Server preference file
+	local VALIDPATHS=("${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR}" "/var/lib/plexmediaserver/Library/Application Support/" "${HOME}/Library/Application Support/")
+	local PREFFILE="/Plex Media Server/Preferences.xml"
+
+	for I in "${VALIDPATHS[@]}" ; do
+		if [ ! -z "${I}" -a -f "${I}${PREFFILE}" ]; then
+			TOKEN=$(sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null)
+		fi
+	done
+}
+
+getPlexWebToken() {
+	FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
+	FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
+	FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
+
+	# Fields we need to submit for login to work
+	#
+	# Field			Value
+	# utf8			&#x2713;
+	# authenticity_token	<Need to be obtained from web page>
+	# user[login]		$EMAIL
+	# user[password]	$PASS
+	# user[remember_me]	0
+	# commit		Sign in
+
+	# Build post data
+	echo -ne >"${FILE_POSTDATA}" "$(keypair "user[login]" "${EMAIL}" )"
+	echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[password]" "${PASS}" )"
+	echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[remember_me]" "0" )"
+
+	# Authenticate (using Plex Single Sign On)
+	wget --header "X-Plex-Client-Identifier: 4a745ae7-1839-e44e-1e42-aebfa578c865" --header "X-Plex-Product: Plex SSO" "${URL_LOGIN}" --post-file="${FILE_POSTDATA}" -q -S -O "${FILE_FAILCAUSE}" 2>"${FILE_RAW}"
+
+	# Provide some details to the end user
+	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
+	if [ $RESULTCODE -eq 401 ]; then
+		echo "ERROR: Username and/or password incorrect" >&2
+	elif [ $RESULTCODE -ne 201 ]; then
+		echo "ERROR: Failed to log in, debug information:" >&2
+		cat "${FILE_RAW}" >&2
+	else
+		TOKEN=$(<"${FILE_FAILCAUSE}"  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
+	fi
+
+	# Clean up temp files since they may contain sensitive information
+	rm "${FILE_FAILCAUSE}" "${FILE_POSTDATA}" "${FILE_RAW}"
+}
+
+if [ "$(basename "$0")" = "get-plex-token" ]; then
+	[ -f /etc/plexupdate.conf ] && source /etc/plexupdate.conf
+	getPlexToken && echo "Token = $TOKEN"
+fi

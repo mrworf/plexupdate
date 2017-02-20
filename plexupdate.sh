@@ -90,10 +90,6 @@ BRANCHNAME="master"
 #Files "owned" by plexupdate, for autoupdate
 PLEXUPDATE_FILES="plexupdate.sh extras/installer.sh extras/cronwrapper"
 
-FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
-FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
-FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
-FILE_KAKA=$(mktemp /tmp/plexupdate.kaka.XXXX)
 FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 FILE_WGETLOG=$(mktemp /tmp/plexupdate.wget.XXXX)
 FILE_LOCAL=$(mktemp /tmp/plexupdate.local.XXXX)
@@ -182,53 +178,9 @@ trimQuotes() {
 	echo $__buffer
 }
 
-# Useful functions
-rawurlencode() {
-	local string="${1}"
-	local strlen=${#string}
-	local encoded=""
-
-	for (( pos=0 ; pos<strlen ; pos++ )); do
-		c=${string:$pos:1}
-		case "$c" in
-		[-_.~a-zA-Z0-9] ) o="${c}" ;;
-		* )               printf -v o '%%%02x' "'$c"
-		esac
-		encoded+="${o}"
-	done
-	echo "${encoded}"
-}
-
-keypair() {
-	local key="$( rawurlencode "$1" )"
-	local val="$( rawurlencode "$2" )"
-
-	echo "${key}=${val}"
-}
-
-getPlexServerToken() {
-	if [ -f /etc/default/plexmediaserver ]; then
-		source /etc/default/plexmediaserver
-	fi
-
-	# List possible locations to find Plex Server preference file
-	local VALIDPATHS=("${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR}" "/var/lib/plexmediaserver/Library/Application Support/" "${HOME}/Library/Application Support/")
-	local PREFFILE="/Plex Media Server/Preferences.xml"
-
-	for I in "${VALIDPATHS[@]}" ; do
-		if [ ! -z "${I}" -a -f "${I}${PREFFILE}" ]; then
-			sed -n 's/.*PlexOnlineToken="\([[:alnum:]]*\).*".*/\1/p' "${I}${PREFFILE}" 2>/dev/null
-			if [ $? -ne 0 -a -z "${EMAIL}" -a -z "${PASS}" ]; then
-				error "Do not have permission to read token from Plex Server preference file (${I}${PREFFILE})"
-			fi
-			exit 0
-		fi
-	done
-}
-
 # Setup an exit handler so we cleanup
 cleanup() {
-	for F in "${FILE_RAW}" "${FILE_FAILCAUSE}" "${FILE_POSTDATA}" "${FILE_KAKA}" "${FILE_SHA}" "${FILE_LOCAL}" "${FILE_REMOTE}" "${FILE_WGETLOG}"; do
+	for F in "${FILE_SHA}" "${FILE_LOCAL}" "${FILE_REMOTE}" "${FILE_WGETLOG}"; do
 		rm "$F" 2>/dev/null >/dev/null
 	done
 }
@@ -460,81 +412,21 @@ if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
 	rm "${FILE_REMOTE}" 2>/dev/null >/dev/null
 fi
 
-# Fields we need to submit for login to work
-#
-# Field			Value
-# utf8			&#x2713;
-# authenticity_token	<Need to be obtained from web page>
-# user[login]		$EMAIL
-# user[password]	$PASSWORD
-# user[remember_me]	0
-# commit		Sign in
-
 if [ "${PUBLIC}" = "no" ]; then
-	# Clean old session
-	rm "${FILE_KAKA}" 2>/dev/null
-  
-	# Try to obtain token from Plex Server Installation
-	TOKEN=
-	if [ -z "${EMAIL}" -o -z "${PASS}" ]; then
-		TOKEN=$(getPlexServerToken)
+	[ -f extras/get-web-token ] && source extras/get-web-token
+	if ! getPlexToken; then
+		error "Unable to get Plex token, falling back to public release"
+		PUBLiC="yes"
 	fi
+fi
 
-	if [ -z "${TOKEN}" ]; then
-		# If no token, go through regular process
-		if [ -z "${EMAIL}" -o -z "${PASS}" ]; then
-			error "Need username & password to download PlexPass version. Otherwise run with -p to download public version."
-			exit 1
-		elif [ ! -z "${EMAIL}" ] && [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
-			error "EMAIL field must contain a valid email address"
-			exit 1
-		elif [ ! -z "${EMAIL}" -a ! -z "${PASS}" -a "${PUBLIC}" = "yes" ]; then
-			warn "You have defined email and password but PUBLIC is set to yes, this will not download the PlexPass version"
-		fi  
-		info "Authenticating with plex.tv using email and password"
-
-		# Build post data
-		echo -ne >"${FILE_POSTDATA}" "$(keypair "user[login]" "${EMAIL}" )"
-		echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[password]" "${PASS}" )"
-		echo -ne >>"${FILE_POSTDATA}" "&$(keypair "user[remember_me]" "0" )"
-
-		# Authenticate (using Plex Single Sign On)
-		wget --header "X-Plex-Client-Identifier: 4a745ae7-1839-e44e-1e42-aebfa578c865" --header "X-Plex-Product: Plex SSO" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_LOGIN}" --post-file="${FILE_POSTDATA}" -q -S -O "${FILE_FAILCAUSE}" 2>"${FILE_RAW}"
-		# Delete authentication data ... Bad idea to let that stick around
-		rm "${FILE_POSTDATA}"
-
-		# Provide some details to the end user
-		RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
-		if [ $RESULTCODE -eq 401 ]; then
-			error "Username and/or password incorrect"
-			if [ "$VERBOSE" = "yes" ]; then
-				info "Tried using \"${EMAIL}\" and \"${PASS}\" "
-			fi
-			exit 1
-		elif [ $RESULTCODE -ne 201 ]; then
-			error "Failed to login, debug information:"
-			cat "${FILE_RAW}" >&2
-			exit 1
-		fi
-
-		# If the system got here, it means the login was successfull, so we set the TOKEN variable to the authToken from the response
-		# I use cut -c 14- to cut off the "authToken":" string from the grepped result, can probably be done in a different way
-		TOKEN=$(<"${FILE_FAILCAUSE}"  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
-
-		# Remove this, since it contains more information than we should leave hanging around
-		rm "${FILE_FAILCAUSE}"
-	else
-		info "Using Plex Server credentials to authenticate"
-	fi
-elif [ "$PUBLIC" != "no" ]; then
-	# It's a public version, so change URL and make doubly sure that cookies are empty
-	rm 2>/dev/null >/dev/null "${FILE_KAKA}"
-	touch "${FILE_KAKA}"
+if [ "$PUBLIC" != "no" ]; then
+	# It's a public version, so change URL
 	URL_DOWNLOAD=${URL_DOWNLOAD_PUBLIC}
 fi
 
 if [ "${LISTOPTS}" = "yes" ]; then
-	opts="$(wget --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -oe '"label"[^}]*' | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
+	opts="$(wget "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -oe '"label"[^}]*' | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
 	eval opts=( "DISTRO" "BUILD" "DESCRIPTION" "======" "=====" "==============================================" $opts )
 
 	BUILD=
@@ -558,7 +450,7 @@ fi
 info "Retrieving list of available distributions"
 
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
-RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
+RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
 DOWNLOAD=$(echo ${RELEASE} | grep -m1 -ioe 'https://[^\"]*')
 CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"checksum\"\:\"//')
 
@@ -646,7 +538,7 @@ fi
 
 if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	info "Downloading release \"${FILENAME}\""
-	wget ${WGETOPTIONS} -o "${FILE_WGETLOG}" --load-cookies "${FILE_KAKA}" --save-cookies "${FILE_KAKA}" --keep-session-cookies "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
+	wget ${WGETOPTIONS} -o "${FILE_WGETLOG}" "${DOWNLOAD}" -O "${DOWNLOADDIR}/${FILENAME}" 2>&1
 	CODE=$?
 
 	if [ ${CODE} -ne 0 ]; then
