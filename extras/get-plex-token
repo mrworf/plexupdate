@@ -3,12 +3,15 @@
 URL_LOGIN='https://plex.tv/users/sign_in.json'
 
 getPlexToken() {
-	[ -z "$TOKEN" ] && getPlexServerToken
-	# Check if we're connected to a terminal
-	if [ -z "$TOKEN" -a -n "$EMAIL" -a -n "$PASS" ]; then
+	if [ -n "$TOKEN" ]; then
+		echo "Fetching token from config"
+	elif getPlexServerToken
+		echo "Fetching token from Plex server"
+	elif [ -z "$TOKEN" -a -n "$EMAIL" -a -n "$PASS" ]; then
 		#TOFIX
 		echo "WARNING: Storing your email and password has been deprecated. Please re-run extras/installer.sh or see LINK_TO_FAQ."
 		getPlexWebToken
+	# Check if we're connected to a terminal
 	elif [ -z "$TOKEN" -a -t 0 ]; then
 		echo "To continue, you will need to provide your Plex account credentials."
 		echo "Your email and password will only be used to retrieve a 'token' and will not be saved anywhere."
@@ -30,8 +33,6 @@ getPlexToken() {
 			fi
 		done
 		getPlexWebToken
-	elif [ -n "$TOKEN" ]; then
-		echo "Fetching token from Plex server"
 	fi
 
 	[ -n "$TOKEN" ] # simulate exit status
@@ -80,6 +81,8 @@ getPlexServerToken() {
 			fi
 		fi
 	done
+
+	[ -n "$TOKEN" ] # simulate exit status
 }
 
 getPlexWebToken() {

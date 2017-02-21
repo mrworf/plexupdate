@@ -347,7 +347,7 @@ if yesno; then
 		PROGRESS_OPT="-P"
 	fi
 	if [ "$AUTOINSTALL" == "yes" ]; then
-		sudo "$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
+		sudo -E "$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	else
 		"$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	fi
