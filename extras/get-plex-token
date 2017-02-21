@@ -5,7 +5,7 @@ URL_LOGIN='https://plex.tv/users/sign_in.json'
 getPlexToken() {
 	if [ -n "$TOKEN" ]; then
 		echo "Fetching token from config"
-	elif getPlexServerToken
+	elif getPlexServerToken; then
 		echo "Fetching token from Plex server"
 	elif [ -z "$TOKEN" -a -n "$EMAIL" -a -n "$PASS" ]; then
 		#TOFIX
