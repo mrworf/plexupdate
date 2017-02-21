@@ -5,6 +5,7 @@ FULL_PATH="/opt/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
 CRONWRAPPER="/etc/cron.daily/plexupdate"
+VERBOSE=yes #to be inherited by get-plex-token, do not save to config
 
 # default options
 AUTOINSTALL=yes

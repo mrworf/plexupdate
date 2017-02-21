@@ -495,7 +495,7 @@ if [ "${CHECKONLY}" = "yes" ]; then
 		info "Your OS reports Plex $INSTALLED_VERSION installed, newer version is available (${AVAIL})"
 		exit 7
 	else
-		info "You are running latest version of Plex (${INSTALLED_VERSION})"
+		info "You are running the latest version of Plex (${INSTALLED_VERSION})"
 	fi
 	exit 0
 fi
