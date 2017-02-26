@@ -395,6 +395,9 @@ if [ -z "${DOWNLOAD}" ]; then
 		error "Please try https://plex.tv and confirm it works there before reporting this issue"
 	fi
 	exit 3
+elif [ -z "${CHECKSUM}" ]; then
+	error "Unable to retrieve a checksum for the download. Please try https://plex.tv/downloads before reporting this issue."
+	exit 3
 fi
 
 FILENAME="$(basename 2>/dev/null ${DOWNLOAD})"
