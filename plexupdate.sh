@@ -476,7 +476,7 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	info "File downloaded"
 fi
 
-if sha1sum --status -c "${FILE_SHA}"; then
+if ! sha1sum --status -c "${FILE_SHA}"; then
 	error "Downloaded file corrupt. Try again."
 	exit 4
 fi
