@@ -154,7 +154,7 @@ configure_plexupdate() {
 	fi
 	if yesno $default; then
 		PUBLIC=no
-		source "${FULL_PATH}/extras/get-plex-token"
+		source "${FULL_PATH}/plexupdate-core"
 		getPlexToken
 		if [ -z "$TOKEN" ]; then
 			abort "Failed to retrieve Plex token, please try again."
