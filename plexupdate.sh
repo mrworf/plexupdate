@@ -388,6 +388,12 @@ RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" "${URL_DOWNLOAD}" -O - 2>/dev/
 DOWNLOAD=$(echo ${RELEASE} | grep -m1 -ioe 'https://[^\"]*')
 CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"checksum\"\:\"//')
 
+if [ "$VERBOSE" = "yes" ]; then
+	for i in RELEASE DOWNLOAD CHECKSUM; do
+		info "$i=${!i}"
+	done
+fi
+
 if [ -z "${DOWNLOAD}" ]; then
 	error "Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)"
 	if [ ! -z "${RELEASE}" ]; then
