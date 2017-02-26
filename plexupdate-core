@@ -19,7 +19,7 @@ DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
 #URL for new version check
-UPSTREAM_GIT_URL="https://raw.githubusercontent.com/${GIT_OWNER:-mrworf}/plexupdate/${BRANCHNAME:-master}/plexupdate.sh"
+UPSTREAM_GIT_URL="https://raw.githubusercontent.com/${GIT_OWNER:-mrworf}/plexupdate/${BRANCHNAME:-master}"
 
 #Files "owned" by plexupdate, for autoupdate
 PLEXUPDATE_FILES="plexupdate.sh plexupdate-core extras/installer.sh extras/cronwrapper"
@@ -163,6 +163,15 @@ trimQuotes() {
 	__buffer=${__buffer%\'}
 
 	echo $__buffer
+}
+
+getRemoteSHA() {
+	(wget -q "$1" -O - 2>/dev/null || return 1) | sha1sum | cut -f1 -d" "
+}
+
+getLocalSHA() {
+	[ -f "$1" ] || return 1
+	sha1sum "$1" | cut -f1 -d" "
 }
 
 # RNNG

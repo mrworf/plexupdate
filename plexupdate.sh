@@ -72,8 +72,7 @@ CHECKONLY=no
 
 FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 FILE_WGETLOG=$(mktemp /tmp/plexupdate.wget.XXXX)
-FILE_LOCAL=$(mktemp /tmp/plexupdate.local.XXXX)
-FILE_REMOTE=$(mktemp /tmp/plexupdate.remote.XXXX)
+SCRIPT_PATH="$(dirname "$0")"
 
 ######################################################################
 
@@ -109,16 +108,14 @@ usage() {
 	exit 0
 }
 
-if ! source "$(dirname "$0")"/plexupdate-core; then
+if ! source "${SCRIPT_PATH}/plexupdate-core"; then
 	echo "ERROR: plexupdate-core can't be found. Please redownload plexupdate and try again." >2
 	exit 1
 fi
 
 # Setup an exit handler so we cleanup
 cleanup() {
-	for F in "${FILE_SHA}" "${FILE_LOCAL}" "${FILE_REMOTE}" "${FILE_WGETLOG}"; do
-		rm "$F" 2>/dev/null >/dev/null
-	done
+	rm "${FILE_SHA}" "${FILE_WGETLOG}" &> /dev/null
 }
 trap cleanup EXIT
 
@@ -144,7 +141,7 @@ done
 # We have to double-check that both files exist before trying to stat them. This is going away soon.
 if [ -z "${CONFIGFILE}" -a -f ~/.plexupdate -a ! -f /etc/plexupdate.conf ] || \
 	([ -f "${CONFIGFILE}" -a -f ~/.plexupdate ] && [ `stat -Lc %i "${CONFIGFILE}"` == `stat -Lc %i ~/.plexupdate` ]); then
-	warn ".plexupdate has been deprecated. Please run $(dirname "$0")/extras/installer.sh to update your configuration."
+	warn ".plexupdate has been deprecated. Please run ${SCRIPT_PATH}/extras/installer.sh to update your configuration."
 	if [ -t 1 ]; then
 		for i in `seq 1 5`; do echo -n .\ ; sleep 1; done
 		echo .
@@ -235,7 +232,7 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 		exit 1
 	fi
 
-	pushd "$(dirname "$0")" >/dev/null
+	pushd "${SCRIPT_PATH}" >/dev/null
 
 	if [ ! -d .git ]; then
 		warn "This is not a git repository. Auto-update only works if you've done a git clone"
@@ -334,24 +331,18 @@ else
 fi
 
 if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
-	(wget -q "$UPSTREAM_GIT_URL" -O - 2>/dev/null || echo ERROR) | sha1sum >"${FILE_REMOTE}" 2>/dev/null
-	ERR1=$?
-	(cat "$0" 2>/dev/null || echo ERROR) | sha1sum >"${FILE_LOCAL}" 2>/dev/null
-	ERR2=$?
-	if [ $ERR1 -ne 0 -o $ERR2 -ne 0 ]; then
-		error "When checking for version, was unable to confirm version of script"
-	else
-		# "709c7506b17090bce0d1e2464f39f4a434cf25f1" is the hash for "ERROR" :)
-		if grep -sq "709c7506b17090bce0d1e2464f39f4a434cf25f1" "${FILE_LOCAL}" ; then
-			error "When checking for version, was unable to validate local copy"
-		elif grep -sq "709c7506b17090bce0d1e2464f39f4a434cf25f1" "${FILE_REMOTE}" ; then
-			error "When checking for version, was was unable to validate remote copy"
-		elif ! diff "${FILE_LOCAL}" "${FILE_REMOTE}" >/dev/null 2>/dev/null ; then
-			info "Newer version of this script is available at https://github.com/mrworf/plexupdate"
+	pushd "${SCRIPT_PATH}" > /dev/null
+	for filename in $PLEXUPDATE_FILES; do
+		[ -f "$filename" ] || error "Update check failed. '$filename' could not be found"
+
+		REMOTE_SHA=$(getRemoteSHA "$UPSTREAM_GIT_URL/$filename") || error "Update check failed. Unable to fetch '$UPSTREAM_GIT_URL/$filename'." 
+		LOCAL_SHA=$(getLocalSHA "$filename")
+		if [ "$REMOTE_SHA" != "$LOCAL_SHA" ]; then
+			info "Newer version of this script is available at https://github.com/${GIT_OWNER:-mrworf}/plexupdate"
+			break
 		fi
-	fi
-	rm "${FILE_LOCAL}" 2>/dev/null >/dev/null
-	rm "${FILE_REMOTE}" 2>/dev/null >/dev/null
+	done
+	popd > /dev/null
 fi
 
 if [ "${PUBLIC}" = "no" -a -z "$TOKEN" ]; then
@@ -476,8 +467,7 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 	info "File downloaded"
 fi
 
-sha1sum --status -c "${FILE_SHA}"
-if [ $? -ne 0 ]; then
+if sha1sum --status -c "${FILE_SHA}"; then
 	error "Downloaded file corrupt. Try again."
 	exit 4
 fi
