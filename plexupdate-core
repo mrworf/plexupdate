@@ -1,7 +1,34 @@
 #!/bin/bash
+######## INDEX ########
+# GPT -> getPlexToken
+# GPS -> getPlexServerToken
+# GPW -> getPlexWebToken
+# HELPERS -> keypair, rawurlencode, trimQuotes
+# RNNG -> running
+# SHARED -> warn, info, warn
 
+######## CONSTANTS ########
+# Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN='https://plex.tv/users/sign_in.json'
+URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
+URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
 
+# Default options for package managers, override if needed
+REDHAT_INSTALL="dnf -y install"
+DEBIAN_INSTALL="dpkg -i"
+DISTRO_INSTALL=""
+
+#URL for new version check
+UPSTREAM_GIT_URL="https://raw.githubusercontent.com/${GIT_OWNER:-mrworf}/plexupdate/${BRANCHNAME:-master}/plexupdate.sh"
+
+#Files "owned" by plexupdate, for autoupdate
+PLEXUPDATE_FILES="plexupdate.sh plexupdate-core extras/installer.sh extras/cronwrapper"
+
+
+######## FUNCTIONS ########
+#### Token Management #####
+
+# GPT
 getPlexToken() {
 	if [ -n "$TOKEN" ]; then
 		[ "$VERBOSE" = "yes" ] && echo "Fetching token from config"
@@ -38,31 +65,7 @@ getPlexToken() {
 	[ -n "$TOKEN" ] # simulate exit status
 }
 
-# Useful functions
-keypair() {
-	local key="$( rawurlencode "$1" )"
-	local val="$( rawurlencode "$2" )"
-
-	echo "${key}=${val}"
-}
-
-rawurlencode() {
-	local string="${1}"
-	local strlen=${#string}
-	local encoded=""
-
-	for (( pos=0 ; pos<strlen ; pos++ )); do
-		c=${string:$pos:1}
-		case "$c" in
-		[-_.~a-zA-Z0-9] ) o="${c}" ;;
-		* )               printf -v o '%%%02x' "'$c"
-		esac
-		encoded+="${o}"
-	done
-	echo "${encoded}"
-}
-
-# Worker functions
+# GPS
 getPlexServerToken() {
 	if [ -f /etc/default/plexmediaserver ]; then
 		source /etc/default/plexmediaserver
@@ -86,6 +89,7 @@ getPlexServerToken() {
 	[ -n "$TOKEN" ] # simulate exit status
 }
 
+# GPW
 getPlexWebToken() {
 	FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
 	FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
@@ -125,6 +129,83 @@ getPlexWebToken() {
 
 	[ -n "$TOKEN" ] # simulate exit status
 }
+
+# HELPERS
+keypair() {
+	local key="$( rawurlencode "$1" )"
+	local val="$( rawurlencode "$2" )"
+
+	echo "${key}=${val}"
+}
+
+rawurlencode() {
+	local string="${1}"
+	local strlen=${#string}
+	local encoded=""
+
+	for (( pos=0 ; pos<strlen ; pos++ )); do
+		c=${string:$pos:1}
+		case "$c" in
+		[-_.~a-zA-Z0-9] ) o="${c}" ;;
+		* )               printf -v o '%%%02x' "'$c"
+		esac
+		encoded+="${o}"
+	done
+	echo "${encoded}"
+}
+
+trimQuotes() {
+	local __buffer=$1
+
+	# Remove leading single quote
+	__buffer=${__buffer#\'}
+	# Remove ending single quote
+	__buffer=${__buffer%\'}
+
+	echo $__buffer
+}
+
+# RNNG
+running() {
+	local DATA="$(wget --no-check-certificate -q -O - https://$1:$3/status/sessions?X-Plex-Token=$2)"
+	local RET=$?
+	if [ ${RET} -eq 0 ]; then
+		if [ -z "${DATA}" ]; then
+			# Odd, but usually means noone is watching
+			return 1
+		fi
+		echo "${DATA}" | grep -q '<MediaContainer size="0">'
+		if [ $? -eq 1 ]; then
+			# not found means that one or more medias are being played
+			return 0
+		fi
+		return 1
+	elif [ ${RET} -eq 4 ]; then
+		# No response, assume not running
+		return 1
+	else
+		# We do not know what this means...
+		warn "Unknown response (${RET}) from server >>>"
+		warn "${DATA}"
+		return 0
+	fi
+}
+
+# Shared functions
+
+# SHARED
+warn() {
+	echo "WARNING: $@" >&1
+}
+
+info() {
+	echo "$@" >&1
+}
+
+error() {
+	echo "ERROR: $@" >&2
+}
+
 
 if [ "$(basename "$0")" = "get-plex-token" ]; then
 	[ -f /etc/plexupdate.conf ] && source /etc/plexupdate.conf

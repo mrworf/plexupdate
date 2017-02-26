@@ -71,41 +71,12 @@ CHECKUPDATE=yes
 NOTIFY=no
 CHECKONLY=no
 
-# Default options for package managers, override if needed
-REDHAT_INSTALL="dnf -y install"
-DEBIAN_INSTALL="dpkg -i"
-DISTRO_INSTALL=""
-
-# Current pages we need - Do not change unless Plex.tv changes again
-URL_LOGIN='https://plex.tv/users/sign_in.json'
-URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
-URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
-
-#URL for new version check
-UPSTREAM_GIT_URL="https://raw.githubusercontent.com/${GIT_OWNER:-mrworf}/plexupdate/${BRANCHNAME:-master}/plexupdate.sh"
-
-#Files "owned" by plexupdate, for autoupdate
-PLEXUPDATE_FILES="plexupdate.sh extras/installer.sh extras/cronwrapper"
-
 FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 FILE_WGETLOG=$(mktemp /tmp/plexupdate.wget.XXXX)
 FILE_LOCAL=$(mktemp /tmp/plexupdate.local.XXXX)
 FILE_REMOTE=$(mktemp /tmp/plexupdate.remote.XXXX)
 
 ######################################################################
-# Functions for rest of script
-
-warn() {
-	echo "WARNING: $@" >&1
-}
-
-info() {
-	echo "$@" >&1
-}
-
-error() {
-	echo "ERROR: $@" >&2
-}
 
 usage() {
 	echo "Usage: $(basename $0) [-acdfFhlpPqsuU] [<long options>]"
@@ -139,41 +110,10 @@ usage() {
 	exit 0
 }
 
-running() {
-	local DATA="$(wget --no-check-certificate -q -O - https://$1:$3/status/sessions?X-Plex-Token=$2)"
-	local RET=$?
-	if [ ${RET} -eq 0 ]; then
-		if [ -z "${DATA}" ]; then
-			# Odd, but usually means noone is watching
-			return 1
-		fi
-		echo "${DATA}" | grep -q '<MediaContainer size="0">'
-		if [ $? -eq 1 ]; then
-			# not found means that one or more medias are being played
-			return 0
-		fi
-		return 1
-	elif [ ${RET} -eq 4 ]; then
-		# No response, assume not running
-		return 1
-	else
-		# We do not know what this means...
-		warn "Unknown response (${RET}) from server >>>"
-		warn "${DATA}"
-		return 0
-	fi
-}
-
-trimQuotes() {
-	local __buffer=$1
-
-	# Remove leading single quote
-	__buffer=${__buffer#\'}
-	# Remove ending single quote
-	__buffer=${__buffer%\'}
-
-	echo $__buffer
-}
+if ! source "$(dirname "$0")"/plexupdate-core; then
+	echo "ERROR: plexupdate-core can't be found. Please redownload plexupdate and try again." >2
+	exit 1
+fi
 
 # Setup an exit handler so we cleanup
 cleanup() {
