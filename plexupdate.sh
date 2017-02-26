@@ -58,7 +58,6 @@ PLEXPORT=32400
 # Defaults
 # (aka "Advanced" settings, can be overriden with config file)
 FORCE=no
-FORCEALL=no
 PUBLIC=no
 AUTOINSTALL=no
 AUTODELETE=no
@@ -86,7 +85,6 @@ usage() {
 	echo "    -d Auto delete after auto install"
 	echo "    -f Force download even if it's the same version or file"
 	echo "       already exists unless checksum passes"
-	echo "    -F Force download always"
 	echo "    -h This help"
 	echo "    -l List available builds and distros"
 	echo "    -p Public Plex Media Server version"
@@ -167,7 +165,7 @@ do
 		(-C) error "CRON option is deprecated, please use cronwrapper (see README.md)"; exit 255;;
 		(-d) AUTODELETE=yes;;
 		(-f) FORCE=yes;;
-		(-F) FORCEALL=yes;;
+		(-F) error "FORCEALL/-F option is deprecated, please use FORCE/-f instead"; exit 255;;
 		(-l) LISTOPTS=yes;;
 		(-p) PUBLIC=yes;;
 		(-P) SHOWPROGRESS=yes;;
@@ -217,6 +215,11 @@ fi
 
 if [ "${KEEP}" = "yes" ]; then
 	error "KEEP is deprecated and should be removed from config file"
+	exit 255
+fi
+
+if [ "${FORCEALL}" = "yes" ]; then
+	error "FORCEALL is deprecated, please use FORCE instead"
 	exit 255
 fi
 
@@ -442,37 +445,21 @@ if [ "${CHECKONLY}" = "yes" ]; then
 	exit 0
 fi
 
-if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
+if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
 	info "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
 	exit 0
 fi
 
-if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
-	if [ "${FORCE}" != "yes" -a "${FORCEALL}" != "yes" ]; then
-		sha1sum --status -c "${FILE_SHA}"
-		if [ $? -eq 0 ]; then
-			info "File already exists (${FILENAME}), won't download."
-			if [ "${AUTOINSTALL}" != "yes" ]; then
-				exit 0
-			fi
-			SKIP_DOWNLOAD="yes"
-		else
-			info "File exists but fails checksum. Redownloading."
-			SKIP_DOWNLOAD="no"
+if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
+	if sha1sum --status -c "${FILE_SHA}"; then
+		info "File already exists (${FILENAME}), won't download."
+		if [ "${AUTOINSTALL}" != "yes" ]; then
+			exit 0
 		fi
-	elif [ "${FORCEALL}" == "yes" ]; then
-		info "Note! File exists, but asked to overwrite with new copy"
+		SKIP_DOWNLOAD="yes"
 	else
-		sha1sum --status -c "${FILE_SHA}"
-		if [ $? -ne 0 ]; then
-			info "File exists but fails checksum. Redownloading."
-		else
-			info "File exists and checksum passes, won't redownload."
-			if [ "${AUTOINSTALL}" != "yes" ]; then
-				exit 0
-			fi
-			SKIP_DOWNLOAD="yes"
-		fi
+		info "File exists but fails checksum. Redownloading."
+		SKIP_DOWNLOAD="no"
 	fi
 fi
 
