@@ -147,17 +147,21 @@ configure_plexupdate() {
 	[ -f "$CONFIGFILE" ] && source "$CONFIGFILE"
 
 	echo
-	echo -n "Do you want to install the latest PlexPass releases? (requires PlexPass username and password) "
+	echo -n "Do you want to install the latest PlexPass releases? (requires PlexPass account) "
 	# The answer to this question and the value of PUBLIC are basically inverted
 	if [ "$PUBLIC" == "yes" ]; then
 		default=N
 	fi
 	if yesno $default; then
 		PUBLIC=no
-		source "${FULL_PATH}/plexupdate-core"
-		getPlexToken
-		if [ -z "$TOKEN" ]; then
-			abort "Failed to retrieve Plex token, please try again."
+		# If they already have a VALID token, leave it alone
+		if [ -z "$TOKEN" ] || ! verifyToken;
+			if getPlexServerToken; then
+				# Only store the token if it's not in PMS
+				TOKEN=
+			else
+				getPlexToken
+			fi
 		fi
 	else
 		# don't forget to erase old settings if they changed their answer
@@ -336,7 +340,7 @@ else
 	install_plexupdate
 fi
 
-
+source "${FULL_PATH}/plexupdate-core"
 
 configure_plexupdate
 configure_cron

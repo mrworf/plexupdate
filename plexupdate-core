@@ -200,6 +200,10 @@ running() {
 	fi
 }
 
+verifyToken() {
+	wget -qO /dev/null "https://plex.tv/api/resources?X-Plex-Token=${TOKEN}"
+}
+
 # Shared functions
 
 # SHARED
