@@ -31,22 +31,22 @@ PLEXUPDATE_FILES="plexupdate.sh plexupdate-core extras/installer.sh extras/cronw
 # GPT
 getPlexToken() {
 	if [ -n "$TOKEN" ]; then
-		[ "$VERBOSE" = "yes" ] && echo "Fetching token from config"
+		[ "$VERBOSE" = "yes" ] && info "Fetching token from config"
 	elif getPlexServerToken; then
-		[ "$VERBOSE" = "yes" ] && echo "Fetching token from Plex server"
+		[ "$VERBOSE" = "yes" ] && info "Fetching token from Plex server"
 	elif [ -z "$TOKEN" -a -n "$EMAIL" -a -n "$PASS" ]; then
 		#TOFIX
-		echo "WARNING: Storing your email and password has been deprecated. Please re-run extras/installer.sh or see LINK_TO_FAQ."
+		warn "Storing your email and password has been deprecated. Please re-run extras/installer.sh or see LINK_TO_FAQ."
 		getPlexWebToken
 	# Check if we're connected to a terminal
 	elif [ -z "$TOKEN" -a -t 0 ]; then
-		echo "To continue, you will need to provide your Plex account credentials."
-		echo "Your email and password will only be used to retrieve a 'token' and will not be saved anywhere."
+		info "To continue, you will need to provide your Plex account credentials."
+		info "Your email and password will only be used to retrieve a 'token' and will not be saved anywhere."
 		echo
 		while true; do
 			read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
 			if [ -z "${EMAIL}" ] || [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
-				echo "Please provide a valid email address"
+				info "Please provide a valid email address"
 			else
 				break
 			fi
@@ -54,7 +54,7 @@ getPlexToken() {
 		while true; do
 			read -e -p "PlexPass Password: " -i "$PASS" PASS
 			if [ -z "$PASS" ]; then
-				echo "Please provide a password"
+				info "Please provide a password"
 			else
 				break
 			fi
@@ -116,9 +116,9 @@ getPlexWebToken() {
 	# Provide some details to the end user
 	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
 	if [ $RESULTCODE -eq 401 ]; then
-		echo "ERROR: Username and/or password incorrect" >&2
+		error "Username and/or password incorrect"
 	elif [ $RESULTCODE -ne 201 ]; then
-		echo "ERROR: Failed to log in, debug information:" >&2
+		error "Failed to log in, debug information:"
 		cat "${FILE_RAW}" >&2
 	else
 		TOKEN=$(<"${FILE_FAILCAUSE}"  grep -ioe '"authToken":"[^"]*' | cut -c 14-)
@@ -218,5 +218,5 @@ error() {
 
 if [ "$(basename "$0")" = "get-plex-token" ]; then
 	[ -f /etc/plexupdate.conf ] && source /etc/plexupdate.conf
-	getPlexToken && echo "Token = $TOKEN"
+	getPlexToken && info "Token = $TOKEN"
 fi
