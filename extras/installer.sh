@@ -159,8 +159,9 @@ configure_plexupdate() {
 			if getPlexServerToken; then
 				# Only store the token if it's not in PMS
 				TOKEN=
-			else
-				getPlexToken
+			elif ! getPlexToken; then
+				error "Unable to get Plex token, falling back to pulic release"
+				PUBLIC=yes
 			fi
 		fi
 	else
