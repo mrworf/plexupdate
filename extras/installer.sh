@@ -155,7 +155,7 @@ configure_plexupdate() {
 	if yesno $default; then
 		PUBLIC=no
 		# If they already have a VALID token, leave it alone
-		if [ -z "$TOKEN" ] || ! verifyToken;
+		if [ -z "$TOKEN" ] || ! verifyToken; then
 			if getPlexServerToken; then
 				# Only store the token if it's not in PMS
 				TOKEN=
