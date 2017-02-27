@@ -6,17 +6,6 @@
 # Server for Linux. It supports both the public versions
 # as well as the PlexPass versions.
 #
-# PlexPass users:
-#   Create a plexupdate.conf file in your home directory with these
-#   values:
-#
-#   EMAIL='<whatever your plexpass email was>'
-#   PASS='<whatever password you used>'
-#   DOWNLOADDIR='<where you would like to save the downloaded package>'
-#
-# And run the tool using: ./plexupdate.sh --config plexupdate.conf
-# or place the config in /etc/plexupdate.conf
-#
 # See https://github.com/mrworf/plexupdate for more details.
 #
 # Returns 0 on success
