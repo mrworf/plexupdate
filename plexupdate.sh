@@ -339,7 +339,7 @@ if [ "${PUBLIC}" = "no" -a -z "$TOKEN" ]; then
 	[ -f "$TO_SOURCE" ] && source $TO_SOURCE
 	if ! getPlexToken; then
 		error "Unable to get Plex token, falling back to public release"
-		PUBLiC="yes"
+		PUBLIC="yes"
 	fi
 fi
 

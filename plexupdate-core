@@ -91,9 +91,9 @@ getPlexServerToken() {
 
 # GPW
 getPlexWebToken() {
-	FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
-	FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
-	FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
+	local FILE_POSTDATA=$(mktemp /tmp/plexupdate.postdata.XXXX)
+	local FILE_RAW=$(mktemp /tmp/plexupdate.raw.XXXX)
+	local FILE_FAILCAUSE=$(mktemp /tmp/plexupdate.failcause.XXXX)
 
 	# Fields we need to submit for login to work
 	#
@@ -114,7 +114,7 @@ getPlexWebToken() {
 	wget --header "X-Plex-Client-Identifier: 4a745ae7-1839-e44e-1e42-aebfa578c865" --header "X-Plex-Product: Plex SSO" "${URL_LOGIN}" --post-file="${FILE_POSTDATA}" -q -S -O "${FILE_FAILCAUSE}" 2>"${FILE_RAW}"
 
 	# Provide some details to the end user
-	RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
+	local RESULTCODE=$(head -n1 "${FILE_RAW}" | grep -oe '[1-5][0-9][0-9]')
 	if [ $RESULTCODE -eq 401 ]; then
 		error "Username and/or password incorrect"
 	elif [ $RESULTCODE -ne 201 ]; then
@@ -166,7 +166,10 @@ trimQuotes() {
 }
 
 getRemoteSHA() {
-	(wget -q "$1" -O - 2>/dev/null || return 1) | sha1sum | cut -f1 -d" "
+	# these two lines can't be combined. `local RESULT=` will gobble up the return
+	local RESULT
+	RESULT=$(wget -q "$1" -O - 2>/dev/null) || return 1
+	sha1sum <<< "$RESULT" | cut -f1 -d" "
 }
 
 getLocalSHA() {
