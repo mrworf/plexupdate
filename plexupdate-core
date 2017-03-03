@@ -222,7 +222,7 @@ error() {
 	echo "ERROR: $@" >&2
 }
 
-
+# Intentionally leaving this hard to find so that people aren't trying to use it manually.
 if [ "$(basename "$0")" = "get-plex-token" ]; then
 	[ -f /etc/plexupdate.conf ] && source /etc/plexupdate.conf
 	getPlexToken && info "Token = $TOKEN"
