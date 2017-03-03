@@ -74,7 +74,7 @@ Of course not, anything you find under `extras/` is optional and only provided a
 
 ## Why am I getting a warning about email and password being deprecated?
 
-Since just storing your password in plexupdate.conf isn't secure, plexupdate will now use a "token" instead. To make this warning just re-run the installer (`extras/installer.sh`) or manually remove `EMAIL` and `PASS` from your plexupdate.conf. For more details, see [this wiki article](https://github.com/mrworf/plexupdate/wiki/Authenticating-with-Plex-Pass).
+Since just storing your password in plexupdate.conf isn't secure, plexupdate will now use a "token" instead. To make this warning go away just re-run the installer (`extras/installer.sh`) or manually remove `EMAIL` and `PASS` from your plexupdate.conf. For more details, see [this wiki article](https://github.com/mrworf/plexupdate/wiki/Authenticating-with-Plex-Pass).
 
 # Need more information?
 
