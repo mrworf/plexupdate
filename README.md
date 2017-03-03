@@ -70,7 +70,7 @@ Here are some of the more useful ones:
 
 ## Do I have to use the `extras/installer.sh`?
 
-Of course not, anything you find under `extras/` is optional and only provided as a easier way to get `plexupdate.sh` up and running quickly. [Read the guide](https://github.com/mrworf/plexupdate/wiki/Manually-installing-plexupdate) for installing plexupdate manually.
+Of course not, anything you find under `extras/` is optional and only provided as an easier way to get `plexupdate.sh` up and running quickly. Read the guide for [installing plexupdate manually](https://github.com/mrworf/plexupdate/wiki/Manually-installing-plexupdate).
 
 ## Why am I getting a warning about email and password being deprecated?
 
