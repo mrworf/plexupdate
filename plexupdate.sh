@@ -87,12 +87,11 @@ usage() {
 	echo "    --check-update Check for new version of plex only"
 	echo "    --config <path/to/config/file> Configuration file to use"
 	echo "    --dldir <path/to/download/dir> Download directory to use"
-	echo "    --email <plex.tv email> Plex.TV email address"
 	echo "    --help This help"
 	echo "    --notify-success Set exit code 10 if update is available/installed"
-	echo "    --pass <plex.tv password> Plex.TV password"
 	echo "    --port <Plex server port> Port for Plex Server. Used with --server"
 	echo "    --server <Plex server address> Address of Plex Server"
+	echo "    --token Manually specify the token to use to download Plex Pass releases"
 	echo ""
 	exit 0
 }
@@ -110,7 +109,7 @@ trap cleanup EXIT
 
 # Parse commandline
 ALLARGS=( "$@" )
-optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:,notify-success,check-update,help"
+optstring="-o acCdfFhlpPqrSsuUv -l config:,dldir:,email:,pass:,server:,port:,token:,notify-success,check-update,help"
 GETOPTRES=$(getopt $optstring -- "$@")
 if [ $? -eq 1 ]; then
 	exit 1
@@ -164,10 +163,11 @@ do
 
 		(--config) shift;; #gobble up the paramater and silently continue parsing
 		(--dldir) shift; DOWNLOADDIR=$(trimQuotes ${1});;
-		(--email) shift; EMAIL=$(trimQuotes ${1});;
-		(--pass) shift; PASS=$(trimQuotes ${1});;
+		(--email) shift; warn "EMAIL is deprecated. Use TOKEN instead."; EMAIL=$(trimQuotes ${1});;
+		(--pass) shift; warn "PASS is deprecated. Use TOKEN instead."; PASS=$(trimQuotes ${1});;
 		(--server) shift; PLEXSERVER=$(trimQuotes ${1});;
 		(--port) shift; PLEXPORT=$(trimQuotes ${1});;
+		(--token) shift; TOKEN=$(trimQuotes ${1});;
 		(--help) usage;;
 
 		(--notify-success) NOTIFY=yes;;
