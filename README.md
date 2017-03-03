@@ -3,7 +3,7 @@
 
 Plex Update is a bash script which helps you keep Plex Media Server up to date on Linux.
 
-You can schedule updates to run daily, and install Plex Pass beta releases if you have a Plex Pass membership.
+You can schedule updates to run daily and install Plex Pass beta releases if you have a Plex Pass membership.
 
 # Installation
 
@@ -23,30 +23,30 @@ If you have any trouble with the installer, or would just prefer to set plexupda
 
 There are a few additional options for the more enterprising user. Setting any of these to `yes` will enable the function.
 
-- CHECKUPDATE
+- `CHECKUPDATE`
   If you didn't install using `git clone` or by running the installer, you can use this option to notify you when there are updates to plexupdate. If you used git or the installer, see `AUTOUPDATE` instead.
-- PLEXSERVER
-  If set, and combined with AUTOINSTALL, the script will automatically check if the server is in use and defer the update. Great for crontab users. `PLEXSERVER` should be set to the IP/DNS of your Plex Media Server, which typically is 127.0.0.1
-- PLEXPORT
+- `PLEXSERVER`
+  If set, and combined with `AUTOINSTALL`, the script will automatically check if the server is in use and defer the update. Great for crontab users. `PLEXSERVER` should be set to the IP/DNS of your Plex Media Server, which typically is 127.0.0.1
+- `PLEXPORT`
   Sets the port to use along with `PLEXSERVER`
-- AUTOUPDATE
+- `AUTOUPDATE`
   Makes plexupdate.sh automatically update itself using git. This only works if you installed using `git clone` or by using the installer.
-- AUTOINSTALL
+- `AUTOINSTALL`
   Automatically installs the newly downloaded version. Currently works for Debian based systems as well as rpm based distros. Requires root permissions.
-- AUTODELETE
+- `AUTODELETE`
   Delete the downloaded package after installation is complete to conserve disk space.
-- PUBLIC
+- `PUBLIC`
   The default behavior of plexupdate.sh is to download the PlexPass edition of Plex Media Server. Setting this option to `yes` will make it download the public version instead.
-- FORCE
+- `FORCE`
   Normally plexupdate.sh will avoid downloading a file it already has or if it's the same as the installed version. Using this option will force it to download again UNLESS the file already downloaded has the correct checksum. If you have AUTOINSTALL set, plexupdate.sh will then reinstall it.
-- PRINT_URL
+- `PRINT_URL`
   Authenticate, fetch the download URL, print it, and then exit.
-- DISTRO_INSTALL
+- `DISTRO_INSTALL`
   The command used to install packages, only change if you need special options. Natively supports Debian and Redhat, so you don't need to set this for these systems.
-  NOTE! If you define this, you MUST define DISTRO and BUILD
-- DISTRO and BUILD
+  NOTE! If you define this, you MUST define `DISTRO` and `BUILD`
+- `DISTRO` and `BUILD`
   Override which version to download, use -l option to see what you can select.
-- TOKEN
+- `TOKEN`
   If you want to install Plex Pass releases, plexupdate will try to get your account token directly from your Plex Media Server. If you want to use a different token to authenticate, you can enter it here instead. Please read [Authenticating with Plex Pass](https://github.com/mrworf/plexupdate/wiki/Authenticating-with-Plex-Pass) on the wiki for more details.
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
