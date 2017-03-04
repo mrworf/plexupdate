@@ -35,8 +35,7 @@ getPlexToken() {
 	elif getPlexServerToken; then
 		[ "$VERBOSE" = "yes" ] && info "Fetching token from Plex server"
 	elif [ -z "$TOKEN" -a -n "$EMAIL" -a -n "$PASS" ]; then
-		#TOFIX
-		warn "Storing your email and password has been deprecated. Please re-run extras/installer.sh or see LINK_TO_FAQ."
+		warn "Storing your email and password has been deprecated. Please re-run extras/installer.sh or see https://github.com/mrworf/plexupdate#faq"
 		getPlexWebToken
 	# Check if we're connected to a terminal
 	elif [ -z "$TOKEN" -a -t 0 ]; then
