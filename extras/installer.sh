@@ -1,10 +1,11 @@
 #!/bin/bash
 
-ORIGIN_REPO="https://github.com/mrworf/plexupdate"
+ORIGIN_REPO="https://github.com/${GIT_OWNER:-mrworf}/plexupdate"
 FULL_PATH="/opt/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
 CRONWRAPPER="/etc/cron.daily/plexupdate"
+VERBOSE=yes #to be inherited by get-plex-token, do not save to config
 
 # default options
 AUTOINSTALL=yes
@@ -12,7 +13,7 @@ AUTOUPDATE=yes
 PUBLIC=
 
 # variables to save in config
-CONFIGVARS="AUTOINSTALL AUTODELETE DOWNLOADDIR EMAIL PASS FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE NOTIFY"
+CONFIGVARS="AUTOINSTALL AUTODELETE DOWNLOADDIR TOKEN FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE NOTIFY"
 CRONVARS="CONF SCRIPT LOGGING"
 
 install() {
@@ -136,7 +137,7 @@ install_plexupdate() {
 		cd - &> /dev/null
 	else
 		echo -n "Installing plexupdate into '$FULL_PATH'... "
-		git clone "$ORIGIN_REPO" "$FULL_PATH" &> /dev/null || abort "install failed, cannot continue"
+		git clone --branch "${BRANCHNAME:-master}" "$ORIGIN_REPO" "$FULL_PATH" &> /dev/null || abort "install failed, cannot continue"
 		echo "done"
 	fi
 }
@@ -146,33 +147,28 @@ configure_plexupdate() {
 	[ -f "$CONFIGFILE" ] && source "$CONFIGFILE"
 
 	echo
-	echo -n "Do you want to install the latest PlexPass releases? (requires PlexPass username and password) "
+	echo -n "Do you want to install the latest PlexPass releases? (requires PlexPass account) "
 	# The answer to this question and the value of PUBLIC are basically inverted
 	if [ "$PUBLIC" == "yes" ]; then
 		default=N
 	fi
 	if yesno $default; then
 		PUBLIC=no
-		while true; do
-			read -e -p "PlexPass Email Address: " -i "$EMAIL" EMAIL
-			if [ -z "${EMAIL}" ] || [[ "$EMAIL" == *"@"* ]] && [[ "$EMAIL" != *"@"*"."* ]]; then
-				echo "Please provide a valid email address"
-			else
-				break
+		# If they already have a VALID token, leave it alone
+		if [ -z "$TOKEN" ] || ! verifyToken; then
+			if getPlexServerToken; then
+				# Only store the token if it's not in PMS
+				TOKEN=
+			elif ! getPlexToken; then
+				error "Unable to get Plex token, falling back to pulic release"
+				PUBLIC=yes
 			fi
-		done
-		while true; do
-			read -e -p "PlexPass Password: " -i "$PASS" PASS
-			if [ -z "$PASS" ]; then
-				echo "Please provide a password"
-			else
-				break
-			fi
-		done
+		fi
 	else
 		# don't forget to erase old settings if they changed their answer
 		EMAIL=
 		PASS=
+		TOKEN=
 		PUBLIC=yes
 	fi
 
@@ -345,7 +341,7 @@ else
 	install_plexupdate
 fi
 
-
+source "${FULL_PATH}/plexupdate-core"
 
 configure_plexupdate
 configure_cron
@@ -357,7 +353,7 @@ if yesno; then
 		PROGRESS_OPT="-P"
 	fi
 	if [ "$AUTOINSTALL" == "yes" ]; then
-		sudo "$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
+		sudo -E "$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	else
 		"$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	fi

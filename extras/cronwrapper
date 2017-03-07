@@ -58,6 +58,11 @@ fi
 if [ $RET -ne 0 ] ; then
 	# Make sure user gets an email about this (when not success or if user has specified when)
 	cat ${LOGFILE} >&2
+
+	# Output will produce a cron email, so we can reset the exit status
+	if [ $RET -eq 10 ]; then
+		RET=0
+	fi
 fi
 
 rm "${LOGFILE}" 2>/dev/null
