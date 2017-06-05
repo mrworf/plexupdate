@@ -384,7 +384,11 @@ if [ "$VERBOSE" = "yes" ]; then
 fi
 
 if [ -z "${DOWNLOAD}" ]; then
-	error "Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)"
+	if [ "$DISTRO" = "ubuntu" -a "$BUILD" = "linux-ubuntu-armv7l" ]; then
+		error "Plex Media Server on Raspbian is not officially supported and script cannot download a working package."
+	else
+		error "Unable to retrieve the URL needed for download (Query DISTRO: $DISTRO, BUILD: $BUILD)"
+	fi
 	if [ ! -z "${RELEASE}" ]; then
 		error "It seems release info is missing a link"
 		error "Please try https://plex.tv and confirm it works there before reporting this issue"
