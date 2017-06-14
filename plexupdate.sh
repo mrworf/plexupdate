@@ -335,8 +335,6 @@ if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
 fi
 
 if [ "${PUBLIC}" = "no" -a -z "$TOKEN" ]; then
-	TO_SOURCE="$(dirname "$0")/extras/get-plex-token"
-	[ -f "$TO_SOURCE" ] && source $TO_SOURCE
 	if ! getPlexToken; then
 		error "Unable to get Plex token, falling back to public release"
 		PUBLIC="yes"
