@@ -351,7 +351,7 @@ fi
 if [ "${LISTOPTS}" = "yes" ]; then
 	wgetresults="$(wget "${URL_DOWNLOAD}" -o "${FILE_WGETLOG}" -O -)"
 	if [ $? -ne 0 ]; then
-		error "Unable to retrieve available builds"
+		error "Unable to retrieve available builds due to a wget error, run with -v for details"
 		[ "$VERBOSE" = "yes" ] && cat "${FILE_WGETLOG}"
 		exit 1
 	fi
