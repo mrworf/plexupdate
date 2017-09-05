@@ -71,7 +71,7 @@ getPlexServerToken() {
 	fi
 
 	# List possible locations to find Plex Server preference file
-	local VALIDPATHS=("${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR}" "/var/lib/plexmediaserver/Library/Application Support/" "${HOME}/Library/Application Support/")
+	local VALIDPATHS=("${PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR}" "/var/lib/plexmediaserver/Library/Application Support/" "${HOME}/Library/Application Support/" "/home/${PLEX_MEDIA_SERVER_USER}/Library/Application Support")
 	local PREFFILE="/Plex Media Server/Preferences.xml"
 
 	for I in "${VALIDPATHS[@]}" ; do
