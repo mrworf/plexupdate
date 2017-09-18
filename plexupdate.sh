@@ -349,7 +349,13 @@ if [ "$PUBLIC" != "no" ]; then
 fi
 
 if [ "${LISTOPTS}" = "yes" ]; then
-	opts="$(wget "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -oe '"label"[^}]*' | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
+	wgetresults="$(wget "${URL_DOWNLOAD}" -o "${FILE_WGETLOG}" -O -)"
+	if [ $? -ne 0 ]; then
+		error "Unable to retrieve available builds due to a wget error, run with -v for details"
+		[ "$VERBOSE" = "yes" ] && cat "${FILE_WGETLOG}"
+		exit 1
+	fi
+	opts="$(grep -oe '"label"[^}]*' <<<"${wgetresults}" | grep -v Download | sed 's/"label":"\([^"]*\)","build":"\([^"]*\)","distro":"\([^"]*\)".*/"\3" "\2" "\1"/' | uniq | sort)"
 	eval opts=( "DISTRO" "BUILD" "DESCRIPTION" "======" "=====" "==============================================" $opts )
 
 	BUILD=
@@ -373,7 +379,13 @@ fi
 info "Retrieving list of available distributions"
 
 # Set "X-Plex-Token" to the auth token, if no token is specified or it is invalid, the list will return public downloads by default
-RELEASE=$(wget --header "X-Plex-Token:"${TOKEN}"" "${URL_DOWNLOAD}" -O - 2>/dev/null | grep -ioe '"label"[^}]*' | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
+wgetresults="$(wget --header "X-Plex-Token:"${TOKEN}"" "${URL_DOWNLOAD}" -o "${FILE_WGETLOG}" -O -)"
+if [ $? -ne 0 ]; then
+	error "Unable to retrieve the URL needed for download due to a wget error, run with -v for details"
+	[ "$VERBOSE" = "yes" ] && cat "${FILE_WGETLOG}"
+	exit 1
+fi
+RELEASE=$(grep -ioe '"label"[^}]*' <<<"${wgetresults}" | grep -i "\"distro\":\"${DISTRO}\"" | grep -m1 -i "\"build\":\"${BUILD}\"")
 DOWNLOAD=$(echo ${RELEASE} | grep -m1 -ioe 'https://[^\"]*')
 CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"checksum\"\:\"//')
 
