@@ -334,12 +334,15 @@ if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
 	popd > /dev/null
 fi
 
-if [ "${PUBLIC}" = "no" -a -z "$TOKEN" ]; then
-	TO_SOURCE="$(dirname "$0")/extras/get-plex-token"
-	[ -f "$TO_SOURCE" ] && source $TO_SOURCE
-	if ! getPlexToken; then
+if [ "${PUBLIC}" = "no" -o -n "${PLEXSERVER}" ] && ! getPlexToken; then
+	if [ "${PUBLIC}" = "no" ]; then
 		error "Unable to get Plex token, falling back to public release"
 		PUBLIC="yes"
+	fi
+
+	if [ -n "${PLEXSERVER}" ]; then
+		error "Unable to get Plex token, server activity check will be skipped"
+		PLEXSERVER=
 	fi
 fi
 
@@ -486,9 +489,9 @@ if ! sha1sum --status -c "${FILE_SHA}"; then
 	exit 4
 fi
 
-if [ ! -z "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
+if [ -n "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 	# Check if server is in-use before continuing (thanks @AltonV, @hakong and @sufr3ak)...
-	if running ${PLEXSERVER} ${TOKEN} ${PLEXPORT}; then
+	if running "${PLEXSERVER}" "${TOKEN}" "${PLEXPORT}"; then
 		error "Server ${PLEXSERVER} is currently being used by one or more users, skipping installation. Please run again later"
 		exit 6
 	fi
