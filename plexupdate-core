@@ -178,8 +178,17 @@ getLocalSHA() {
 
 # RNNG
 running() {
-	local DATA="$(wget --no-check-certificate -q -O - https://$1:$3/status/sessions?X-Plex-Token=$2)"
+	# If a server is unclaimed, it probably doesn't have TLS enabled either
+	local DATA="$(wget -q -O - http://$1:$2/status/sessions)"
 	local RET=$?
+
+	if [ ${RET} -eq 6 ]; then
+		# Server may be claimed, in which case we should use TLS and pass a token
+		getPlexToken
+		DATA="$(wget --no-check-certificate -q -O - https://$1:$2/status/sessions?X-Plex-Token=$TOKEN)"
+		RET=$?
+	fi
+
 	if [ ${RET} -eq 0 ]; then
 		if [ -z "${DATA}" ]; then
 			# Odd, but usually means noone is watching
