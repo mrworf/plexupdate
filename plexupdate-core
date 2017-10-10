@@ -179,7 +179,8 @@ getLocalSHA() {
 # RNNG
 running() {
 	# If a server is unclaimed, it probably doesn't have TLS enabled either
-	local DATA="$(wget -q -O - http://$1:$2/status/sessions)"
+	local DATA
+	DATA="$(wget -q -O - http://$1:$2/status/sessions)"
 	local RET=$?
 
 	if [ ${RET} -eq 6 ]; then
