@@ -200,7 +200,7 @@ if [ "${CRON}" = "yes" ]; then
 fi
 
 if [ "${KEEP}" = "yes" ]; then
-	error "KEEP is deprecated and should be removed from config file"
+	error "KEEP is deprecated and must be removed from config file"
 	exit 255
 fi
 
@@ -210,7 +210,7 @@ if [ "${FORCEALL}" = "yes" ]; then
 fi
 
 if [ ! -z "${RELEASE}" ]; then
-	error "RELEASE keyword is deprecated and should be removed from config file"
+	error "RELEASE keyword is deprecated and must be removed from config file"
 	error "Use DISTRO and BUILD instead to manually select what to install (check README.md)"
 	exit 255
 fi
