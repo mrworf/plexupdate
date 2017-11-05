@@ -58,6 +58,7 @@ WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
 NOTIFY=no
 CHECKONLY=no
+SYSTEMDUNIT=plexmediaserver.service
 
 FILE_SHA=$(mktemp /tmp/plexupdate.sha.XXXX)
 FILE_WGETLOG=$(mktemp /tmp/plexupdate.wget.XXXX)
@@ -519,7 +520,7 @@ if [ "${AUTOSTART}" = "yes" ]; then
 	fi
 	# Check for systemd
 	if hash systemctl 2>/dev/null; then
-		systemctl start plexmediaserver.service
+		systemctl start "$SYSTEMDUNIT"
 	elif hash service 2>/dev/null; then
 		service plexmediaserver start
 	elif [ -x /etc/init.d/plexmediaserver ]; then
