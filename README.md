@@ -48,6 +48,8 @@ There are a few additional options for the more enterprising user. Setting any o
   Override which version to download, use -l option to see what you can select.
 - `TOKEN`
   If you want to install Plex Pass releases, plexupdate will try to get your account token directly from your Plex Media Server. If you want to use a different token to authenticate, you can enter it here instead. Please read [Authenticating with Plex Pass](https://github.com/mrworf/plexupdate/wiki/Authenticating-with-Plex-Pass) on the wiki for more details.
+- `SYSTEMDUNIT`
+  If set, plexupdate.sh will use a custom systemd unit during `AUTOSTART`, which may be necessary when you are using a custom NAS package. The default is `plexmediaserver.service`.
 
 Most of these options can be specified on the command-line as well, this is just a more convenient way of doing it if you're scripting it. Which brings us to...
 
