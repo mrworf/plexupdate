@@ -72,8 +72,7 @@ usage() {
 	echo ""
 	echo "    -a Auto install if download was successful (requires root)"
 	echo "    -d Auto delete after auto install"
-	echo "    -f Force download even if it's the same version or file"
-	echo "       already exists unless checksum passes"
+	echo "    -f Force download/update even if the newest release is already installed"
 	echo "    -h This help"
 	echo "    -l List available builds and distros"
 	echo "    -p Public Plex Media Server version"
@@ -452,7 +451,7 @@ if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" ] && [ ! -z 
 	exit 0
 fi
 
-if [ -f "${DOWNLOADDIR}/${FILENAME}" -a "${FORCE}" != "yes" ]; then
+if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
 	if sha1sum --status -c "${FILE_SHA}"; then
 		info "File already exists (${FILENAME}), won't download."
 		if [ "${AUTOINSTALL}" != "yes" ]; then
