@@ -420,7 +420,7 @@ fi
 SKIP_DOWNLOAD="no"
 
 INSTALLED_VERSION="$(getPlexVersion)" || warn "Unable to detect installed version, first time?"
-FILE_VERSION="$(cut -f2 -d_ <<< "${FILENAME}")"
+FILE_VERSION="$(parseVersion "${FILENAME}")"
 verboseOutput INSTALLED_VERSION FILE_VERSION
 
 if [ "${REDHAT}" = "yes" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
