@@ -431,7 +431,7 @@ if [ "${REDHAT}" = "yes" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ];
 fi
 
 if [ "${CHECKONLY}" = "yes" ]; then
-	if [ -n "${INSTALLED_VERSION}" ] && isNewerVersion "$FILE_VERSION" "$INSTALLED_VERSION" then
+	if [ -n "${INSTALLED_VERSION}" ] && isNewerVersion "$FILE_VERSION" "$INSTALLED_VERSION"; then
 		info "Your OS reports Plex $INSTALLED_VERSION installed, newer version is available (${FILE_VERSION})"
 		exit 7
 	elif [ -n "${INSTALLED_VERSION}" ]; then
