@@ -240,6 +240,14 @@ getPlexVersion() {
 	fi
 }
 
+verboseOutput() {
+	if [ "$VERBOSE" = "yes" ]; then
+		for i in $@; do
+			info "$i=${!i}"
+		done
+	fi
+}
+
 # Shared functions
 
 # SHARED

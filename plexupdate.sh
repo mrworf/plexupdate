@@ -385,11 +385,7 @@ RELEASE=$(grep -ioe '"label"[^}]*' <<<"${wgetresults}" | grep -i "\"distro\":\"$
 DOWNLOAD=$(echo ${RELEASE} | grep -m1 -ioe 'https://[^\"]*')
 CHECKSUM=$(echo ${RELEASE} | grep -ioe '\"checksum\"\:\"[^\"]*' | sed 's/\"checksum\"\:\"//')
 
-if [ "$VERBOSE" = "yes" ]; then
-	for i in RELEASE DOWNLOAD CHECKSUM; do
-		info "$i=${!i}"
-	done
-fi
+verboseOutput RELEASE DOWNLOAD CHECKSUM
 
 if [ -z "${DOWNLOAD}" ]; then
 	if [ "$DISTRO" = "ubuntu" -a "$BUILD" = "linux-ubuntu-armv7l" ]; then
@@ -425,6 +421,7 @@ SKIP_DOWNLOAD="no"
 
 INSTALLED_VERSION="$(getPlexVersion)" || warn "Unable to detect installed version, first time?"
 FILE_VERSION="$(cut -f2 -d_ <<< "${FILENAME}")"
+verboseOutput INSTALLED_VERSION FILE_VERSION
 
 if [ "${REDHAT}" = "yes" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
 	warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
