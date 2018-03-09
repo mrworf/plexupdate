@@ -209,6 +209,37 @@ verifyToken() {
 	wget -qO /dev/null "https://plex.tv/api/resources?X-Plex-Token=${TOKEN}"
 }
 
+isNewerVersion() {
+	# Returns true ONLY if 1 > 2.
+	[ -z "$1" ] && return 1
+	[ -z "$2" ] && return
+	[ "$1" = "$2" ] && return 1
+	if hash dpkg 2>/dev/null; then
+		dpkg --compare-versions "$1" gt "$2"
+	elif sort -V --version &>/dev/null; then
+		[ "$(printf "$1\n$2" | sort -Vr | head -n1)" = "$1" ]
+	else
+		# sort has had -V since at least 2009, so nobody should ever see this
+		warn "Unable to compare version numbers, assuming '$1' is newer."
+	fi
+}
+
+getPlexVersion() {
+	if [ "${REDHAT}" != "yes" ]; then
+		dpkg-query --showformat='${Version}' --show plexmediaserver 2>/dev/null
+	elif hash rpm 2>/dev/null; then
+		local rpmtemp
+		if rpmtemp=$(rpm -q plexmediaserver); then
+			cut -f2 -d_ <<< "$rpmtemp"
+		else
+			return 1
+		fi
+	else
+		error "Unknown OS, exiting."
+		exit 1
+	fi
+}
+
 # Shared functions
 
 # SHARED

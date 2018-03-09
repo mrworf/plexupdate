@@ -423,32 +423,26 @@ fi
 # By default, try downloading
 SKIP_DOWNLOAD="no"
 
-# Installed version detection
-if [ "${REDHAT}" != "yes" ]; then
-	INSTALLED_VERSION=$(dpkg-query -s plexmediaserver 2>/dev/null | grep -Po 'Version: \K.*')
-else
-	if [ "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
-		warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
-	fi
-	INSTALLED_VERSION=$(rpm -qv plexmediaserver 2>/dev/null)
+INSTALLED_VERSION="$(getPlexVersion)" || warn "Unable to detect installed version, first time?"
+FILE_VERSION="$(cut -f2 -d_ <<< "${FILENAME}")"
+
+if [ "${REDHAT}" = "yes" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
+	warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 fi
 
 if [ "${CHECKONLY}" = "yes" ]; then
-	if [ -z "${INSTALLED_VERSION}" ]; then
-		warn "Unable to detect installed version, first time?"
-	elif [[ $FILENAME != *$INSTALLED_VERSION* ]]; then
-		AVAIL="$(echo "${FILENAME}" | sed -nr 's/^[^0-9]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\-[^_]+).*/\1/pg')"
-		info "Your OS reports Plex $INSTALLED_VERSION installed, newer version is available (${AVAIL})"
+	if [ -n "${INSTALLED_VERSION}" ] && isNewerVersion "$FILE_VERSION" "$INSTALLED_VERSION" then
+		info "Your OS reports Plex $INSTALLED_VERSION installed, newer version is available (${FILE_VERSION})"
 		exit 7
-	else
+	elif [ -n "${INSTALLED_VERSION}" ]; then
 		info "You are running the latest version of Plex (${INSTALLED_VERSION})"
 	fi
 	exit 0
 fi
 
-if [[ $FILENAME == *$INSTALLED_VERSION* ]] && [ "${FORCE}" != "yes" ] && [ ! -z "${INSTALLED_VERSION}" ]; then
-	info "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
-	exit 0
+if ! isNewerVersion "$FILE_VERSION" "$INSTALLED_VERSION" && [ "${FORCE}" != "yes" ]; then
+		info "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
+		exit 0
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
