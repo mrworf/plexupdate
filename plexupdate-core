@@ -180,36 +180,29 @@ getLocalSHA() {
 running() {
 	# If a server is unclaimed, it probably doesn't have TLS enabled either
 	local DATA
+	# get Plex sessions
 	DATA="$(wget -q -O - http://$1:$2/status/sessions)"
 	local RET=$?
+	# and live TV/DVR sessions
+	DATA+="$(wget -q -O - http://$1:$2/livetv/sessions)"
 
 	if [ ${RET} -eq 6 ]; then
 		# Server may be claimed, in which case we should use TLS and pass a token
 		getPlexToken
 		DATA="$(wget --no-check-certificate -q -O - https://$1:$2/status/sessions?X-Plex-Token=$TOKEN)"
 		RET=$?
+		DATA+="$(wget --no-check-certificate -q -O - https://$1:$2/livetv/sessions?X-Plex-Token=$TOKEN)"
 	fi
 
 	if [ ${RET} -eq 0 ]; then
-		if [ -z "${DATA}" ]; then
-			# Odd, but usually means noone is watching
-			return 1
-		fi
-		echo "${DATA}" | grep -q '<MediaContainer size="0">'
-		if [ $? -eq 1 ]; then
-			# not found means that one or more medias are being played
-			return 0
-		fi
-		return 1
-	elif [ ${RET} -eq 4 ]; then
-		# No response, assume not running
-		return 1
-	else
-		# We do not know what this means...
-		warn "Unknown response (${RET}) from server >>>"
-		warn "${DATA}"
-		return 0
+		# Get a total count of active media (MediaContainer size), then deduct one for every paused stream.
+		# If all streams are paused, we consider the server to not be active.
+		local mediacount="$(awk -F'"' '/<MediaContainer size="[0-9]+">/ {count+=$2}; /<Player[^>]* state="paused"/ {count--}; END {print count}' <<< ${DATA})"
+		[ $mediacount -gt 0 ] && return 0
 	fi
+
+	# if we don't know for sure that Plex is busy, assume that it's not so the update can proceed
+	return 1
 }
 
 verifyToken() {
