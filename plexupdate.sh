@@ -228,8 +228,12 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 	elif ! git diff --quiet; then
 		warn "You have made changes to the plexupdate files, cannot auto update"
 	else
+		BRANCHNAME="${BRANCHNAME:-master}"
+		if [ "${BRANCHNAME}" != "$(git symbolic-ref -q --short HEAD)" ]; then
+			git checkout "${BRANCHNAME}"
+		fi
 		# Force FETCH_HEAD to point to the correct branch (for older versions of git which don't default to current branch)
-		if git fetch origin ${BRANCHNAME:-master} --quiet && ! git diff --quiet FETCH_HEAD; then
+		if git fetch origin ${BRANCHNAME} --quiet && ! git diff --quiet FETCH_HEAD; then
 			info "Auto-updating..."
 
 			# Use an associative array to store permissions. If you're running bash < 4, the declare will fail and we'll
