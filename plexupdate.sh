@@ -228,8 +228,9 @@ if [ "${AUTOUPDATE}" = "yes" ]; then
 	elif ! git diff --quiet; then
 		warn "You have made changes to the plexupdate files, cannot auto update"
 	else
-		BRANCHNAME="${BRANCHNAME:-master}"
-		if [ "${BRANCHNAME}" != "$(git symbolic-ref -q --short HEAD)" ]; then
+		if [ -z "${BRANCHNAME}" ]; then
+			BRANCHNAME="$(git symbolic-ref -q --short HEAD)"
+		elif [ "${BRANCHNAME}" != "$(git symbolic-ref -q --short HEAD)" ]; then
 			git checkout "${BRANCHNAME}"
 		fi
 		# Force FETCH_HEAD to point to the correct branch (for older versions of git which don't default to current branch)
