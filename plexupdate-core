@@ -18,9 +18,6 @@ REDHAT_INSTALL="dnf -y install"
 DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
-#URL for new version check
-UPSTREAM_GIT_URL="https://raw.githubusercontent.com/${GIT_OWNER:-mrworf}/plexupdate/${BRANCHNAME:-master}"
-
 #Files "owned" by plexupdate, for autoupdate
 PLEXUPDATE_FILES="plexupdate.sh plexupdate-core extras/installer.sh extras/cronwrapper"
 

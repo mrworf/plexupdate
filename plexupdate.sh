@@ -319,6 +319,9 @@ else
 	fi
 fi
 
+#URL for new version check
+UPSTREAM_GIT_URL="https://raw.githubusercontent.com/${GIT_OWNER:-mrworf}/plexupdate/${BRANCHNAME:-master}"
+
 if [ "${CHECKUPDATE}" = "yes" -a "${AUTOUPDATE}" = "no" ]; then
 	pushd "${SCRIPT_PATH}" > /dev/null
 	for filename in $PLEXUPDATE_FILES; do
