@@ -15,27 +15,6 @@
 #         (typically /var/log/daemon.log or /var/log/syslog)
 #
 
-sendSlackMessage() {
-    escapedText=$(cat ${1} | sed 's/"/\"/g' | sed "s/'/\'/g" )
-    slackUsername=${SLACK_USERNAME:-plexupdate}
-
-    if [ $RET -eq 10 ] || [ $RET -eq 0 ]; then
-        color="#36a64f"
-    else
-        color="#ad2d2d"
-    fi
-    ts=`date +%s`
-    attachment="{\"color\": \"$color\",\"footer\": \"Plex Update\",\"title\": \"Log File\", \"text\": \"$escapedText\", \"ts\": $ts}"
-
-    if [ ! -z "$SLACK_CHANNEL" ]; then
-        json="{\"channel\": \"$SLACK_CHANNEL\", \"username\": \"$slackUsername\", \"attachments\": [$attachment]}"
-    else
-        json="{\"username\": \"$slackUsername\", \"attachments\": [$attachment]}"
-    fi
-
-    curl -s -X POST -H 'Content-type: application/json' -d "$json" "$SLACK_WEBHOOK_URL"
-}
-
 if [ ! -f /etc/plexupdate.cron.conf ]; then
 	echo "ERROR: You have not configured /etc/plexupdate.cron.conf" >&2
 	exit 255
@@ -79,11 +58,6 @@ fi
 if [ $RET -ne 0 ] ; then
 	# Make sure user gets an email about this (when not success or if user has specified when)
 	cat ${LOGFILE} >&2
-
-    # If there's a slack webhook specified then send a slack message with the log output
-    if [ ! -z "$SLACK_WEBHOOK_URL" ]; then
-        sendSlackMessage ${LOGFILE}
-    fi
 
 	# Output will produce a cron email, so we can reset the exit status
 	if [ $RET -eq 10 ]; then
