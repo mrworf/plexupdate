@@ -24,6 +24,8 @@ install() {
 
 	if [ $EUID -ne 0 ]; then
 		sudo $DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
+	else
+		$DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
 	fi
 }
 
