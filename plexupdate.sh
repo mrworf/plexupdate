@@ -443,8 +443,8 @@ if [ "${CHECKONLY}" = "yes" ]; then
 fi
 
 if ! isNewerVersion "$FILE_VERSION" "$INSTALLED_VERSION" && [ "${FORCE}" != "yes" ]; then
-		info "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
-		exit 0
+	info "Your OS reports the latest version of Plex ($INSTALLED_VERSION) is already installed. Use -f to force download."
+	exit 0
 fi
 
 if [ -f "${DOWNLOADDIR}/${FILENAME}" ]; then
