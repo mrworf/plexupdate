@@ -183,8 +183,8 @@ check_distro() {
 		DISTRO_REINSTALL="yum -y reinstall"
 	elif hash zypper 2>/dev/null; then
 		DISTRO=redhat
-		DISTRO_INSTALL="zypper install"
-		DISTRO_REINSTALL="zypper install --force"
+		DISTRO_INSTALL="zypper install -y"
+		DISTRO_REINSTALL="zypper install -y --force"
 	elif hash apt 2>/dev/null; then
 		DISTRO=ubuntu
 		DISTRO_INSTALL="apt install"
