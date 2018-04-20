@@ -27,12 +27,10 @@ else
 	fi
 	# there is no 'else' because if this is being run plexupdate is either already installed
 	# or they already have either wget or curl
-	echo "Sourcing plexupdate-core using: $DOWNLOADER '${LIBRARY_URL}"
 	if ! source <($DOWNLOADER "${LIBRARY_URL}"); then
 		echo "failed to source"
 		exit 1
 	fi
-	echo "Source succeeded"
 fi
 
 install() {
@@ -40,7 +38,6 @@ install() {
 	sleep 1
 
 	[ -z "$DISTRO_INSTALL" ] && check_distro
-	DISTRO_INSTALL="${DISTRO_INSTALL} install"
 
 	if [ $EUID -ne 0 ]; then
 		sudo $DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
