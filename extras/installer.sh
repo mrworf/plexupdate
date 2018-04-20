@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ORIGIN_REPO="https://github.com/${GIT_OWNER:-mrworf}/plexupdate"
+LIBRARY_URL="https://raw.githubusercontent.com/${GIT_OWNER:-mrworf}/plexupdate/${BRANCHNAME:-master}/plexupdate-core"
 FULL_PATH="/opt/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
@@ -26,8 +27,8 @@ else
 	fi
 	# there is no 'else' because if this is being run plexupdate is either already installed
 	# or they already have either wget or curl
-	echo "Sourcing plexupdate-core using: $DOWNLOADER '${ORIGIN_REPO}/${BRANCHNAME:-master}/plexupdate-core"
-	source <($DOWNLOADER "${ORIGIN_REPO}/${BRANCHNAME:-master}/plexupdate-core") || echo "failed to source" && exit 1
+	echo "Sourcing plexupdate-core using: $DOWNLOADER '${LIBRARY_URL}"
+	source <($DOWNLOADER "${LIBRARY_URL}") || echo "failed to source" && exit 1
 	echo "Source succeeded"
 fi
 
