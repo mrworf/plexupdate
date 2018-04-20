@@ -34,29 +34,12 @@ install() {
 	sleep 1
 
 	[ -z "$DISTRO_INSTALL" ] && check_distro
+	DISTRO_INSTALL="${DISTRO_INSTALL} install"
 
 	if [ $EUID -ne 0 ]; then
 		sudo $DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
 	else
 		$DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
-	fi
-}
-
-check_distro() {
-	if [ -f /etc/redhat-release ] && hash dnf 2>/dev/null; then
-		DISTRO="redhat"
-		DISTRO_INSTALL="dnf -y install"
-	elif [ -f /etc/redhat-release ] && hash yum 2>/dev/null; then
-		DISTRO="redhat" #or CentOS but functionally the same
-		DISTRO_INSTALL="yum -y install"
-	elif hash apt 2>/dev/null; then
-		DISTRO="debian" #or Ubuntu
-		DISTRO_INSTALL="apt install"
-	elif hash apt-get 2>/dev/null; then
-		DISTRO="debian"
-		DISTRO_INSTALL="apt-get install"
-	else
-		DISTRO="unknown"
 	fi
 }
 

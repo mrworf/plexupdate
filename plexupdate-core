@@ -12,10 +12,6 @@
 URL_LOGIN='https://plex.tv/users/sign_in.json'
 URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
 URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
-
-# Default options for package managers, override if needed
-REDHAT_INSTALL="dnf -y install"
-DEBIAN_INSTALL="dpkg -i"
 DISTRO_INSTALL=""
 
 #URL for new version check
@@ -176,6 +172,28 @@ getLocalSHA() {
 	sha1sum "$1" | cut -f1 -d" "
 }
 
+check_distro() {
+	if hash dnf 2>/dev/null; then
+		DISTRO=redhat
+		DISTRO_INSTALL="dnf -y"
+	elif hash yum 2>/dev/null; then
+		DISTRO=redhat
+		DISTRO_INSTALL="yum -y"
+	elif hash zypper 2>/dev/null; then
+		DISTRO=redhat
+		DISTRO_INSTALL="zypper -y"
+	elif hash apt 2>/dev/null; then
+		DISTRO=ubuntu
+		DISTRO_INSTALL="apt"
+	elif hash apt-get 2>/dev/null; then
+		DISTRO=ubuntu
+		DISTRO_INSTALL="apt-get -y"
+	else
+		error "Unable to determine distribution, aborting."
+		exit 1
+	fi
+}
+
 # RNNG
 running() {
 	# If a server is unclaimed, it probably doesn't have TLS enabled either
@@ -226,7 +244,7 @@ isNewerVersion() {
 }
 
 parseVersion() {
-	if [ "${REDHAT}" = "yes" ]; then
+	if [ "${DISTRO}" = "redhat" ]; then
 		cut -f2- -d- <<< "$1" | cut -f1-4 -d.
 	else
 		cut -f2 -d_ <<< "$1"
@@ -234,7 +252,7 @@ parseVersion() {
 }
 
 getPlexVersion() {
-	if [ "${REDHAT}" != "yes" ]; then
+	if [ "${DISTRO}" != "redhat" ]; then
 		dpkg-query --showformat='${Version}' --show plexmediaserver 2>/dev/null
 	elif hash rpm 2>/dev/null; then
 		local rpmtemp

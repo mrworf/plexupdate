@@ -297,21 +297,12 @@ fi
 
 if [ -z "${DISTRO_INSTALL}" ]; then
 	if [ -z "${DISTRO}" -a -z "${BUILD}" ]; then
-		# Detect if we're running on redhat instead of ubuntu
-		if [ -f /etc/redhat-release ]; then
-			REDHAT=yes
-			BUILD="linux-ubuntu-${ARCH}"
-			DISTRO="redhat"
-			if ! hash dnf 2>/dev/null; then
-				DISTRO_INSTALL="${REDHAT_INSTALL/dnf/yum}"
-			else
-				DISTRO_INSTALL="${REDHAT_INSTALL}"
-			fi
+		check_distro
+		BUILD="linux-ubuntu-${ARCH}"
+		if [ "${FORCE}" = "yes" ]; then
+			DISTRO_INSTALL="${DISTRO INSTALL} reinstall"
 		else
-			REDHAT=no
-			BUILD="linux-ubuntu-${ARCH}"
-			DISTRO="ubuntu"
-			DISTRO_INSTALL="${DEBIAN_INSTALL}"
+			DISTRO_INSTALL="${DISTRO_INSTALL} install"
 		fi
 	elif [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
 		error "You must define both DISTRO and BUILD"
@@ -428,7 +419,7 @@ INSTALLED_VERSION="$(getPlexVersion)" || warn "Unable to detect installed versio
 FILE_VERSION="$(parseVersion "${FILENAME}")"
 verboseOutput INSTALLED_VERSION FILE_VERSION
 
-if [ "${REDHAT}" = "yes" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
+if [ "${DISTRO}" = "redhat" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
 	warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 fi
 
@@ -510,7 +501,7 @@ if [ "${AUTODELETE}" = "yes" ]; then
 fi
 
 if [ "${AUTOSTART}" = "yes" ]; then
-	if [ "${REDHAT}" = "no" ]; then
+	if [ "${DISTRO}" != "redhat" ]; then
 		warn "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	# Check for systemd
