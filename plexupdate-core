@@ -175,19 +175,24 @@ getLocalSHA() {
 check_distro() {
 	if hash dnf 2>/dev/null; then
 		DISTRO=redhat
-		DISTRO_INSTALL="dnf -y"
+		DISTRO_INSTALL="dnf -y install"
+		DISTRO_REINSTALL="dnf -y reinstall"
 	elif hash yum 2>/dev/null; then
 		DISTRO=redhat
-		DISTRO_INSTALL="yum -y"
+		DISTRO_INSTALL="yum -y install"
+		DISTRO_REINSTALL="yum -y reinstall"
 	elif hash zypper 2>/dev/null; then
 		DISTRO=redhat
-		DISTRO_INSTALL="zypper -y"
+		DISTRO_INSTALL="zypper install"
+		DISTRO_REINSTALL="zypper install --force"
 	elif hash apt 2>/dev/null; then
 		DISTRO=ubuntu
-		DISTRO_INSTALL="apt"
+		DISTRO_INSTALL="apt install"
+		DISTRO_REINSTALL="dpkg -i"
 	elif hash apt-get 2>/dev/null; then
 		DISTRO=ubuntu
-		DISTRO_INSTALL="apt-get -y"
+		DISTRO_INSTALL="apt-get -y install"
+		DISTRO_REINSTALL="apt-get -y install --reinstall"
 	else
 		error "Unable to determine distribution, aborting."
 		exit 1

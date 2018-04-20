@@ -300,9 +300,7 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 		check_distro
 		BUILD="linux-ubuntu-${ARCH}"
 		if [ "${FORCE}" = "yes" ]; then
-			DISTRO_INSTALL="${DISTRO INSTALL} reinstall"
-		else
-			DISTRO_INSTALL="${DISTRO_INSTALL} install"
+			DISTRO_INSTALL="${DISTRO REINSTALL}"
 		fi
 	elif [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
 		error "You must define both DISTRO and BUILD"
