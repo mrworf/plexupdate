@@ -5,7 +5,7 @@
 # GPW -> getPlexWebToken
 # HELPERS -> keypair, rawurlencode, trimQuotes
 # RNNG -> running
-# SHARED -> warn, info, warn
+# SHARED -> warn, info, error, abort
 
 ######## CONSTANTS ########
 # Current pages we need - Do not change unless Plex.tv changes again
@@ -272,8 +272,13 @@ error() {
 	echo "ERROR: $@" >&2
 }
 
+abort() {
+	echo "$@" >&2
+	exit 1
+}
+
 # Intentionally leaving this hard to find so that people aren't trying to use it manually.
 if [ "$(basename "$0")" = "get-plex-token" ]; then
 	[ -f /etc/plexupdate.conf ] && source /etc/plexupdate.conf
-	getPlexToken && info "Token = $TOKEN"
+	getPlexToken && info "TOKEN=$TOKEN"
 fi

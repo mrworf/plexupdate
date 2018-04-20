@@ -16,6 +16,19 @@ PUBLIC=
 CONFIGVARS="AUTOINSTALL AUTODELETE DOWNLOADDIR TOKEN FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE NOTIFY"
 CRONVARS="CONF SCRIPT LOGGING"
 
+if [ "$0" = "installer.sh" ]; then
+	source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/plexupdate-core"
+else
+	if hash wget 2>/dev/null; then
+		DOWNLOADER="wget -qO -"
+	elif hash curl 2>/dev/null; then
+		DOWNLOADER="curl -fsSL"
+	fi
+	# there is no 'else' because if this is being run plexupdate is either already installed
+	# or they already have either wget or curl
+	source <($DOWNLOADER "${ORIGIN_REPO}/${BRANCHNAME:-master}/plexupdate-core")
+fi
+
 install() {
 	echo "'$req' is required but not installed, attempting to install..."
 	sleep 1
@@ -93,11 +106,6 @@ yesno() {
 
 noyes() {
 	yesno N
-}
-
-abort() {
-	echo "$@"
-	exit 1
 }
 
 install_plexupdate() {
@@ -342,8 +350,6 @@ if [ -f "$(dirname "$0")/../plexupdate.sh" -a -d "$(dirname "$0")/../.git" ]; th
 else
 	install_plexupdate
 fi
-
-source "${FULL_PATH}/plexupdate-core"
 
 configure_plexupdate
 configure_cron
