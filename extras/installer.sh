@@ -38,6 +38,7 @@ install() {
 	sleep 1
 
 	[ -z "$DISTRO_INSTALL" ] && check_distro
+	echo "Installing using '$DISTRO_INSTALL $1'"
 
 	if [ $EUID -ne 0 ]; then
 		sudo $DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
