@@ -26,7 +26,9 @@ else
 	fi
 	# there is no 'else' because if this is being run plexupdate is either already installed
 	# or they already have either wget or curl
-	source <($DOWNLOADER "${ORIGIN_REPO}/${BRANCHNAME:-master}/plexupdate-core")
+	echo "Sourcing plexupdate-core using: $DOWNLOADER '${ORIGIN_REPO}/${BRANCHNAME:-master}/plexupdate-core"
+	source <($DOWNLOADER "${ORIGIN_REPO}/${BRANCHNAME:-master}/plexupdate-core") || echo "failed to source" && exit 1
+	echo "Source succeeded"
 fi
 
 install() {
