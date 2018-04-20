@@ -28,7 +28,10 @@ else
 	# there is no 'else' because if this is being run plexupdate is either already installed
 	# or they already have either wget or curl
 	echo "Sourcing plexupdate-core using: $DOWNLOADER '${LIBRARY_URL}"
-	source <($DOWNLOADER "${LIBRARY_URL}") || echo "failed to source" && exit 1
+	if ! source <($DOWNLOADER "${LIBRARY_URL}"); then
+		echo "failed to source"
+		exit 1
+	fi
 	echo "Source succeeded"
 fi
 
