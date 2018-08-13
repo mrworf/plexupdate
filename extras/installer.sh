@@ -24,6 +24,8 @@ install() {
 
 	if [ $EUID -ne 0 ]; then
 		sudo $DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
+	else
+		$DISTRO_INSTALL $1 || abort "Failed while trying to install '$1'. Please install it manually and try again."
 	fi
 }
 
@@ -112,12 +114,12 @@ install_plexupdate() {
 		echo -n "'$FULL_PATH' doesn't exist, attempting to create... "
 		if ! mkdir -p "$FULL_PATH" 2>/dev/null; then
 			sudo mkdir -p "$FULL_PATH" || abort "failed, cannot continue"
-			sudo chown $(id -un):$(id -gn) "$FULL_PATH" || abort "failed, cannot continue"
+			sudo chown $(id -u):$(id -g) "$FULL_PATH" || abort "failed, cannot continue"
 		fi
 		echo "done"
 	elif [ ! -w "$FULL_PATH" ]; then
 		echo -n "'$FULL_PATH' exists, but you don't have permission to write to it. Changing owner... "
-		sudo chown $(id -un):$(id -gn) "$FULL_PATH" || abort "failed, cannot continue"
+		sudo chown $(id -u):$(id -g) "$FULL_PATH" || abort "failed, cannot continue"
 		echo "done"
 	fi
 
@@ -302,7 +304,7 @@ save_config() {
 	sudo tee "$2" > /dev/null < "$CONFIGTEMP"
 	sudo chmod 640 "$2"
 	# only root can modify the config, but the user can still read it
-	sudo chown 0:$(id -gn) "$2"
+	sudo chown 0:$(id -g) "$2"
 	rm "$CONFIGTEMP"
 
 	echo "done"
