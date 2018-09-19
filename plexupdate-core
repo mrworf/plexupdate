@@ -235,7 +235,7 @@ parseVersion() {
 
 getPlexVersion() {
 	if [ "${REDHAT}" != "yes" ]; then
-		dpkg-query --showformat='${Version}' --show plexmediaserver 2>/dev/null
+		dpkg-query --showformat='${Version}' --show plexmediaserver* 2>/dev/null
 	elif hash rpm 2>/dev/null; then
 		local rpmtemp
 		if rpmtemp=$(rpm -q plexmediaserver); then
