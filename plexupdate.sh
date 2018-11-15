@@ -52,6 +52,7 @@ AUTOINSTALL=no
 AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
+KEEPREVERTED=no
 ARCH=$(uname -m)
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
@@ -81,6 +82,8 @@ usage() {
 	echo "    -s Auto start (needed for some distros)"
 	echo "    -u Auto update plexupdate.sh before running it (default with installer)"
 	echo "    -U Do not autoupdate plexupdate.sh"
+	echo "    -k Keep reverted version if newer version has already been downloaded. (overriden by -f)"
+	echo "    -K Update even when latest package has already been downloaded but is not installed. (default with installer)"
 	echo "    -v Show additional debug information"
 	echo ""
 	echo "    Long Argument Options:"
@@ -160,6 +163,8 @@ do
 		(-u) AUTOUPDATE=yes;;
 		(-U) AUTOUPDATE=no;;
 		(-v) VERBOSE=yes;;
+		(-k) KEEPREVERTED=yes;;
+		(-K) KEEPREVERTED=no;;
 
 		(--config) shift;; #gobble up the paramater and silently continue parsing
 		(--dldir) shift; DOWNLOADDIR=$(trimQuotes ${1});;
@@ -471,6 +476,10 @@ if [ "${SKIP_DOWNLOAD}" = "no" ]; then
 		exit ${CODE}
 	fi
 	info "File downloaded"
+elif [ "${KEEPREVERTED}" = "yes" -a "${FORCE}" != "yes" ]; then
+	# We are skipping the download so the file already exists and is a valid download, but we aren't running that version.
+	info "Release \"${FILENAME}\" has already been downloaded, but is not installed.  KEEPREVERTED has been set, so we will not install the new version.  Use -K to turn KEEPREVERTED off or -f to force."
+	exit 0
 fi
 
 if ! sha1sum --status -c "${FILE_SHA}"; then
