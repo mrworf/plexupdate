@@ -229,7 +229,7 @@ parseVersion() {
 	if [ "${REDHAT}" = "yes" ]; then
 		cut -f2- -d- <<< "$1" | cut -f1-4 -d.
 	elif [ "${DISTRO}" = "synology" ]; then
-		cut -f2 -d- <<< "$1"
+		cut -f2-3 -d- <<< "$1"
 	else
 		cut -f2 -d_ <<< "$1"
 	fi
