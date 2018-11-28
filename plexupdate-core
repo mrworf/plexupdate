@@ -228,13 +228,17 @@ isNewerVersion() {
 parseVersion() {
 	if [ "${REDHAT}" = "yes" ]; then
 		cut -f2- -d- <<< "$1" | cut -f1-4 -d.
+	elif [ "${DISTRO}" = "synology" ]; then
+		cut -f2 -d- <<< "$1"
 	else
 		cut -f2 -d_ <<< "$1"
 	fi
 }
 
 getPlexVersion() {
-	if [ "${REDHAT}" != "yes" ]; then
+	if [ "${DISTRO}" = "synology" ]; then
+		synopkg version "Plex Media Server" 2>/dev/null
+	elif [ "${REDHAT}" != "yes" ]; then
 		dpkg-query --showformat='${Version}' --show plexmediaserver 2>/dev/null
 	elif hash rpm 2>/dev/null; then
 		local rpmtemp
