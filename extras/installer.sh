@@ -42,6 +42,9 @@ check_distro() {
 	elif hash apt-get 2>/dev/null; then
 		DISTRO="debian"
 		DISTRO_INSTALL="apt-get install"
+	elif [ -f /etc/synoinfo.conf ]; then
+	        DISTRO="synology"
+	        DISTRO_INSTALL="synopkg install"
 	else
 		DISTRO="unknown"
 	fi
