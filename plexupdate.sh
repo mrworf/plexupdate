@@ -307,6 +307,20 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 			else
 				DISTRO_INSTALL="${REDHAT_INSTALL}"
 			fi
+		elif [ -f /etc/synoinfo.conf ]; then
+		        DISTRO="synology"
+		        if [ "${PUBLIC}" = "yes" ]; then
+			        if [ "${ARCH}" = "x86_64"]; then
+				    BUILD="linux-ubuntu-x86_64"
+				elif [ "${ARCH}" = "x86"]; then
+				    BUILD="linux-synology-i686"
+				elif [ "${ARCH}" = "armv7"]; then
+				    BUILD="linux-synology-armv7"
+				fi
+			else
+				BUILD="linux-${ARCH}"
+			fi
+			DISTRO_INSTALL="synopkg install"
 		else
 			REDHAT=no
 			DISTRO="debian"
