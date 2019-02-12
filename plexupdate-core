@@ -10,7 +10,7 @@
 ######## CONSTANTS ########
 # Current pages we need - Do not change unless Plex.tv changes again
 URL_LOGIN='https://plex.tv/users/sign_in.json'
-URL_DOWNLOAD='https://plex.tv/api/downloads/1.json?channel=plexpass'
+URL_DOWNLOAD='https://plex.tv/api/downloads/5.json?channel=plexpass'
 URL_DOWNLOAD_PUBLIC='https://plex.tv/api/downloads/1.json'
 
 # Default options for package managers, override if needed

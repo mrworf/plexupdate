@@ -300,7 +300,11 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 		# Detect if we're running on redhat instead of ubuntu
 		if [ -f /etc/redhat-release ]; then
 			REDHAT=yes
-			BUILD="linux-ubuntu-${ARCH}"
+			if [ "${PUBLIC}" = "yes" ]; then
+				BUILD="linux-ubuntu-${ARCH}"
+			else
+				BUILD="linux-${ARCH}"
+			fi
 			DISTRO="redhat"
 			if ! hash dnf 2>/dev/null; then
 				DISTRO_INSTALL="${REDHAT_INSTALL/dnf/yum}"
@@ -309,8 +313,13 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 			fi
 		else
 			REDHAT=no
-			BUILD="linux-ubuntu-${ARCH}"
-			DISTRO="ubuntu"
+			if [ "${PUBLIC}" = yes ]; then
+				BUILD="linux-ubuntu-${ARCH}"
+				DISTRO="ubuntu"
+			else
+				BUILD="linux-${ARCH}"
+				DISTRO="debian"
+			fi
 			DISTRO_INSTALL="${DEBIAN_INSTALL}"
 		fi
 	elif [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
@@ -342,6 +351,10 @@ fi
 if [ "${PUBLIC}" = "no" ] && ! getPlexToken; then
 	error "Unable to get Plex token, falling back to public release"
 	PUBLIC="yes"
+	BUILD="linux-ubuntu-${ARCH}"
+	if [ "${REDHAT}" = "yes" ]; then
+		DISTRO="ubuntu"
+	fi
 fi
 
 if [ "$PUBLIC" != "no" ]; then
@@ -487,7 +500,7 @@ if [ -n "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 fi
 
 if [ "${AUTOINSTALL}" = "yes" ]; then
-	if ! hash ldconfig 2>/dev/null && [ "${DISTRO}" = "ubuntu" ]; then
+	if ! hash ldconfig 2>/dev/null && [ "${REDHAT}" = "no" ]; then
 		export PATH=$PATH:/sbin
 	fi
 
