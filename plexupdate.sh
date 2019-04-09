@@ -54,6 +54,7 @@ AUTOUPDATE=no
 AUTOSTART=no
 KEEPREVERTED=no
 ARCH=$(uname -m)
+BUILD="linux-$ARCH"
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
 CHECKUPDATE=yes
@@ -301,15 +302,10 @@ if [ ! -d "${DOWNLOADDIR}" ]; then
 fi
 
 if [ -z "${DISTRO_INSTALL}" ]; then
-	if [ -z "${DISTRO}" -a -z "${BUILD}" ]; then
+	if [ -z "${DISTRO}" ]; then
 		# Detect if we're running on redhat instead of ubuntu
 		if [ -f /etc/redhat-release ]; then
 			REDHAT=yes
-			if [ "${PUBLIC}" = "yes" ]; then
-				BUILD="linux-ubuntu-${ARCH}"
-			else
-				BUILD="linux-${ARCH}"
-			fi
 			DISTRO="redhat"
 			if ! hash dnf 2>/dev/null; then
 				DISTRO_INSTALL="${REDHAT_INSTALL/dnf/yum}"
@@ -318,18 +314,9 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 			fi
 		else
 			REDHAT=no
-			if [ "${PUBLIC}" = yes ]; then
-				BUILD="linux-ubuntu-${ARCH}"
-				DISTRO="ubuntu"
-			else
-				BUILD="linux-${ARCH}"
-				DISTRO="debian"
-			fi
+			DISTRO="debian"
 			DISTRO_INSTALL="${DEBIAN_INSTALL}"
 		fi
-	elif [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
-		error "You must define both DISTRO and BUILD"
-		exit 255
 	fi
 else
 	if [ -z "${DISTRO}" -o -z "${BUILD}" ]; then
@@ -356,10 +343,6 @@ fi
 if [ "${PUBLIC}" = "no" ] && ! getPlexToken; then
 	error "Unable to get Plex token, falling back to public release"
 	PUBLIC="yes"
-	BUILD="linux-ubuntu-${ARCH}"
-	if [ "${REDHAT}" = "yes" ]; then
-		DISTRO="ubuntu"
-	fi
 fi
 
 if [ "$PUBLIC" != "no" ]; then
