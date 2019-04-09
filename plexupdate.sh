@@ -96,6 +96,7 @@ usage() {
 	echo "    --port <Plex server port> Port for Plex Server. Used with --server"
 	echo "    --server <Plex server address> Address of Plex Server"
 	echo "    --token Manually specify the token to use to download Plex Pass releases"
+	echo "    --run-after Program to run after successful install."
 	echo ""
 	exit 0
 }
@@ -174,6 +175,7 @@ do
 		(--server) shift; PLEXSERVER=$(trimQuotes ${1});;
 		(--port) shift; PLEXPORT=$(trimQuotes ${1});;
 		(--token) shift; TOKEN=$(trimQuotes ${1});;
+		(--run-after) shift; RUNAFTER=$(trimQuotes ${1});;
 		(--help) usage;;
 
 		(--notify-success) NOTIFY=yes;;
@@ -500,8 +502,14 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 	RET=$?
 	if [ ${RET} -ne 0 ]; then
 		# Clarify why this failed, so user won't be left in the dark
-		error "Failed to install update. Command '${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"' returned error code ${RET}"
+		error "Failed to install update. Command '${DISTRO_INSTALL} \"${DOWNLOADDIR}/${FILENAME}\"' returned error code ${RET}"
 		exit ${RET}
+	fi
+
+	if [ ! -z "${RUNAFTER}" ]; then
+		# RUNAFTER command has been set.  Pass version number as a parameter.
+		verboseOutput "Successfully installed update.  Running '${RUNAFTER} \"${FILE_VERSION}\"'"
+		${RUNAFTER} "${FILE_VERSION}"
 	fi
 fi
 
