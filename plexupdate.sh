@@ -309,7 +309,6 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 			fi
 		elif [ -f /etc/synoinfo.conf ]; then
 			DISTRO="synology"
-			BUILD="linux-${ARCH}"
 			DISTRO_INSTALL="synopkg install"
 		else
 			REDHAT=no
