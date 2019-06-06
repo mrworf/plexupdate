@@ -19,6 +19,12 @@ If you'd ever like to change your configuration, just re-run the installer from 
 
 If you have any trouble with the installer, or would just prefer to set plexupdate up manually, [read the guide](https://github.com/mrworf/plexupdate/wiki/Manually-installing-plexupdate).
 
+## Synology Installation
+
+Before installing on a Synology NAS, you will need to follow the instructions in the Plex support article [How to add Plex’s package signing public key to Synology NAS Package Center](https://support.plex.tv/articles/205165858-how-to-add-plex-s-package-signing-public-key-to-synology-nas-package-center/).
+
+Then you can follow the regular installation instructions as normal.
+
 # Advanced options
 
 There are a few additional options for the more enterprising user. Setting any of these to `yes` will enable the function.
