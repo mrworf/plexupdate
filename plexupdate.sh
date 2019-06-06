@@ -300,7 +300,6 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 	if [ -z "${DISTRO}" ]; then
 		# Detect if we're running on redhat instead of ubuntu
 		if [ -f /etc/redhat-release ]; then
-			REDHAT=yes
 			DISTRO="redhat"
 			if ! hash dnf 2>/dev/null; then
 				DISTRO_INSTALL="${REDHAT_INSTALL/dnf/yum}"
@@ -311,7 +310,6 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 			DISTRO="synology"
 			DISTRO_INSTALL="synopkg install"
 		else
-			REDHAT=no
 			DISTRO="debian"
 			DISTRO_INSTALL="${DEBIAN_INSTALL}"
 		fi
@@ -427,7 +425,7 @@ INSTALLED_VERSION="$(getPlexVersion)" || warn "Unable to detect installed versio
 FILE_VERSION="$(parseVersion "${FILENAME}")"
 verboseOutput INSTALLED_VERSION FILE_VERSION
 
-if [ "${REDHAT}" = "yes" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
+if [ "${DISTRO}" = "redhat" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
 	warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 fi
 
@@ -486,7 +484,7 @@ if [ -n "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 fi
 
 if [ "${AUTOINSTALL}" = "yes" ]; then
-	if ! hash ldconfig 2>/dev/null && [ "${REDHAT}" = "no" ]; then
+	if ! hash ldconfig 2>/dev/null && [ "${DISTRO}" != "redhat" ]; then
 		export PATH=$PATH:/sbin
 	fi
 
@@ -509,7 +507,7 @@ if [ "${AUTODELETE}" = "yes" ]; then
 fi
 
 if [ "${AUTOSTART}" = "yes" ]; then
-	if [ "${REDHAT}" = "no" ]; then
+	if [ "${DISTRO}" != "redhat" ]; then
 		warn "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	# Check for systemd
