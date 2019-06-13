@@ -51,7 +51,7 @@ getPlexToken() {
 			fi
 		done
 		while true; do
-			read -e -p "PlexPass Password: " -i "$PASS" PASS
+			read -e -s -p "PlexPass Password: " -i "$PASS" PASS
 			if [ -z "$PASS" ]; then
 				info "Please provide a password"
 			else
