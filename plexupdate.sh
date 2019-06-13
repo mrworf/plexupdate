@@ -494,7 +494,7 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 		# Clarify why this failed, so user won't be left in the dark
 		error "Failed to install update. Command '${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"' returned error code ${RET}"
 		if [ "${DISTRO}" = "synology" -a ${RET} -eq 1 ]; then
-			info "On Synology devices, you need to add Plex's public key to Package Center. If you have not done so, follow the instructions at \033[0;34mhttps://support.plex.tv/articles/205165858-how-to-add-plex-s-package-signing-public-key-to-synology-nas-package-center/\033[0m"
+			echo -e "On Synology devices, you need to add Plex's public key to Package Center. If you have not done so, follow the instructions at \033[0;34mhttps://support.plex.tv/articles/205165858-how-to-add-plex-s-package-signing-public-key-to-synology-nas-package-center/\033[0m"
 		fi
 		exit ${RET}
 	fi
