@@ -520,6 +520,8 @@ if [ "${AUTOSTART}" = "yes" ]; then
 		service plexmediaserver start
 	elif [ -x /etc/init.d/plexmediaserver ]; then
 		/etc/init.d/plexmediaserver start
+	elif [ "${DISTRO}" = "synology" ]; then
+		synopkg start "Plex Media Server"
 	else
 		error "AUTOSTART was specified but no startup scripts were found for 'plexmediaserver'."
 		exit 1
