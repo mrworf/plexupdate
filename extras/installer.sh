@@ -184,9 +184,7 @@ configure_plexupdate() {
 		AUTOINSTALL=yes
 
 		[ -z "$DISTRO" ] && check_distro
-		if [ "$DISTRO" == "redhat" ]; then
-			AUTOSTART=yes
-		elif [ "$DISTRO" == "synology" ]; then
+		if [ "$DISTRO" == "redhat" -o "$DISTRO" == "synology" ]; then
 			AUTOSTART=yes
 		else
 			AUTOSTART=
