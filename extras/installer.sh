@@ -287,7 +287,7 @@ configure_cron() {
 		#changes go here
 		schedule=$(grep "cron.daily" crontab)
 		if [ -z "$schedule" ]; then
-    			schedule="0	4	*	*	*	"
+			schedule="0	4	*	*	*	"
 		else
 			schedule=${schedule%%root*}
 		fi
@@ -312,6 +312,7 @@ configure_cron() {
 
 save_cronjob() {
 	CONFIGTEMP=$(mktemp /tmp/plexupdate.XXX)
+	echo "$(grep "PATH=" /etc/crontab)" >> $CONFIGTEMP
 	echo "#minute	hour	mday	month	wday	who	command" >> $CONFIGTEMP
 	echo "$1" >> $CONFIGTEMP
 
