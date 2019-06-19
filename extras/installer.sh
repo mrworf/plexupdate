@@ -291,7 +291,7 @@ configure_cron() {
 		else
 			schedule=${schedule%%root*}
 		fi
-		save_cronjob "${schedule}root	$(which sh)	${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
+		save_cronjob "$schedule" "$CRONWRAPPER"
 		echo "done"
 	elif [ -f "$CRONWRAPPER" -o -f "$CONFIGCRON" ]; then
 		echo
@@ -315,7 +315,7 @@ save_cronjob() {
 	echo "$(grep "MAILTO=" /etc/crontab)" >> $CONFIGTEMP
 	echo "$(grep "PATH=" /etc/crontab)" >> $CONFIGTEMP
 	echo "#minute	hour	mday	month	wday	who	command" >> $CONFIGTEMP
-	echo "$1" >> $CONFIGTEMP
+	echo "${1}root	$(which sh)	${FULL_PATH}/extras/cronwrapper" >> $CONFIGTEMP
 
 	save_config_tmp "$CONFIGTEMP" "$2"
 }
