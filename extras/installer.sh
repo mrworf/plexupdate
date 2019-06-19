@@ -316,17 +316,7 @@ save_cronjob() {
 	echo "#minute	hour	mday	month	wday	who	command" >> $CONFIGTEMP
 	echo "$1" >> $CONFIGTEMP
 
-	echo
-	echo -n "Writing cron job file '$2'... "
-
-	# most likely writing to /etc, so we need sudo
-	sudo tee "$2" > /dev/null < "$CONFIGTEMP"
-	sudo chmod 640 "$2"
-	# only root can modify the config, but the user can still read it
-	sudo chown 0:$(id -g) "$2"
-	rm "$CONFIGTEMP"
-
-	echo "done"
+	save_config_tmp "$CONFIGTEMP" "$2"
 }
 
 save_config() {
@@ -337,15 +327,19 @@ save_config() {
 		fi
 	done
 
+	save_config_tmp "$CONFIGTEMP" "$2"
+}
+
+save_config_tmp() {
 	echo
 	echo -n "Writing configuration file '$2'... "
 
 	# most likely writing to /etc, so we need sudo
-	sudo tee "$2" > /dev/null < "$CONFIGTEMP"
+	sudo tee "$2" > /dev/null < "$1"
 	sudo chmod 640 "$2"
 	# only root can modify the config, but the user can still read it
 	sudo chown 0:$(id -g) "$2"
-	rm "$CONFIGTEMP"
+	rm "$1"
 
 	echo "done"
 }
