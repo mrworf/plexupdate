@@ -284,7 +284,7 @@ configure_cron() {
 
 		echo
 		echo -n "Installing daily cron job... "
-		#changes go here
+		
 		schedule=$(grep "cron.daily" crontab)
 		if [ -z "$schedule" ]; then
 			schedule="0	4	*	*	*	"
