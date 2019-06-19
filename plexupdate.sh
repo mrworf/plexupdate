@@ -510,7 +510,7 @@ if [ "${AUTODELETE}" = "yes" ]; then
 fi
 
 if [ "${AUTOSTART}" = "yes" ]; then
-	if [ "${DISTRO}" != "redhat" ]; then
+	if [ "${DISTRO}" != "redhat" -a "${DISTRO}" != "synology" ]; then
 		warn "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	# Check for systemd
