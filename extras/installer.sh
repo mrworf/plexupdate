@@ -4,7 +4,8 @@ ORIGIN_REPO="https://github.com/${GIT_OWNER:-mrworf}/plexupdate"
 FULL_PATH="/opt/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
-CRONWRAPPER="/etc/cron.daily/plexupdate"
+CRONWRAPPER="/etc/cron.d/plexupdate"
+CRONWRAPPER_LEGACY="/etc/cron.daily/plexupdate"
 VERBOSE=yes #to be inherited by get-plex-token, do not save to config
 
 # default options
@@ -240,6 +241,11 @@ configure_cron() {
 		return 1
 	fi
 
+	if [ -f "CRONWRAPPER_LEGACY" -a ! -L "CRONWRAPPER_LEGACY" ]; then
+		echo "It seems like you have a custom cron job for plexupdate. Skipping cron job configuration."
+		return 1
+	fi
+	
 	[ -f "$CONFIGCRON" ] && source "$CONFIGCRON"
 
 	echo
@@ -278,7 +284,14 @@ configure_cron() {
 
 		echo
 		echo -n "Installing daily cron job... "
-		sudo ln -sf "${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
+		#changes go here
+		schedule=$(grep "cron.daily" crontab)
+		if [ -z "$schedule" ]; then
+    			schedule="0	4	*	*	*	"
+		else
+			schedule=${schedule%%root*}
+		fi
+		save_cronjob "${schedule}root	$(which sh)	${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
 		echo "done"
 	elif [ -f "$CRONWRAPPER" -o -f "$CONFIGCRON" ]; then
 		echo
@@ -291,6 +304,28 @@ configure_cron() {
 		fi
 		echo done
 	fi
+
+	if [ -f "$CRONWRAPPER_LEGACY" ]; then
+		sudo rm "$CRONWRAPPER_LEGACY" || echo "Failed to remove old cron configuration, please check '$CRONWRAPPER_LEGACY'"
+	fi
+}
+
+save_cronjob() {
+	CONFIGTEMP=$(mktemp /tmp/plexupdate.XXX)
+	echo "#minute	hour	mday	month	wday	who	command" >> $CONFIGTEMP
+	echo "$1" >> $CONFIGTEMP
+
+	echo
+	echo -n "Writing cron job file '$2'... "
+
+	# most likely writing to /etc, so we need sudo
+	sudo tee "$2" > /dev/null < "$CONFIGTEMP"
+	sudo chmod 640 "$2"
+	# only root can modify the config, but the user can still read it
+	sudo chown 0:$(id -g) "$2"
+	rm "$CONFIGTEMP"
+
+	echo "done"
 }
 
 save_config() {
