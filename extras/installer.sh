@@ -312,6 +312,7 @@ configure_cron() {
 
 save_cronjob() {
 	CONFIGTEMP=$(mktemp /tmp/plexupdate.XXX)
+	echo "$(grep "MAILTO=" /etc/crontab)" >> $CONFIGTEMP
 	echo "$(grep "PATH=" /etc/crontab)" >> $CONFIGTEMP
 	echo "#minute	hour	mday	month	wday	who	command" >> $CONFIGTEMP
 	echo "$1" >> $CONFIGTEMP
