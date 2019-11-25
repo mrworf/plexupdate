@@ -53,6 +53,8 @@ AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
 ARCH=$(uname -m)
+# patch for Raspberry Pi 4 reporting as armv7l, whereas Plex only offers armv7hf_neon
+cat /proc/cpuinfo | grep -q "Raspberry Pi 4" && ARCH=armv7hf_neon
 BUILD="linux-$ARCH"
 SHOWPROGRESS=no
 WGETOPTIONS=""	# extra options for wget. Used for progress bar.
