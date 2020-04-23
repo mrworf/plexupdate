@@ -51,7 +51,7 @@ getPlexToken() {
 			fi
 		done
 		while true; do
-			read -e -p "PlexPass Password: " -i "$PASS" PASS
+			read -e -s -p "PlexPass Password: " -i "$PASS" PASS
 			if [ -z "$PASS" ]; then
 				info "Please provide a password"
 			else
@@ -226,17 +226,21 @@ isNewerVersion() {
 }
 
 parseVersion() {
-	if [ "${REDHAT}" = "yes" ]; then
+	if [ "${DISTRO}" = "redhat" ]; then
 		cut -f2- -d- <<< "$1" | cut -f1-4 -d.
+	elif [ "${DISTRO}" = "synology" ]; then
+		cut -f2-3 -d- <<< "$1"
 	else
 		cut -f2 -d_ <<< "$1"
 	fi
 }
 
 getPlexVersion() {
-	if [ "${REDHAT}" != "yes" ]; then
+	if [ "${DISTRO}" = "debian" ]; then
 		dpkg-query --showformat='${Version}' --show plexmediaserver 2>/dev/null
-	elif hash rpm 2>/dev/null; then
+	elif [ "${DISTRO}" = "synology" ]; then
+		synopkg version "Plex Media Server" 2>/dev/null
+	elif [ "${DISTRO}" = "redhat" ]; then
 		local rpmtemp
 		if rpmtemp=$(rpm -q plexmediaserver); then
 			parseVersion "$rpmtemp"

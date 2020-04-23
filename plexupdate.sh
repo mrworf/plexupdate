@@ -304,15 +304,16 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 	if [ -z "${DISTRO}" ]; then
 		# Detect if we're running on redhat instead of ubuntu
 		if [ -f /etc/redhat-release ]; then
-			REDHAT=yes
 			DISTRO="redhat"
 			if ! hash dnf 2>/dev/null; then
 				DISTRO_INSTALL="${REDHAT_INSTALL/dnf/yum}"
 			else
 				DISTRO_INSTALL="${REDHAT_INSTALL}"
 			fi
+		elif [ -f /etc/synoinfo.conf ]; then
+			DISTRO="synology"
+			DISTRO_INSTALL="synopkg install"
 		else
-			REDHAT=no
 			DISTRO="debian"
 			DISTRO_INSTALL="${DEBIAN_INSTALL}"
 		fi
@@ -428,7 +429,7 @@ INSTALLED_VERSION="$(getPlexVersion)" || warn "Unable to detect installed versio
 FILE_VERSION="$(parseVersion "${FILENAME}")"
 verboseOutput INSTALLED_VERSION FILE_VERSION
 
-if [ "${REDHAT}" = "yes" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
+if [ "${DISTRO}" = "redhat" -a "${AUTOINSTALL}" = "yes" -a "${AUTOSTART}" = "no" ]; then
 	warn "Your distribution may require the use of the AUTOSTART [-s] option for the service to start after the upgrade completes."
 fi
 
@@ -487,7 +488,7 @@ if [ -n "${PLEXSERVER}" -a "${AUTOINSTALL}" = "yes" ]; then
 fi
 
 if [ "${AUTOINSTALL}" = "yes" ]; then
-	if ! hash ldconfig 2>/dev/null && [ "${REDHAT}" = "no" ]; then
+	if ! hash ldconfig 2>/dev/null && [ "${DISTRO}" != "redhat" ]; then
 		export PATH=$PATH:/sbin
 	fi
 
@@ -496,6 +497,9 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 	if [ ${RET} -ne 0 ]; then
 		# Clarify why this failed, so user won't be left in the dark
 		error "Failed to install update. Command '${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"' returned error code ${RET}"
+		if [ "${DISTRO}" = "synology" -a ${RET} -eq 1 ]; then
+			error "On Synology devices, you need to add Plex's public key to Package Center. If you have not done so, follow the instructions at https://support.plex.tv/articles/205165858-how-to-add-plex-s-package-signing-public-key-to-synology-nas-package-center/"
+		fi
 		exit ${RET}
 	fi
 fi
@@ -510,7 +514,7 @@ if [ "${AUTODELETE}" = "yes" ]; then
 fi
 
 if [ "${AUTOSTART}" = "yes" ]; then
-	if [ "${REDHAT}" = "no" ]; then
+	if [ "${DISTRO}" != "redhat" -a "${DISTRO}" != "synology" ]; then
 		warn "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
 	# Check for systemd
@@ -520,6 +524,8 @@ if [ "${AUTOSTART}" = "yes" ]; then
 		service plexmediaserver start
 	elif [ -x /etc/init.d/plexmediaserver ]; then
 		/etc/init.d/plexmediaserver start
+	elif [ "${DISTRO}" = "synology" ]; then
+		synopkg start "Plex Media Server"
 	else
 		error "AUTOSTART was specified but no startup scripts were found for 'plexmediaserver'."
 		exit 1
