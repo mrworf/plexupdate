@@ -236,11 +236,16 @@ configure_cron() {
 		return 1
 	fi
 
-	[ -f "$CONFIGCRON" ] && source "$CONFIGCRON"
+	if [ -f "$CONFIGCRON" ]; then
+		#this is redundant since null is evaluated as yes anyway, but including for readability
+		CRON=yes
+		source "$CONFIGCRON"
+	fi
 
 	echo
 	echo -n "Would you like to set up automatic daily updates for Plex? "
 	if yesno $CRON; then
+		CRON=yes
 		if [ $(sudo find -L "${FULL_PATH}" -perm /002 -or -not -uid 0 -or -not -gid 0 | wc -l) -ne 0 ]; then
 			echo
 			echo "WARNING: For security reasons, plexupdate needs to be installed as root in order to run automatically. In order to finish setting up automatic updates, we will change the ownership of '${FULL_PATH}' to root:root."
@@ -354,7 +359,7 @@ if yesno; then
 	if wget --show-progress -V &> /dev/null; then
 		PROGRESS_OPT="-P"
 	fi
-	if [ "$AUTOINSTALL" == "yes" ]; then
+	if [ "$AUTOINSTALL" == "yes" -o "$CRON" == "yes" ]; then
 		sudo -E "$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	else
 		"$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
