@@ -358,7 +358,7 @@ if yesno; then
 	if wget --show-progress -V &> /dev/null; then
 		PROGRESS_OPT="-P"
 	fi
-	if [ "$AUTOINSTALL" == "yes" ] || [ "$CRON" == "yes" ]; then
+	if [ "$AUTOINSTALL" == "yes" -o "$CRON" == "yes" ]; then
 		sudo -E "$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	else
 		"$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
