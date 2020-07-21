@@ -236,7 +236,11 @@ configure_cron() {
 		return 1
 	fi
 
-	[ -f "$CONFIGCRON" ] && source "$CONFIGCRON"
+	if [ -f "$CONFIGCRON" ]; then
+		#this is redundant since null is evaluated as yes anyway, but including for readability
+		CRON=yes
+		source "$CONFIGCRON"
+	fi
 
 	echo
 	echo -n "Would you like to set up automatic daily updates for Plex? "
@@ -354,7 +358,7 @@ if yesno; then
 	if wget --show-progress -V &> /dev/null; then
 		PROGRESS_OPT="-P"
 	fi
-	if [ "$AUTOINSTALL" == "yes" ] || [ -f "$CONFIGCRON" ]; then
+	if [ "$AUTOINSTALL" == "yes" ] || [ "$CRON" == "yes" ]; then
 		sudo -E "$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
 	else
 		"$FULL_PATH/plexupdate.sh" $PROGRESS_OPT --config "$CONFIGFILE"
