@@ -53,7 +53,7 @@ AUTODELETE=no
 AUTOUPDATE=no
 AUTOSTART=no
 ARCH=$(uname -m)
-# patch for Raspberry Pi reporting as armv7l, whereas Plex only offers armv7hf_neon
+# patch for Raspberry Pi reporting as armv7l, whereas Plex only offers armv7neon
 [ "$ARCH" = "armv7l" ] && ARCH="armv7neon"
 BUILD="linux-$ARCH"
 SHOWPROGRESS=no
