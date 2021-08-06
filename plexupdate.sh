@@ -308,6 +308,9 @@ if [ -z "${DISTRO_INSTALL}" ]; then
 			fi
 		elif [ -f /etc/synoinfo.conf ]; then
 			DISTRO="synology"
+			if grep -q "major=\"7\"" /etc/VERSION; then
+				DISTRO="synology-dsm7"
+			fi
 			DISTRO_INSTALL="synopkg install"
 		else
 			DISTRO="debian"
@@ -493,8 +496,10 @@ if [ "${AUTOINSTALL}" = "yes" ]; then
 	if [ ${RET} -ne 0 ]; then
 		# Clarify why this failed, so user won't be left in the dark
 		error "Failed to install update. Command '${DISTRO_INSTALL} "${DOWNLOADDIR}/${FILENAME}"' returned error code ${RET}"
-		if [ "${DISTRO}" = "synology" -a ${RET} -eq 1 ]; then
-			error "On Synology devices, you need to add Plex's public key to Package Center. If you have not done so, follow the instructions at https://support.plex.tv/articles/205165858-how-to-add-plex-s-package-signing-public-key-to-synology-nas-package-center/"
+		if [ ${RET} -eq 1 ]; then
+			if [ "${DISTRO}" = "synology" || "${DISTRO}" = "synology-dsm7" ]; then
+				error "On Synology devices, you need to add Plex's public key to Package Center. If you have not done so, follow the instructions at https://support.plex.tv/articles/205165858-how-to-add-plex-s-package-signing-public-key-to-synology-nas-package-center/"
+			fi
 		fi
 		exit ${RET}
 	fi
@@ -510,18 +515,20 @@ if [ "${AUTODELETE}" = "yes" ]; then
 fi
 
 if [ "${AUTOSTART}" = "yes" ]; then
-	if [ "${DISTRO}" != "redhat" -a "${DISTRO}" != "synology" ]; then
+	if [ "${DISTRO}" != "redhat" -a "${DISTRO}" != "synology" -a "${DISTRO}" != "synology-dsm7" ]; then
 		warn "The AUTOSTART [-s] option may not be needed on your distribution."
 	fi
-	# Check for systemd
-	if hash systemctl 2>/dev/null; then
+
+	if [ "${DISTRO}" = "synology" ]; then
+		synopkg start "Plex Media Server"
+	elif [ "${DISTRO}" = "synology-dsm7" ]; then
+		synopkg start "PlexMediaServer"
+	elif hash systemctl 2>/dev/null; then
 		systemctl start "$SYSTEMDUNIT"
 	elif hash service 2>/dev/null; then
 		service plexmediaserver start
 	elif [ -x /etc/init.d/plexmediaserver ]; then
 		/etc/init.d/plexmediaserver start
-	elif [ "${DISTRO}" = "synology" ]; then
-		synopkg start "Plex Media Server"
 	else
 		error "AUTOSTART was specified but no startup scripts were found for 'plexmediaserver'."
 		exit 1
