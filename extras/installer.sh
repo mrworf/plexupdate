@@ -44,8 +44,11 @@ check_distro() {
 		DISTRO="debian"
 		DISTRO_INSTALL="apt-get install"
 	elif [ -f /etc/synoinfo.conf ]; then
-	        DISTRO="synology"
-	        DISTRO_INSTALL="synopkg install"
+		DISTRO="synology"
+		if grep -q "major=\"7\"" /etc/VERSION; then
+			DISTRO="synology-dsm7"
+		fi
+		DISTRO_INSTALL="synopkg install"
 	else
 		DISTRO="unknown"
 	fi
@@ -186,7 +189,7 @@ configure_plexupdate() {
 		AUTODELETE=yes
 		
 		[ -z "$DISTRO" ] && check_distro
-		if [ "$DISTRO" == "redhat" -o "$DISTRO" == "synology" ]; then
+		if [ "$DISTRO" == "redhat" -o "$DISTRO" == "synology" -o "$DISTRO" == "synology-dsm7" ]; then
 			AUTOSTART=yes
 		else
 			AUTOSTART=
