@@ -228,8 +228,10 @@ isNewerVersion() {
 parseVersion() {
 	if [ "${DISTRO}" = "redhat" ]; then
 		cut -f2- -d- <<< "$1" | cut -f1-4 -d.
-	elif [ "${DISTRO}" = "synology" -o "${DISTRO}" = "synology-dsm7" ]; then
+	elif [ "${DISTRO}" = "synology" ]; then
 		cut -f2-3 -d- <<< "$1"
+	elif [ "${DISTRO}" = "synology-dsm7" ]; then
+		cut -f2 -d- <<< "$1"
 	else
 		cut -f2 -d_ <<< "$1"
 	fi
@@ -241,7 +243,7 @@ getPlexVersion() {
 	elif [ "${DISTRO}" = "synology" ]; then
 		synopkg version "Plex Media Server" 2>/dev/null
 	elif [ "${DISTRO}" = "synology-dsm7" ]; then
-		synopkg version "PlexMediaServer" 2>/dev/null
+		synopkg version "PlexMediaServer" 2>/dev/null | cut -f1 -d-
 	elif [ "${DISTRO}" = "redhat" ]; then
 		local rpmtemp
 		if rpmtemp=$(rpm -q plexmediaserver); then
