@@ -324,7 +324,7 @@ elif [ ! -z "$SUDO_USER" ]; then
 	abort "This script will ask for sudo as necessary, but you should not run it as sudo. Please try again."
 fi
 
-for req in wget git; do
+for req in wget git sudo; do
 	if ! hash $req 2>/dev/null; then
 		install $req
 	fi
