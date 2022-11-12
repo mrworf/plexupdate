@@ -4,7 +4,8 @@ ORIGIN_REPO="https://github.com/${GIT_OWNER:-mrworf}/plexupdate"
 FULL_PATH="/opt/plexupdate"
 CONFIGFILE="/etc/plexupdate.conf"
 CONFIGCRON="/etc/plexupdate.cron.conf"
-CRONWRAPPER="/etc/cron.daily/plexupdate"
+CRONWRAPPER="/etc/cron.d/plexupdate"
+CRONWRAPPER_LEGACY="/etc/cron.daily/plexupdate"
 VERBOSE=yes #to be inherited by get-plex-token, do not save to config
 
 # default options
@@ -42,6 +43,12 @@ check_distro() {
 	elif hash apt-get 2>/dev/null; then
 		DISTRO="debian"
 		DISTRO_INSTALL="apt-get install"
+	elif [ -f /etc/synoinfo.conf ]; then
+		DISTRO="synology"
+		if grep -q "major=\"7\"" /etc/VERSION; then
+			DISTRO="synology-dsm7"
+		fi
+		DISTRO_INSTALL="synopkg install"
 	else
 		DISTRO="unknown"
 	fi
@@ -179,9 +186,10 @@ configure_plexupdate() {
 
 	if yesno "$AUTOINSTALL"; then
 		AUTOINSTALL=yes
-
+		AUTODELETE=yes
+		
 		[ -z "$DISTRO" ] && check_distro
-		if [ "$DISTRO" == "redhat" ]; then
+		if [ "$DISTRO" == "redhat" -o "$DISTRO" == "synology" -o "$DISTRO" == "synology-dsm7" ]; then
 			AUTOSTART=yes
 		else
 			AUTOSTART=
@@ -236,6 +244,11 @@ configure_cron() {
 		return 1
 	fi
 
+	if [ -f "CRONWRAPPER_LEGACY" -a ! -L "CRONWRAPPER_LEGACY" ]; then
+		echo "It seems like you have a custom cron job for plexupdate. Skipping cron job configuration."
+		return 1
+	fi
+	
 	if [ -f "$CONFIGCRON" ]; then
 		#this is redundant since null is evaluated as yes anyway, but including for readability
 		CRON=yes
@@ -279,7 +292,14 @@ configure_cron() {
 
 		echo
 		echo -n "Installing daily cron job... "
-		sudo ln -sf "${FULL_PATH}/extras/cronwrapper" "$CRONWRAPPER"
+		
+		schedule=$(grep "cron.daily" crontab)
+		if [ -z "$schedule" ]; then
+			schedule="0	4	*	*	*	"
+		else
+			schedule=${schedule%%root*}
+		fi
+		save_cronjob "$schedule" "$CRONWRAPPER"
 		echo "done"
 	elif [ -f "$CRONWRAPPER" -o -f "$CONFIGCRON" ]; then
 		echo
@@ -292,6 +312,20 @@ configure_cron() {
 		fi
 		echo done
 	fi
+
+	if [ -f "$CRONWRAPPER_LEGACY" ]; then
+		sudo rm "$CRONWRAPPER_LEGACY" || echo "Failed to remove old cron configuration, please check '$CRONWRAPPER_LEGACY'"
+	fi
+}
+
+save_cronjob() {
+	CONFIGTEMP=$(mktemp /tmp/plexupdate.XXX)
+	echo "$(grep "MAILTO=" /etc/crontab)" >> $CONFIGTEMP
+	echo "$(grep "PATH=" /etc/crontab)" >> $CONFIGTEMP
+	echo "#minute	hour	mday	month	wday	who	command" >> $CONFIGTEMP
+	echo "${1}root	$(which sh)	${FULL_PATH}/extras/cronwrapper" >> $CONFIGTEMP
+
+	save_config_tmp "$CONFIGTEMP" "$2"
 }
 
 save_config() {
@@ -302,15 +336,19 @@ save_config() {
 		fi
 	done
 
+	save_config_tmp "$CONFIGTEMP" "$2"
+}
+
+save_config_tmp() {
 	echo
 	echo -n "Writing configuration file '$2'... "
 
 	# most likely writing to /etc, so we need sudo
-	sudo tee "$2" > /dev/null < "$CONFIGTEMP"
+	sudo tee "$2" > /dev/null < "$1"
 	sudo chmod 640 "$2"
 	# only root can modify the config, but the user can still read it
 	sudo chown 0:$(id -g) "$2"
-	rm "$CONFIGTEMP"
+	rm "$1"
 
 	echo "done"
 }
