@@ -8,6 +8,7 @@ CRONWRAPPER="/etc/cron.daily/plexupdate"
 VERBOSE=yes #to be inherited by get-plex-token, do not save to config
 
 # default options
+USEDEFAULTS=false
 AUTOINSTALL=yes
 AUTOUPDATE=yes
 PUBLIC=
@@ -15,6 +16,19 @@ PUBLIC=
 # variables to save in config
 CONFIGVARS="AUTOINSTALL AUTODELETE DOWNLOADDIR TOKEN FORCE FORCEALL PUBLIC AUTOSTART AUTOUPDATE PLEXSERVER PLEXPORT CHECKUPDATE NOTIFY"
 CRONVARS="CONF SCRIPT LOGGING"
+
+usage() {
+	echo "Usage: $(basename $0) [-h] [<long options>]"
+	echo ""
+	echo ""
+	echo "    -h This help"
+	echo ""
+	echo "    Long Argument Options:"
+	echo "    --default Use defaults for all prompts"
+	echo "    --help This help"
+	echo ""
+	exit 0
+}
 
 install() {
 	echo "'$req' is required but not installed, attempting to install..."
@@ -77,7 +91,11 @@ yesno() {
 	fi
 
 	while true; do
-		read -n 1 -p "$prompt" answer
+		if $USEDEFAULTS; then
+			echo "$prompt"
+		else
+			read -n 1 -p "$prompt" answer
+		fi
 		answer=${answer:-$default}
 		answer="$(tr "[:lower:]" "[:upper:]" <<< "$answer")"
 
@@ -195,9 +213,17 @@ configure_plexupdate() {
 				PLEXSERVER="127.0.0.1"
 			fi
 			while true; do
-				read -e -p "Plex Server IP/DNS name: " -i "$PLEXSERVER" PLEXSERVER
+				prompt="Plex Server IP/DNS name:"
+				if $USEDEFAULTS; then
+					echo "$prompt $PLEXSERVER"
+				else
+					read -e -p "$prompt " -i "$PLEXSERVER" PLEXSERVER
+				fi
 				if ! ping -c 1 -w 1 "$PLEXSERVER" &>/dev/null ; then
 					echo -n "Server $PLEXSERVER isn't responding, are you sure you entered it correctly? "
+					if $USEDEFAULTS; then
+						abort
+					fi
 					if yesno N; then
 						break
 					fi
@@ -209,7 +235,12 @@ configure_plexupdate() {
 				PLEXPORT=32400
 			fi
 			while true; do
-				read -e -p "Plex Server Port: " -i "$PLEXPORT" PLEXPORT
+				prompt="Plex Server Port:"
+				if $USEDEFAULTS; then
+					echo "$prompt $PLEXPORT"
+				else
+					read -e -p "$prompt " -i "$PLEXPORT" PLEXPORT
+				fi
 				if ! [[ "$PLEXPORT" =~ ^[1-9][0-9]*$ ]]; then
 					echo "Port $PLEXPORT isn't valid, please try again"
 					PLEXPORT=32400
@@ -328,6 +359,19 @@ for req in wget git sudo; do
 	if ! hash $req 2>/dev/null; then
 		install $req
 	fi
+done
+
+while true;
+do
+	case "$1" in
+		(-h) usage;;
+
+		(--default) USEDEFAULTS=true;;
+		(--help) usage;;
+		(-*) error "Unrecognized option $1"; usage; exit 1;;
+		(*)  break;;
+	esac
+	shift
 done
 
 if [ -f ~/.plexupdate ]; then
